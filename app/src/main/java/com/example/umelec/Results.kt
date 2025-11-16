@@ -27,52 +27,10 @@ class Results : AppCompatActivity() {
     private var candidateItemWidth = 0
     private var currentCandidateIndex = 0
 
-    // ⭐️ Simulated data for leading candidates (used in ONGOING phase)
-    private val leadingCandidates = listOf(
-        LeadingCandidate(
-            position = "Chairperson",
-            name = "Mark Tan",
-            votes = 2540,
-            profileResId = R.drawable.ic_profile // Use your placeholder image resource
-        ),
-        LeadingCandidate(
-            position = "Treasurer",
-            name = "Sarah Lee",
-            votes = 1800,
-            profileResId = R.drawable.ic_profile // Use your placeholder image resource
-        ),
-        LeadingCandidate(
-            position = "PRO",
-            name = "Alex Stone",
-            votes = 1500,
-            profileResId = R.drawable.ic_profile // Use your placeholder image resource
-        )
-    )
-
-    // ⭐️ Mock data for Receipt Verification (ENDED phase)
-    private val FAKE_RECEIPT_DATA = mapOf(
-        "test@example.com" to "0x12345678",
-        "user@umelec.edu" to "0xABCDEF01"
-    )
-
-    // ⭐️ Fake Future Dates for Countdown demonstration
-    private val UPCOMING_START_TIME_MS: Long
-    private val ONGOING_END_TIME_MS: Long
-
-    // ⭐️ CHANGE THIS VALUE to test the different card messages:
-    private var resultCardState = ResultCardState.ENDED
-
-
-    init {
-        // Calculate demonstration dates immediately
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, 5) // 5 days for UPCOMING phase
-        UPCOMING_START_TIME_MS = calendar.timeInMillis
-
-        val calendar2 = Calendar.getInstance()
-        calendar2.add(Calendar.MINUTE, 10) // 10 minutes for ONGOING phase
-        ONGOING_END_TIME_MS = calendar2.timeInMillis
-    }
+    // Real data from Firestore
+    private var leadingCandidates = emptyList<LeadingCandidate>()
+    private var currentElectionId: String? = null
+    private var resultCardState = ResultCardState.NO_ELECTION
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,7 +41,8 @@ class Results : AppCompatActivity() {
         setupHeaderIcons()
         setupFooterNavigation()
 
-        updateUIForPhase(resultCardState)
+        // Determine election state from Firestore
+        determineElectionState()
     }
 
     override fun onDestroy() {
@@ -100,6 +59,43 @@ class Results : AppCompatActivity() {
     // ----------------------------------------------------------------------
     // --- MAIN PHASE LOGIC ---
     // ----------------------------------------------------------------------
+
+    /**
+     * Determine election state from Firestore
+     */
+    private fun determineElectionState() {
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId != null) {
+                    FirestoreElectionHelper.determineElectionState(
+                        onSuccess = { state ->
+                            resultCardState = when (state) {
+                                ElectionState.UPCOMING -> ResultCardState.UPCOMING
+                                ElectionState.ONGOING -> ResultCardState.ONGOING
+                                ElectionState.ENDED -> ResultCardState.ENDED
+                                ElectionState.NO_ELECTION -> ResultCardState.NO_ELECTION
+                            }
+                            updateUIForPhase(resultCardState)
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Results", "Error determining state: $error")
+                            resultCardState = ResultCardState.NO_ELECTION
+                            updateUIForPhase(resultCardState)
+                        }
+                    )
+                } else {
+                    resultCardState = ResultCardState.NO_ELECTION
+                    updateUIForPhase(resultCardState)
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Results", "Error getting election ID: $error")
+                resultCardState = ResultCardState.NO_ELECTION
+                updateUIForPhase(resultCardState)
+            }
+        )
+    }
 
     private fun updateUIForPhase(state: ResultCardState) {
         val timeCard: ConstraintLayout = findViewById(R.id.TimeCard)
@@ -121,7 +117,7 @@ class Results : AppCompatActivity() {
             ResultCardState.UPCOMING -> {
                 timeCard.visibility = View.VISIBLE
                 findViewById<TextView>(R.id.TimeTitle).text = "Next election starts in"
-                setupCountdown(UPCOMING_START_TIME_MS)
+                setupCountdownForElection(isStartDate = true)
             }
             ResultCardState.ONGOING -> {
                 timeCard.visibility = View.VISIBLE
@@ -129,8 +125,8 @@ class Results : AppCompatActivity() {
                 talliesCard.visibility = View.VISIBLE
 
                 findViewById<TextView>(R.id.TimeTitle).text = "Remaining time for the election"
-                setupCountdown(ONGOING_END_TIME_MS)
-                setupCandidatesPreviewCard()
+                setupCountdownForElection(isStartDate = false)
+                loadLeadingCandidates()
                 setupTalliesCard(isFinal = false)
             }
             ResultCardState.ENDED -> {
@@ -157,6 +153,50 @@ class Results : AppCompatActivity() {
     // ----------------------------------------------------------------------
     // --- COUNTDOWN TIMER LOGIC ---
     // ----------------------------------------------------------------------
+
+    /**
+     * Setup countdown based on election dates from Firestore
+     */
+    private fun setupCountdownForElection(isStartDate: Boolean) {
+        FirestoreElectionHelper.getCurrentElection(
+            onSuccess = { electionData ->
+                if (electionData != null) {
+                    // Get dates from Firestore
+                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("elections")
+                        .document(currentElectionId ?: return@getCurrentElection)
+                        .get()
+                        .addOnSuccessListener { document ->
+                            if (document.exists()) {
+                                // Use DocumentSnapshot getTimestamp method instead of casting
+                                val startDateTimestamp = document.getTimestamp("startDate")
+                                val endDateTimestamp = document.getTimestamp("endDate")
+                                
+                                val startDate = startDateTimestamp?.toDate()
+                                val endDate = endDateTimestamp?.toDate()
+                                
+                                val targetDate = if (isStartDate) startDate else endDate
+                                if (targetDate != null) {
+                                    setupCountdown(targetDate.time)
+                                } else {
+                                    updateTimerDisplay(0)
+                                }
+                            }
+                        }
+                        .addOnFailureListener { error ->
+                            android.util.Log.e("Results", "Error getting election dates: $error")
+                            updateTimerDisplay(0)
+                        }
+                } else {
+                    updateTimerDisplay(0)
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Results", "Error fetching election: $error")
+                updateTimerDisplay(0)
+            }
+        )
+    }
 
     private fun setupCountdown(futureTimeMs: Long) {
         countDownTimer?.cancel()
@@ -202,6 +242,30 @@ class Results : AppCompatActivity() {
     // ----------------------------------------------------------------------
     // --- ONGOING PHASE CARD LOGIC ---
     // ----------------------------------------------------------------------
+
+    /**
+     * Load leading candidates from Firestore
+     */
+    private fun loadLeadingCandidates() {
+        currentElectionId?.let { electionId ->
+            FirestoreVoteHelper.getLeadingCandidates(
+                electionId = electionId,
+                limit = 3,
+                onSuccess = { candidates ->
+                    leadingCandidates = candidates
+                    setupCandidatesPreviewCard()
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Results", "Error loading leading candidates: $error")
+                    leadingCandidates = emptyList()
+                    setupCandidatesPreviewCard()
+                }
+            )
+        } ?: run {
+            leadingCandidates = emptyList()
+            setupCandidatesPreviewCard()
+        }
+    }
 
     private fun setupCandidatesPreviewCard() {
         val container: LinearLayout = findViewById(R.id.candidateListContainer)
@@ -430,18 +494,80 @@ class Results : AppCompatActivity() {
                 Toast.makeText(this, "Please enter verification details.", Toast.LENGTH_SHORT).show()
 
             } else if (email.isNotEmpty() && signatureSnippet.isNotEmpty()) {
-                // Use Dialogs for critical verification results
-                if (FAKE_RECEIPT_DATA[email] == signatureSnippet) {
-                    showReceiptSuccessDialog()
-                } else {
-                    showReceiptFailureDialog()
-                }
-
+                // Verify receipt from Firestore
+                verifyReceipt(email, signatureSnippet)
             } else {
                 // Keep as Toast for quick input prompt
                 Toast.makeText(this, "Please fill both Email and Signature fields for verification.", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    /**
+     * Verify vote receipt from Firestore
+     */
+    private fun verifyReceipt(email: String, signatureSnippet: String) {
+        // Find user by email
+        FirebaseAuthHelper.getCurrentUser()?.let { currentUser ->
+            if (currentUser.email?.equals(email, ignoreCase = true) == true) {
+                // Get user's vote receipt
+                currentElectionId?.let { electionId ->
+                    FirestoreVoteHelper.getVoteReceipt(
+                        userId = currentUser.uid,
+                        electionId = electionId,
+                        onSuccess = { receipt ->
+                            if (receipt != null) {
+                                // Check if signature snippet matches
+                                if (receipt.signaturePreview.contains(signatureSnippet, ignoreCase = true)) {
+                                    showReceiptSuccessDialog()
+                                } else {
+                                    showReceiptFailureDialog()
+                                }
+                            } else {
+                                showReceiptFailureDialog()
+                            }
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Results", "Error verifying receipt: $error")
+                            showReceiptFailureDialog()
+                        }
+                    )
+                } ?: showReceiptFailureDialog()
+            } else {
+                // Email doesn't match current user - search by email in Firestore
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .whereEqualTo("email", email)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener { documents ->
+                        if (documents.isEmpty) {
+                            showReceiptFailureDialog()
+                            return@addOnSuccessListener
+                        }
+                        val userId = documents.documents[0].id
+                        currentElectionId?.let { electionId ->
+                            FirestoreVoteHelper.getVoteReceipt(
+                                userId = userId,
+                                electionId = electionId,
+                                onSuccess = { receipt ->
+                                    if (receipt != null && receipt.signaturePreview.contains(signatureSnippet, ignoreCase = true)) {
+                                        showReceiptSuccessDialog()
+                                    } else {
+                                        showReceiptFailureDialog()
+                                    }
+                                },
+                                onFailure = { error ->
+                                    showReceiptFailureDialog()
+                                }
+                            )
+                        } ?: showReceiptFailureDialog()
+                    }
+                    .addOnFailureListener {
+                        showReceiptFailureDialog()
+                    }
+            }
+        } ?: showReceiptFailureDialog()
     }
 
     // ----------------------------------------------------------------------

@@ -11,6 +11,11 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.constraintlayout.widget.ConstraintLayout
 
 
+// Define the possible states for the election card UI
+//enum class ElectionState { ONGOING, NO_ELECTION, UPCOMING, ENDED }
+
+// Data class to easily handle election details for the ONGOING phase
+//data class ElectionDetails(val title: String, val period: String, val status: String)
 
 // Data class to represent a single candidate's information
 data class Candidate(
@@ -36,6 +41,7 @@ class Homepage : AppCompatActivity() {
 
     // Shared width variable for candidate and result preview
     private var candidateItemWidth = 0
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -62,15 +68,27 @@ class Homepage : AppCompatActivity() {
 
 
         // --- NEW ELECTION INITIALIZATION ---
-        // Determine the current election status from the backend/database
-        val currentElectionState = determineElectionState()
-
-        // Update the UI based on the state
-        updateElectionUI(currentElectionState)
+        // Get current election ID and state from Firestore
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId != null) {
+                    determineElectionState()
+                } else {
+                    updateElectionUI(ElectionState.NO_ELECTION)
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Homepage", "Error getting election ID: $error")
+                updateElectionUI(ElectionState.NO_ELECTION)
+            }
+        )
         // -----------------------------------
 
         // --- NEW FOOTER NAVIGATION SETUP ---
         setupFooterNavigation() // <--- ADD THIS LINE
+
+
         // -----------------------------------
     }
 
@@ -121,8 +139,6 @@ class Homepage : AppCompatActivity() {
             // Create an Intent to start the ProfileActivity class (assuming it's named Profile.kt)
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
-            overridePendingTransition(0, 0)
-
         }
 
         // 3. 庁 NEW: Notification Icon Click Listener (Integrate NotificationManager)
@@ -134,14 +150,17 @@ class Homepage : AppCompatActivity() {
 
     // --- ELECTION LOGIC START ---
 
-    // Placeholder function to simulate fetching the election state and data
-    private fun determineElectionState(): ElectionState {
-        // **IMPORTANT:** Replace this with your actual backend call logic.
-        // Use the desired state for testing:
-        return ElectionState.ONGOING
-        //return ElectionState.NO_ELECTION
-        // return ElectionState.UPCOMING
-        //return ElectionState.ENDED
+    // Determine election state from Firestore
+    private fun determineElectionState() {
+        FirestoreElectionHelper.determineElectionState(
+            onSuccess = { state ->
+                updateElectionUI(state)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Homepage", "Error determining election state: $error")
+                updateElectionUI(ElectionState.NO_ELECTION)
+            }
+        )
     }
 
     /**
@@ -229,52 +248,46 @@ class Homepage : AppCompatActivity() {
 
 
                 // **Backend Integration Point (ONGOING)**
-                val electionData = fetchOngoingElectionData()
-                electionTitleValue.text = electionData.title
+                fetchElectionData { electionData ->
+                    electionTitleValue.text = electionData.title
+                    votingPeriodValue.text = electionData.period
 
-                votingPeriodValue.text = electionData.period
+                    // 🚀 UPDATED LOGIC (From Vote.kt): Status text and button text
+                    statusValue.text = "Ongoing"
+                    statusValue.setTextColor(Color.parseColor("#333333"))
+                    btnVoteNow.text = "Vote now"
 
-                // 🚀 UPDATED LOGIC (From Vote.kt): Status text and button text
-                statusValue.text = "Ongoing" // Change from electionData.status
-                statusValue.setTextColor(Color.parseColor("#333333")) // Change from Green
-                btnVoteNow.text = "Vote now" // Explicitly set button text
+                    // Set click listener for Vote Now button
+                    btnVoteNow.setOnClickListener {
+                        val intent = Intent(this, Vote::class.java)
+                        startActivity(intent)
+                    }
 
+                    // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
+                    candidatesContainer.visibility = View.VISIBLE
+                    btnViewAll.isClickable = true
+                    btnViewAll.setTextColor(Color.parseColor("#0039A6"))
 
-                // Set click listener for Vote Now button
-                btnVoteNow.setOnClickListener {
+                    // Fetch and populate candidates
+                    currentElectionId?.let { electionId ->
+                        FirestoreCandidateHelper.getCandidatesForPreview(
+                            electionId = electionId,
+                            limit = 5,
+                            onSuccess = { candidates ->
+                                populateCandidateList(candidateListContainer, candidates)
+                                setupCandidateScrollControls()
+                            },
+                            onFailure = { error ->
+                                android.util.Log.e("Homepage", "Error fetching candidates: $error")
+                            }
+                        )
+                    }
 
-                    // Assuming Vote.kt is Vote Activity
-                    val intent = Intent(this, Castvote::class.java)
-
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
-
-                }
-
-                // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
-                candidatesContainer.visibility = View.VISIBLE
-
-
-                // textCandidatesEnded and textNoCandidates are already hidden by reset
-
-
-                // FIX: Use isClickable and set text color back to active
-                btnViewAll.isClickable = true
-                btnViewAll.setTextColor(Color.parseColor("#0039A6")) // Example: Active Blue color (optional)
-
-
-                // Populate and set up scrolling
-                populateCandidateList(candidateListContainer, candidates)
-
-                setupCandidateScrollControls()
-
-                // Set View All button click listener
-                btnViewAll.setOnClickListener {
-                    // Assuming Candidates.kt is Candidates Activity
-                    val intent = Intent(this, Candidates::class.java)
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
-
+                    // Set View All button click listener
+                    btnViewAll.setOnClickListener {
+                        val intent = Intent(this, Candidates::class.java)
+                        startActivity(intent)
+                    }
                 }
 
 
@@ -302,43 +315,43 @@ class Homepage : AppCompatActivity() {
                 upcomingLayout.visibility = View.GONE // Ensure original upcoming layout is hidden
 
                 // **Backend Integration Point (UPCOMING)**
-                val upcomingDate = fetchUpcomingElectionDate()
-                val electionData = fetchOngoingElectionData() // For title
+                fetchElectionData { electionData ->
+                    electionTitleValue.text = electionData.title
+                    votingPeriodValue.text = electionData.period
 
-                electionTitleValue.text = electionData.title
-                votingPeriodValue.text = upcomingDate // Re-using this field for the key date
+                    // 🚀 UPDATED LOGIC (From Vote.kt): Status text and Button state
+                    statusValue.text = "Upcoming"
+                    statusValue.setTextColor(Color.parseColor("#333333"))
+                    btnVoteNow.text = "Vote Now"
+                    btnVoteNow.isEnabled = false
+                    btnVoteNow.alpha = 0.5f
+                    btnVoteNow.setOnClickListener(null)
 
+                    // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
+                    candidatesContainer.visibility = View.VISIBLE
+                    btnViewAll.isClickable = true
+                    btnViewAll.setTextColor(Color.parseColor("#0039A6"))
 
-                // 🚀 UPDATED LOGIC (From Vote.kt): Status text and Button state
-                statusValue.text = "Upcoming"
-                statusValue.setTextColor(Color.parseColor("#333333")) // Neutral/Default color
+                    // Fetch and populate candidates
+                    currentElectionId?.let { electionId ->
+                        FirestoreCandidateHelper.getCandidatesForPreview(
+                            electionId = electionId,
+                            limit = 5,
+                            onSuccess = { candidates ->
+                                populateCandidateList(candidateListContainer, candidates)
+                                setupCandidateScrollControls()
+                            },
+                            onFailure = { error ->
+                                android.util.Log.e("Homepage", "Error fetching candidates: $error")
+                            }
+                        )
+                    }
 
-                btnVoteNow.text = "Vote Now"
-                btnVoteNow.isEnabled = false // Disable button
-                btnVoteNow.alpha = 0.5f
-                btnVoteNow.setOnClickListener(null) // Remove any potential click listener
-
-
-                // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
-                candidatesContainer.visibility = View.VISIBLE
-                // textCandidatesEnded and textNoCandidates are already hidden by reset
-
-
-                // FIX: Use isClickable and set text color back to active
-                btnViewAll.isClickable = true
-                btnViewAll.setTextColor(Color.parseColor("#0039A6")) // Example: Active Blue color (optional)
-
-
-                // Populate and set up scrolling
-                populateCandidateList(candidateListContainer, candidates)
-
-                setupCandidateScrollControls()
-
-                // Set View All button click listener
-                btnViewAll.setOnClickListener {
-                    val intent = Intent(this, Candidates::class.java)
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
+                    // Set View All button click listener
+                    btnViewAll.setOnClickListener {
+                        val intent = Intent(this, Candidates::class.java)
+                        startActivity(intent)
+                    }
                 }
 
             }
@@ -378,18 +391,28 @@ class Homepage : AppCompatActivity() {
 
                 // 4. Populate with winning candidates
                 // **Backend Integration Point (ENDED):** Use the list of winning candidates
-                populateCandidateList(candidateListContainer, winningCandidates.map {
+                currentElectionId?.let { electionId ->
+                    FirestoreCandidateHelper.getWinningCandidates(
+                        electionId = electionId,
+                        onSuccess = { winners ->
+                            val candidateList = winners.map {
+                                Candidate(it.name, it.position, it.photoResource)
+                            }
+                            populateCandidateList(candidateListContainer, candidateList)
+                            setupCandidateScrollControls()
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Homepage", "Error fetching winners: $error")
+                        }
+                    )
+                } ?: run {
+                    android.util.Log.e("Homepage", "No election ID available")
+                }
 
-                    Candidate(it.name, it.position, it.photoResource)
-                })
-
-                setupCandidateScrollControls()
-
-                // 5. Set View All button click listener (Assuming Results.kt is Results Activity)
+                // 5. Set View All button click listener
                 btnViewAll.setOnClickListener {
-                    val intent = Intent(this, Results::class.java) // Navigate to Results
+                    val intent = Intent(this, Results::class.java)
                     startActivity(intent)
-                    overridePendingTransition(0, 0)
                 }
 
 
@@ -398,19 +421,31 @@ class Homepage : AppCompatActivity() {
         }
     }
 
-    // --- Backend Data Simulation (Replace with actual backend calls) ---
-    private fun fetchOngoingElectionData(): ElectionDetails {
-        // **CODE IT
-        return ElectionDetails(
-            title = "Student Council Leadership Election",
-            period = "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm",
-            status = "Active"
+    // --- Backend Data Integration ---
+    private fun fetchElectionData(callback: (ElectionDetails) -> Unit) {
+        FirestoreElectionHelper.getCurrentElection(
+            onSuccess = { electionData ->
+                if (electionData != null) {
+                    callback(electionData)
+                } else {
+                    // Default fallback
+                    callback(ElectionDetails(
+                        title = "No Active Election",
+                        period = "",
+                        status = "None"
+                    ))
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Homepage", "Error fetching election data: $error")
+                // Default fallback
+                callback(ElectionDetails(
+                    title = "Error Loading Election",
+                    period = "",
+                    status = "Error"
+                ))
+            }
         )
-    }
-
-    private fun fetchUpcomingElectionDate(): String {
-        // **CODE IT FOR EASY BACKEND/DATABASE ACCESS**
-        return "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm"
     }
 
 // --- ELECTION LOGIC END ---
@@ -418,24 +453,6 @@ class Homepage : AppCompatActivity() {
 
 
     // --- CANDIDATE PREVIEW LOGIC START ---
-
-    // The current candidate list (simulated data)
-
-    private val candidates = listOf(
-        Candidate("John Doe", "President", R.drawable.ic_profile), // Use a placeholder drawable ID
-        Candidate("Jane Smith", "VP", R.drawable.ic_notification), // Use a placeholder drawable ID
-        Candidate("Bob Johnson", "Secretary", R.drawable.ic_profile),
-        Candidate("Alice Williams", "Treasurer", R.drawable.ic_notification),
-
-        Candidate("Chris Lee", "Auditor", R.drawable.ic_profile)
-    )
-
-    private val winningCandidates = listOf(
-        // **IMPORTANT:** Replace with actual winning data from your backend/database
-        WinningCandidate("Maya Lopez", "President", R.drawable.ic_profile), // Use a placeholder drawable ID
-        WinningCandidate("Daniel Kim", "VP", R.drawable.ic_notification), // Use a placeholder drawable ID
-        WinningCandidate("Sarah Chen", "Secretary", R.drawable.ic_profile)
-    )
 
     /**
      * Dynamically populates
@@ -581,6 +598,10 @@ class Homepage : AppCompatActivity() {
 
 
     // --- FOOTER NAVIGATION LOGIC START ---
+
+    /**
+     * Sets up click listeners for all elements in the footer navigation bar.
+     */
     private fun setupFooterNavigation() {
         // Find all navigation items (LinearLayouts)
         val navHome: LinearLayout = findViewById(R.id.nav_home)
@@ -588,21 +609,38 @@ class Homepage : AppCompatActivity() {
         val navCandidates: LinearLayout = findViewById(R.id.nav_candidates)
         val navResults: LinearLayout = findViewById(R.id.nav_results)
         val navFaq: LinearLayout = findViewById(R.id.nav_faq)
+
+        // Helper function to navigate to a new Activity
+
+
         val navigateTo = { activityClass: Class<*> ->
             // Only start the activity if it's not the current one (to prevent unnecessary restarts)
             if (activityClass != this::class.java) {
                 val intent = Intent(this, activityClass)
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+
+
                 // Optional: Add finish() if you don't want the user to return here via back button
                 // finish()
             }
         }
 
-        navHome.setOnClickListener {}
+        // Set Click Listeners
+
+        // Home (Current Activity - No action needed unless reloading is desired)
+        // We can keep this listener
+        // empty or make it re-initialize the current activity.
+        navHome.setOnClickListener {
+            // Since we are already on Homepage.kt, we typically do nothing or smooth scroll to top.
+        }
         navVote.setOnClickListener { navigateTo(Vote::class.java) }
         navCandidates.setOnClickListener { navigateTo(Candidates::class.java) }
         navResults.setOnClickListener { navigateTo(Results::class.java) }
         navFaq.setOnClickListener { navigateTo(Faq::class.java) }
     }
+
+// --- FOOTER NAVIGATION LOGIC END ---
+
+    // NOTE: The local notification logic (toggleNotificationDropdown and showNotificationDropdown)
+    // has been removed and replaced by the single call to notificationManager.toggleNotificationDropdown(it as ImageView)
 }

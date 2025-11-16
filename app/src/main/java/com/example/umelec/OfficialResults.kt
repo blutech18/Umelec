@@ -12,6 +12,8 @@ import de.hdodenhof.circleimageview.CircleImageView
 import java.text.SimpleDateFormat
 import java.util.*
 
+
+
 // Data structure for a single winner's result
 data class OfficialResultCandidate(
     val name: String,
@@ -26,35 +28,102 @@ class OfficialResults : AppCompatActivity() {
     // --- BACKEND/DATABASE INTEGRATION POINTS ---
     // ----------------------------------------------------------------------
 
-    /** * DB/BACKEND GUIDE:
-     * 1. Fetch the timestamp (in milliseconds) of when the results were officially certified.
-     * This time is used for the "As of [Date], [Time]" status text.
-     */
-    private val officialUpdateTimeMillis = System.currentTimeMillis()
-
-    /** * DB/BACKEND GUIDE:
-     * 2. This List should be populated by querying your database for the final, certified winners.
-     * Each entry requires the candidate's name, their winning position, their final vote count,
-     * and the Android resource ID for their profile photo.
-     */
-    private val winnerData = listOf(
-        OfficialResultCandidate("Jane Doe", "Chairperson", 1580, R.drawable.ic_launcher_background),
-        OfficialResultCandidate("Mark Tan", "Vice-Chairperson", 1710, R.drawable.ic_launcher_background),
-        OfficialResultCandidate("David Chan", "Secretary", 1900, R.drawable.ic_launcher_background),
-        OfficialResultCandidate("Maria Dela Cruz", "Treasurer", 2200, R.drawable.ic_launcher_background),
-        OfficialResultCandidate("Kenji Sato", "Auditor", 1770, R.drawable.ic_launcher_background),
-        // Additional candidate for better scroll testing
-        OfficialResultCandidate("Sarah Lee", "Board Member 1", 1650, R.drawable.ic_launcher_background)
-    )
+    private var officialUpdateTimeMillis = System.currentTimeMillis()
+    private var winnerData = emptyList<OfficialResultCandidate>()
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_official_results)
 
         // Setup UI elements
-        setupHeaderBehavior()
-        setupResultsCards()
-        // setupFooterNavigation() // REMOVED
+        setupFooterNavigation()
+
+        // Load winner data from Firestore
+        loadWinnerData()
+    }
+
+    /**
+     * Load winner data from Firestore
+     */
+    private fun loadWinnerData() {
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId != null) {
+                    // Get winning candidates
+                    FirestoreCandidateHelper.getWinningCandidates(
+                        electionId = electionId,
+                        onSuccess = { winners ->
+                            // Convert to OfficialResultCandidate list
+                            // We need vote counts, so get tallies
+                            FirestoreVoteHelper.getVoteTallies(
+                                electionId = electionId,
+                                onSuccess = { tallies ->
+                                    // Create map of candidate votes by position
+                                    val voteMap = mutableMapOf<String, Int>() // candidateName_positionName -> votes
+                                    tallies.forEach { tally ->
+                                        val key = "${tally.candidateName}_${tally.positionName}"
+                                        voteMap[key] = tally.voteCount
+                                    }
+
+                                    // Convert winners to OfficialResultCandidate
+                                    winnerData = winners.mapNotNull { winner ->
+                                        val key = "${winner.name}_${winner.position}"
+                                        val votes = voteMap[key] ?: 0
+                                        OfficialResultCandidate(
+                                            name = winner.name,
+                                            position = winner.position,
+                                            votes = votes,
+                                            photoResId = winner.photoResource
+                                        )
+                                    }.sortedByDescending { it.votes }
+
+                                    // Update timestamp
+                                    officialUpdateTimeMillis = System.currentTimeMillis()
+
+                                    // Setup UI
+                                    setupHeaderBehavior()
+                                    setupResultsCards()
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("OfficialResults", "Error loading vote counts: $error")
+                                    // Use winners without vote counts
+                                    winnerData = winners.map {
+                                        OfficialResultCandidate(
+                                            name = it.name,
+                                            position = it.position,
+                                            votes = 0,
+                                            photoResId = it.photoResource
+                                        )
+                                    }
+                                    officialUpdateTimeMillis = System.currentTimeMillis()
+                                    setupHeaderBehavior()
+                                    setupResultsCards()
+                                }
+                            )
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("OfficialResults", "Error loading winners: $error")
+                            winnerData = emptyList()
+                            setupHeaderBehavior()
+                            setupResultsCards()
+                        }
+                    )
+                } else {
+                    android.util.Log.e("OfficialResults", "No active election")
+                    winnerData = emptyList()
+                    setupHeaderBehavior()
+                    setupResultsCards()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("OfficialResults", "Error getting election ID: $error")
+                winnerData = emptyList()
+                setupHeaderBehavior()
+                setupResultsCards()
+            }
+        )
     }
 
     // ----------------------------------------------------------------------
@@ -66,7 +135,6 @@ class OfficialResults : AppCompatActivity() {
         val btnBack: ImageButton? = findViewById(R.id.btnBack)
         btnBack?.setOnClickListener {
             finish() // Goes back to the previous activity
-            overridePendingTransition(0, 0)
         }
 
         // 2. Results Status Text
@@ -85,15 +153,14 @@ class OfficialResults : AppCompatActivity() {
 
     /**
      * Finds the parent container and dynamically generates a card for each winner.
-     * 🔥 FIX: Sets LayoutParams with bottom AND horizontal margins for each card.
+     * 🔥 FIX: Sets LayoutParams with a bottom margin for each card.
      */
     private fun setupResultsCards() {
         val outerContainer: LinearLayout? = findViewById(R.id.registerContainer)
         outerContainer?.removeAllViews() // Clear any static placeholder card in the XML
 
-        // Define the margin in DP (20dp) and convert it to pixels
+        // Define the margin in DP (e.g., 20dp) and convert it to pixels
         val cardMarginBottomPx = 20.toPx()
-        val cardMarginHorizontalPx = 20.toPx() // 🔥 NEW: Horizontal margin in pixels
 
         winnerData.forEach { winner ->
             val candidateCardView = createCandidateCardView(winner)
@@ -105,12 +172,9 @@ class OfficialResults : AppCompatActivity() {
             ).apply {
                 // 2. Apply the bottom margin
                 bottomMargin = cardMarginBottomPx
-                // 🔥 3. Apply the horizontal margins programmatically
-                marginStart = cardMarginHorizontalPx
-                marginEnd = cardMarginHorizontalPx
             }
 
-            // 4. Apply the parameters to the view
+            // 3. Apply the parameters to the view
             candidateCardView.layoutParams = params
 
             outerContainer?.addView(candidateCardView)
@@ -152,14 +216,39 @@ class OfficialResults : AppCompatActivity() {
     }
 
     /**
-     * Extension function to convert DP units to screen Pixels.
+     * 🔥 NEW: Extension function to convert DP units to screen Pixels.
      * This is required for setting margins programmatically.
      */
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
 
     // ----------------------------------------------------------------------
-    // --- FOOTER NAVIGATION LOGIC (REMOVED) ---
+    // --- FOOTER NAVIGATION LOGIC (REMAINS THE SAME) ---
     // ----------------------------------------------------------------------
 
-    // The setupFooterNavigation function was removed as requested.
+    /**
+    Sets up click listeners for all elements in the footer navigation bar.*/
+    private fun setupFooterNavigation() {// Find all navigation items (LinearLayouts)
+        val navHome: LinearLayout? = findViewById(R.id.nav_home)
+        val navVote: LinearLayout? = findViewById(R.id.nav_vote)
+        val navCandidates: LinearLayout? = findViewById(R.id.nav_candidates)
+        val navResults: LinearLayout? = findViewById(R.id.nav_results)
+        val navFaq: LinearLayout? = findViewById(R.id.nav_faq)
+
+        // Helper function to navigate to a new Activity
+        val navigateTo = { activityClass: Class<*> ->
+            if (activityClass != this::class.java) {
+                val intent = Intent(this, activityClass)
+                // Use this flag for smoother tab switching
+                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                startActivity(intent)
+            }
+        }
+
+        // Set Click Listeners (Assuming Activities exist)
+        navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
+        navVote?.setOnClickListener { navigateTo(Vote::class.java) }
+        navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
+        navResults?.setOnClickListener { navigateTo(Tallies::class.java) } // Assuming Results leads to Tallies/OfficialResults
+        navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
+    }
 }

@@ -17,28 +17,14 @@ import androidx.core.content.ContextCompat
 
 // --- DATA STRUCTURES (Defined outside the class for shared access with Castvote2.kt) ---
 
-// --- MOCK DATA: Replace this with data fetched from your backend ---
-private val MOCK_VOTING_DATA = listOf(
-    VotingPosition("PRES", "Presidentaaaaaaaaaaaaaaaaaaaaaaaaa", listOf(
-        CandidateChoices("PRES_C1", "Jane Doeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-        CandidateChoices("PRES_C2", "John Smith"),
-    )),
-    VotingPosition("VPRES", "Vice President", listOf(
-        CandidateChoices("VPRES_C3", "Alice Johnson"),
-        CandidateChoices("VPRES_C4", "Bob Williams"),
-        CandidateChoices("VPRES_C5", "Cathy Brown"),
-    )),
-    VotingPosition("SEC", "Secretary", listOf(
-        CandidateChoices("SEC_C6", "David Lee")
-    ))
-)
-
 class Castvote : AppCompatActivity() {
 
     private lateinit var votingContainer: LinearLayout
     private lateinit var btnSubmit: AppCompatButton
     private lateinit var allRadioGroups: List<RadioGroup>
     private var unsavedChanges = false
+    private var votingPositions: List<VotingPosition> = emptyList()
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,19 +35,53 @@ class Castvote : AppCompatActivity() {
         btnSubmit = findViewById(R.id.btnSubmit)
         val electionTitleView: TextView = findViewById(R.id.ElectionTitle)
 
-        // 2. Set dynamic UI elements
-        // --- BACKEND GUIDANCE: Replace this static string with a value fetched from your database/API.
-        // Example: backend.fetchCurrentElectionTitle()
-        val currentElectionTitle = "UMak Student Council \nElections 2025" // Mock data
-        electionTitleView.text = currentElectionTitle
-        // --- END BACKEND GUIDANCE ---
-
-        allRadioGroups = inflateVotingCards()
+        // 2. Get current election ID and data
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId != null) {
+                    // Fetch election title
+                    FirestoreElectionHelper.getCurrentElection(
+                        onSuccess = { electionData ->
+                            electionTitleView.text = electionData?.title ?: "Election"
+                            // Fetch positions and candidates
+                            loadVotingData(electionId)
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Castvote", "Error fetching election: $error")
+                            electionTitleView.text = "Election"
+                            loadVotingData(electionId)
+                        }
+                    )
+                } else {
+                    android.util.Log.e("Castvote", "No active election found")
+                    finish()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote", "Error getting election ID: $error")
+                finish()
+            }
+        )
 
         setupBackNavigation()
         setupSubmitButton()
         setupChangeTracking()
         setupModernBackPressHandler()
+    }
+
+    private fun loadVotingData(electionId: String) {
+        FirestoreCandidateHelper.getPositionsForElection(
+            electionId = electionId,
+            onSuccess = { positions ->
+                votingPositions = positions
+                allRadioGroups = inflateVotingCards()
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote", "Error loading voting data: $error")
+                Toast.makeText(this, "Failed to load voting data", Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // ----------------------------------------------------------------------
@@ -96,7 +116,7 @@ class Castvote : AppCompatActivity() {
 
         votingContainer.removeAllViews()
 
-        for (position in MOCK_VOTING_DATA) {
+        for (position in votingPositions) {
             val positionCardView = inflater.inflate(R.layout.position_card, votingContainer, false) as LinearLayout
             positionCardView.findViewById<TextView>(R.id.PositionTitle).text = position.title
             val radioGroup = positionCardView.findViewById<RadioGroup>(R.id.CandidateRadioGroup)
@@ -110,6 +130,13 @@ class Castvote : AppCompatActivity() {
                 candidateRow.findViewById<TextView>(R.id.CandidateName).text = candidate.name
 
                 radioButton.id = View.generateViewId()
+                // Store candidate and position data as tags for retrieval later
+                radioButton.tag = mapOf(
+                    "candidateId" to candidate.id,
+                    "candidateName" to candidate.name,
+                    "positionId" to position.id,
+                    "positionName" to position.title
+                )
 
                 // Attach listener ONLY to the RadioButton icon
                 radioButton.setOnClickListener {
@@ -137,6 +164,13 @@ class Castvote : AppCompatActivity() {
             val abstainRadioButton = abstainRow.findViewById<RadioButton>(R.id.CandidateRadioButton)
             abstainRadioButton.id = View.generateViewId()
             abstainRow.findViewById<TextView>(R.id.CandidateName).text = "Abstain"
+            // Store abstain data as tag
+            abstainRadioButton.tag = mapOf(
+                "candidateId" to "ABSTAIN",
+                "candidateName" to "Abstain",
+                "positionId" to position.id,
+                "positionName" to position.title
+            )
 
             abstainRadioButton.setOnClickListener {
                 radioGroup.check(abstainRadioButton.id)
@@ -167,31 +201,39 @@ class Castvote : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     /**
-     * Gathers the selected candidate name for each position.
-     * @return A map where the key is the Position Title and the value is the Candidate Name (or "Abstain").
+     * Gathers the selected candidate data for each position.
+     * @return A map where the key is positionId and the value is candidate data map.
      */
-    private fun gatherSelections(): Map<String, String> {
-        val selections = mutableMapOf<String, String>()
+    private fun gatherSelections(): Map<String, Map<String, String>> {
+        val selections = mutableMapOf<String, Map<String, String>>()
 
         allRadioGroups.forEachIndexed { index, radioGroup ->
-            val position = MOCK_VOTING_DATA[index]
+            if (index >= votingPositions.size) return@forEachIndexed
             val checkedId = radioGroup.checkedRadioButtonId
 
-            val selectedCandidateName = if (checkedId != -1) {
-                // Find the selected RadioButton view
+            if (checkedId != -1) {
                 val checkedRadioButton = findViewById<RadioButton>(checkedId)
-
-                // The RadioButton is inside a LinearLayout (candidate_row). We need the name TextView.
-                val candidateRow = checkedRadioButton.parent as? LinearLayout
-
-                // Find the TextView containing the name (CandidateName is in the layout)
-                // Use the text from the TextView that is a sibling to the RadioButton
-                candidateRow?.findViewById<TextView>(R.id.CandidateName)?.text.toString() ?: "Error"
-            } else {
-                "Not Voted" // Should not happen if validation passed
+                @Suppress("UNCHECKED_CAST")
+                val tagData = checkedRadioButton.tag as? Map<String, String>
+                
+                tagData?.let { data ->
+                    val positionId = data["positionId"] ?: return@let
+                    selections[positionId] = data
+                }
             }
-
-            selections[position.title] = selectedCandidateName
+        }
+        return selections
+    }
+    
+    /**
+     * Gathers selections as simple name map for display in Castvote2
+     */
+    private fun gatherSelectionsForDisplay(): Map<String, String> {
+        val selections = mutableMapOf<String, String>()
+        gatherSelections().forEach { (_, data) ->
+            val positionName = data["positionName"] ?: ""
+            val candidateName = data["candidateName"] ?: ""
+            selections[positionName] = candidateName
         }
         return selections
     }
@@ -226,16 +268,25 @@ class Castvote : AppCompatActivity() {
         btnSubmit.setOnClickListener {
             if (validateSelections()) {
                 // Validation passed, gather data and navigate directly
-                val selections = gatherSelections()
+                val selectionsData = gatherSelections() // Full data with IDs
+                val selectionsDisplay = gatherSelectionsForDisplay() // Simple name map for display
 
                 val intent = Intent(this, Castvote2::class.java).apply {
-                    // Convert Map keys (Positions) and values (Candidates) to String Arrays
-                    putStringArrayListExtra("positions", ArrayList(selections.keys))
-                    putStringArrayListExtra("candidates", ArrayList(selections.values))
+                    // Convert Map keys (Positions) and values (Candidates) to String Arrays for display
+                    putStringArrayListExtra("positions", ArrayList(selectionsDisplay.keys))
+                    putStringArrayListExtra("candidates", ArrayList(selectionsDisplay.values))
+                    // Store full selection data as serializable
+                    putExtra("selectionsData", android.os.Bundle().apply {
+                        selectionsData.forEach { (positionId, data) ->
+                            putString("pos_$positionId", android.util.Base64.encodeToString(
+                                org.json.JSONObject(data as Map<*, *>).toString().toByteArray(),
+                                android.util.Base64.NO_WRAP
+                            ))
+                        }
+                    })
+                    currentElectionId?.let { putExtra("electionId", it) }
                 }
                 startActivity(intent)
-                overridePendingTransition(0, 0)
-            } else {
             }
         }
     }
@@ -285,7 +336,6 @@ class Castvote : AppCompatActivity() {
             showUnsavedChangesDialog()
         } else {
             finish()
-            overridePendingTransition(0, 0)
         }
     }
 

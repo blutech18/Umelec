@@ -32,14 +32,25 @@ class Castvote2 : AppCompatActivity() {
         reviewVoteContainer = findViewById(R.id.ReviewVoteContainer)
         val electionTitleView: TextView = findViewById(R.id.ElectionTitle)
 
-        // 2. Set dynamic UI elements
-        val currentElectionTitle = "UMak Student Council \nElections 2025" // Mock data
-        electionTitleView.text = currentElectionTitle
+        // 2. Set dynamic UI elements - Fetch from Firestore
+        FirestoreElectionHelper.getCurrentElection(
+            onSuccess = { electionData ->
+                electionTitleView.text = electionData?.title ?: "Election"
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote2", "Error fetching election: $error")
+                electionTitleView.text = "Election"
+            }
+        )
 
         // 3. Get Data from Intent
         // These keys must match the ones used in Castvote.kt
         reviewedPositions = intent.getStringArrayListExtra("positions") ?: emptyList()
         reviewedCandidates = intent.getStringArrayListExtra("candidates") ?: emptyList()
+        
+        // Store selections data bundle and election ID for Castvote3
+        val selectionsDataBundle = intent.getBundleExtra("selectionsData")
+        val electionId = intent.getStringExtra("electionId")
 
         // 4. Inflate the Review List
         inflateReviewList()
@@ -130,14 +141,20 @@ class Castvote2 : AppCompatActivity() {
      * Navigates to Castvote3.kt, passing the selected vote data.
      */
     private fun navigateToCastvote3() {
-        val intent = Intent(this, Castvote3::class.java).apply {
+        val intent = intent // Get original intent
+        val selectionsDataBundle = intent.getBundleExtra("selectionsData")
+        val electionId = intent.getStringExtra("electionId")
+        
+        val newIntent = Intent(this, Castvote3::class.java).apply {
             // Pass the reviewed voting data to Castvote3 for the final step
             putStringArrayListExtra("positions", ArrayList(reviewedPositions))
             putStringArrayListExtra("candidates", ArrayList(reviewedCandidates))
+            // Pass selections data bundle and election ID
+            selectionsDataBundle?.let { putExtra("selectionsData", it) }
+            electionId?.let { putExtra("electionId", it) }
         }
 
-        startActivity(intent)
-        overridePendingTransition(0, 0)
+        startActivity(newIntent)
     }
 
     private fun setupBackToBallotButton() {
@@ -157,7 +174,6 @@ class Castvote2 : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         startActivity(intent)
         finish() // Finish Castvote2 so they don't return here if Castvote is restarted
-        overridePendingTransition(0, 0)
     }
 
 
@@ -169,7 +185,6 @@ class Castvote2 : AppCompatActivity() {
     private fun setupBackNavigation() {
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
             finish() // Simply closes Castvote2, returning to Castvote
-            overridePendingTransition(0, 0)
         }
     }
 
@@ -180,7 +195,6 @@ class Castvote2 : AppCompatActivity() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 finish() // Simply closes Castvote2, returning to Castvote
-                overridePendingTransition(0, 0)
             }
         }
         onBackPressedDispatcher.addCallback(this, callback)

@@ -45,7 +45,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     
-    // Elections collection (if exists)
+    // Elections collection
     match /elections/{electionId} {
       // Allow authenticated users to read elections
       allow read: if request.auth != null;
@@ -53,12 +53,41 @@ service cloud.firestore {
       allow write: if false;
     }
     
-    // Votes collection (if exists)
+    // Candidates collection
+    match /candidates/{candidateId} {
+      // Allow authenticated users to read candidates
+      allow read: if request.auth != null;
+      // Only allow writes through Cloud Functions or admin
+      allow write: if false;
+    }
+    
+    // Votes collection
     match /votes/{voteId} {
-      // Users can only read/write their own votes
-      allow read, write: if request.auth != null && 
-        (request.resource.data.userId == request.auth.uid || 
-         resource.data.userId == request.auth.uid);
+      // Users can create their own votes
+      allow create: if request.auth != null && 
+                     request.resource.data.userId == request.auth.uid;
+      // Users can only read their own votes
+      allow read: if request.auth != null && 
+                   (resource.data.userId == request.auth.uid ||
+                    request.auth.uid == resource.data.userId);
+      // Users cannot update or delete votes (votes are immutable)
+      allow update, delete: if false;
+    }
+    
+    // Results collection (for election results/winners)
+    match /results/{resultId} {
+      // Allow authenticated users to read results
+      allow read: if request.auth != null;
+      // Only allow writes through Cloud Functions or admin
+      allow write: if false;
+    }
+    
+    // FAQs collection
+    match /faqs/{faqId} {
+      // Allow authenticated users to read FAQs
+      allow read: if request.auth != null;
+      // Only allow writes through Cloud Functions or admin
+      allow write: if false;
     }
     
     // Default deny all other access

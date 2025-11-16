@@ -22,16 +22,12 @@ class Comparison : AppCompatActivity() {
         val candidateId2 = intent.getStringExtra("CANDIDATE_ID_2")
 
         if (candidateId1 != null && candidateId2 != null) {
-            // 2. Fetch the data for both candidates
-            val candidate1Details = fetchCandidateData(candidateId1)
-            val candidate2Details = fetchCandidateData(candidateId2)
-
-            // 3. Populate the UI elements
-            populateComparison(candidate1Details, candidate2Details)
+            // 2. Fetch the data for both candidates from Firestore
+            fetchCandidateData(candidateId1, candidateId2)
         } else {
-            // Handle the case where the IDs are missing (e.g., show an error or close the activity)
-            // For production, you might want a Toast message here.
-            // Toast.makeText(this, "Error: Missing candidate data for comparison.", Toast.LENGTH_LONG).show()
+            // Handle the case where the IDs are missing
+            android.util.Log.e("Comparison", "Missing candidate IDs")
+            finish()
         }
 
         setupBackNavigation()
@@ -40,62 +36,86 @@ class Comparison : AppCompatActivity() {
     }
 
     // ----------------------------------------------------------------------
-    // --- DATA FETCHING LOGIC (Copied from Platform.kt) ---
+    // --- DATA FETCHING FROM FIRESTORE ---
     // ----------------------------------------------------------------------
 
     /**
-     * Simulates fetching a full candidate profile from a database or API.
-     * This function must be kept synchronized with the one in Platform.kt.
+     * Fetches candidate data for both candidates from Firestore.
      */
-    private fun fetchCandidateData(id: String): CandidatePlatformDetails {
-        // NOTE: Ensure R.drawable.profile exists in your project.
-        return when (id) {
-            "JANE_D" -> CandidatePlatformDetails(
-                candidateId = "JANE_D",
-                name = "Jane Doe",
-                position = "Marketing Director",
-                courseInfo = "III - BCSAD",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Graduated with honors. Former Editor-in-Chief of the student paper and team lead for two successful university events.",
-                advocacy = "My platform focuses on modernizing student services through digitalization and creating a more inclusive community by funding new cultural organizations."
-            )
-            "JOHN_S" -> CandidatePlatformDetails(
-                candidateId = "JOHN_S",
-                name = "John Smith",
-                position = "Marketing Director",
-                courseInfo = "IV - BSIT",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Lead programmer for the university's attendance system. Holds multiple certifications in project management and database administration.",
-                advocacy = "I advocate for better student technological infrastructure, including faster campus Wi-Fi and subsidized cloud storage for all students."
-            )
-            "SARAH_L" -> CandidatePlatformDetails(
-                candidateId = "SARAH_L",
-                name = "Sarah Lee",
-                position = "Treasurer",
-                courseInfo = "II - BSBA",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Top student in Accounting and Finance. Managed the budget for the university's largest annual fundraiser.",
-                advocacy = "Focused on maximizing transparency in student funds and introducing new, low-cost financial literacy workshops."
-            )
-            "MARK_T" -> CandidatePlatformDetails(
-                candidateId = "MARK_T",
-                name = "Mark Tan",
-                position = "President",
-                courseInfo = "I - BSED",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Founder of the Peer Mentorship Program. Proven leadership skills across multiple community and academic organizations.",
-                advocacy = "My core platform is centered on student welfare, mental health support, and enhancing the feedback loop between students and administration."
-            )
-            else -> CandidatePlatformDetails( // Default/Error case
-                candidateId = id,
-                name = "Error Loading Data",
-                position = "N/A",
-                courseInfo = "N/A",
-                profilePictureResource = R.drawable.ic_profile, // Use a generic placeholder
-                credentials = "Data not available.",
-                advocacy = "Data not available."
-            )
+    private fun fetchCandidateData(id1: String, id2: String) {
+        var candidate1: CandidatePlatformDetails? = null
+        var candidate2: CandidatePlatformDetails? = null
+        var loadCount = 0
+
+        fun checkAndPopulate() {
+            if (candidate1 != null && candidate2 != null) {
+                populateComparison(candidate1!!, candidate2!!)
+            }
         }
+
+        // Fetch first candidate
+        FirestoreCandidateHelper.getCandidatePlatformDetails(
+            candidateId = id1,
+            onSuccess = { details ->
+                candidate1 = details ?: CandidatePlatformDetails(
+                    candidateId = id1,
+                    name = "Candidate Not Found",
+                    position = "N/A",
+                    courseInfo = "N/A",
+                    profilePictureResource = R.drawable.ic_profile,
+                    credentials = "Data not available.",
+                    advocacy = "Data not available."
+                )
+                loadCount++
+                checkAndPopulate()
+            },
+            onFailure = { error ->
+                android.util.Log.e("Comparison", "Error fetching candidate 1: $error")
+                candidate1 = CandidatePlatformDetails(
+                    candidateId = id1,
+                    name = "Error Loading",
+                    position = "N/A",
+                    courseInfo = "N/A",
+                    profilePictureResource = R.drawable.ic_profile,
+                    credentials = "Failed to load data.",
+                    advocacy = "Please try again later."
+                )
+                loadCount++
+                checkAndPopulate()
+            }
+        )
+
+        // Fetch second candidate
+        FirestoreCandidateHelper.getCandidatePlatformDetails(
+            candidateId = id2,
+            onSuccess = { details ->
+                candidate2 = details ?: CandidatePlatformDetails(
+                    candidateId = id2,
+                    name = "Candidate Not Found",
+                    position = "N/A",
+                    courseInfo = "N/A",
+                    profilePictureResource = R.drawable.ic_profile,
+                    credentials = "Data not available.",
+                    advocacy = "Data not available."
+                )
+                loadCount++
+                checkAndPopulate()
+            },
+            onFailure = { error ->
+                android.util.Log.e("Comparison", "Error fetching candidate 2: $error")
+                candidate2 = CandidatePlatformDetails(
+                    candidateId = id2,
+                    name = "Error Loading",
+                    position = "N/A",
+                    courseInfo = "N/A",
+                    profilePictureResource = R.drawable.ic_profile,
+                    credentials = "Failed to load data.",
+                    advocacy = "Please try again later."
+                )
+                loadCount++
+                checkAndPopulate()
+            }
+        )
     }
 
     // ----------------------------------------------------------------------

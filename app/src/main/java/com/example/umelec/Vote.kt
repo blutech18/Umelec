@@ -7,6 +7,8 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 // NOTE: Assume ElectionState, ElectionDetails, and NotificationManager are defined
 // in other files (e.g., SharedData.kt and NotificationManager.kt).
@@ -25,7 +27,7 @@ class Vote : AppCompatActivity() {
         notificationManager = NotificationManager(this)
 
         setupHeaderIcons()
-        updateElectionUI(determineElectionState())
+        determineElectionState()
         setupFooterNavigation()
     }
 
@@ -37,7 +39,6 @@ class Vote : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
-            overridePendingTransition(0, 0)
         }
 
         notificationIcon.setOnClickListener {
@@ -47,12 +48,16 @@ class Vote : AppCompatActivity() {
 
     // --- INTEGRATED BEHAVIOR 2: ELECTION INFO CARD ---
 
-    private fun determineElectionState(): ElectionState {
-        // **IMPORTANT:** Replace this with your actual backend call logic.
-        return ElectionState.ONGOING
-        //return ElectionState.NO_ELECTION
-        //return ElectionState.UPCOMING
-        //return ElectionState.ENDED
+    private fun determineElectionState() {
+        FirestoreElectionHelper.determineElectionState(
+            onSuccess = { state ->
+                updateElectionUI(state)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Vote", "Error determining election state: $error")
+                updateElectionUI(ElectionState.NO_ELECTION)
+            }
+        )
     }
 
     /**
@@ -105,25 +110,31 @@ class Vote : AppCompatActivity() {
                 // PHASE 1: ONGOING (Election Info Card)
                 ongoingLayout.visibility = View.VISIBLE
 
-                // Fetch live data
-                val electionData = fetchOngoingElectionData()
-                electionTitleValue.text = electionData.title
-                votingPeriodValue.text = electionData.period
+                // Fetch live data from Firestore
+                FirestoreElectionHelper.getCurrentElection(
+                    onSuccess = { electionData ->
+                        if (electionData != null) {
+                            electionTitleValue.text = electionData.title
+                            votingPeriodValue.text = electionData.period
+                        }
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("Vote", "Error fetching election data: $error")
+                    }
+                )
 
                 // 🚀 NEW LOGIC 1: Status text and Button enable
                 statusValue.text = "Ongoing"
-                statusValue.setTextColor(Color.parseColor("#333333")) // Neutral/Default color
+                statusValue.setTextColor(Color.parseColor("#333333"))
 
                 btnVoteNow.text = "Vote now"
                 btnVoteNow.isEnabled = true
                 btnVoteNow.alpha = 1.0f
 
-                // Add click listener for 'Vote now' if it scrolls the screen or starts a process
+                // Add click listener for 'Vote now'
                 btnVoteNow.setOnClickListener {
-                    // Implement vote initiation logic here (e.g., scroll to content, or next step)
                     val intent = Intent(this, Castvote::class.java)
                     startActivity(intent)
-                    overridePendingTransition(0, 0)
                 }
             }
 
@@ -135,24 +146,27 @@ class Vote : AppCompatActivity() {
 
             ElectionState.UPCOMING -> {
                 // PHASE 3: UPCOMING
-                // 🚀 NEW LOGIC 2: Revise visibility to use OngoingLayout structure
                 ongoingLayout.visibility = View.VISIBLE
 
-                // Fetch upcoming date data, but fill the 'OngoingLayout' fields
-                val upcomingDate = fetchUpcomingElectionDate()
-                val electionData = fetchOngoingElectionData()
+                // Fetch election data from Firestore
+                FirestoreElectionHelper.getCurrentElection(
+                    onSuccess = { electionData ->
+                        if (electionData != null) {
+                            electionTitleValue.text = electionData.title
+                            votingPeriodValue.text = electionData.period
+                        }
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("Vote", "Error fetching election data: $error")
+                    }
+                )
 
-                electionTitleValue.text = electionData.title
-                votingPeriodValue.text = upcomingDate // Re-using this field for the key date
-
-                statusValue.text = "Upcoming" // 🚀 NEW LOGIC 2: Status text
-                statusValue.setTextColor(Color.parseColor("#333333")) // Neutral/Default color
+                statusValue.text = "Upcoming"
+                statusValue.setTextColor(Color.parseColor("#333333"))
 
                 btnVoteNow.text = "Vote Now"
-                btnVoteNow.isEnabled = false // 🚀 NEW LOGIC 2: Disable button
+                btnVoteNow.isEnabled = false
                 btnVoteNow.alpha = 0.5f
-
-                // Remove existing click listener if any
                 btnVoteNow.setOnClickListener(null)
             }
 
@@ -173,18 +187,6 @@ class Vote : AppCompatActivity() {
         }
     }
 
-    // Data fetching functions (Simulated)
-    private fun fetchOngoingElectionData(): ElectionDetails {
-        return ElectionDetails(
-            title = "UMak Student Council Elections",
-            period = "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm",
-            status = "Active"
-        )
-    }
-
-    private fun fetchUpcomingElectionDate(): String {
-        return "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm"
-    }
 
     // --- INTEGRATED BEHAVIOR 3: FOOTER NAVIGATION ---
 
@@ -200,7 +202,6 @@ class Vote : AppCompatActivity() {
         val navigateTo = { activityClass: Class<*> ->
             val intent = Intent(this, activityClass)
             startActivity(intent)
-            overridePendingTransition(0, 0)
         }
 
         navHome.setOnClickListener { navigateTo(Homepage::class.java) }

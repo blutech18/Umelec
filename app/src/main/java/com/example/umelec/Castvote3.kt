@@ -21,8 +21,17 @@ import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.collections.ArrayList
 import android.os.Handler
 import android.os.Looper
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.DocumentsContract
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
 
 // REMINDER: You MUST add the following dependency to your app/build.gradle file:
 // implementation 'com.github.gcacace:signature-pad:1.2.1'
@@ -40,6 +49,13 @@ class Castvote3 : AppCompatActivity() {
     private lateinit var reviewedPositions: List<String>
     private lateinit var reviewedCandidates: List<String>
     private var signatureBase64String: String? = null // To store the signature data
+    private var selectionsDataBundle: android.os.Bundle? = null
+    private var electionId: String? = null
+    private var currentUserId: String? = null
+    private var currentUserName: String? = ""
+    private var currentUserEmail: String? = ""
+    private var electionTitle: String? = "Election"
+    private var voteReceiptData: ReceiptPdfHelper.ReceiptData? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +70,42 @@ class Castvote3 : AppCompatActivity() {
         // 2. Retrieve Data from Castvote2.kt
         reviewedPositions = intent.getStringArrayListExtra("positions") ?: emptyList()
         reviewedCandidates = intent.getStringArrayListExtra("candidates") ?: emptyList()
+        selectionsDataBundle = intent.getBundleExtra("selectionsData")
+        electionId = intent.getStringExtra("electionId")
+        
+        // Get current user ID and info
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        currentUserId = currentUser?.uid
+        currentUserEmail = currentUser?.email ?: ""
+        
+        // Get user name from Firestore
+        currentUserId?.let { userId: String ->
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = userId,
+                onSuccess = { userData: Map<String, Any>? ->
+                    currentUserName = userData?.get("name") as? String ?: userData?.get("firstName") as? String ?: ""
+                    if (currentUserName.isNullOrBlank()) {
+                        currentUserName = currentUserEmail?.substringBefore("@") ?: "User"
+                    }
+                },
+                onFailure = { error: String ->
+                    // Use email as fallback
+                    currentUserName = currentUserEmail?.substringBefore("@") ?: "User"
+                }
+            )
+        }
+        
+        // Get election title
+        electionId?.let { id: String ->
+            FirestoreElectionHelper.getCurrentElection(
+                onSuccess = { electionData: ElectionDetails? ->
+                    electionTitle = electionData?.title ?: "Election"
+                },
+                onFailure = { error: String ->
+                    electionTitle = "Election"
+                }
+            )
+        }
 
         // 3. Setup Initial State
         updateSubmitButtonState()
@@ -155,15 +207,8 @@ class Castvote3 : AppCompatActivity() {
         dialogView.findViewById<AppCompatButton>(R.id.btn_action_secondary).setOnClickListener {
             alertDialog.dismiss()
 
-            // --- FAKE BACKEND SUBMISSION ---
-            println("--- VOTE SUBMISSION PAYLOAD ---")
-            println("Positions: $reviewedPositions")
-            println("Candidates: $reviewedCandidates")
-            println("Signature Base64: ${signatureBase64String?.substring(0, 50)}...")
-            println("-----------------------------")
-
-            // Show the recorded dialog with proof of submission
-            showRecordedDialog()
+            // Submit vote to Firestore
+            submitVote()
         }
 
         alertDialog.show()
@@ -171,22 +216,90 @@ class Castvote3 : AppCompatActivity() {
 
 
     /**
+     * Submits the vote to Firestore
+     */
+    private fun submitVote() {
+        val userId = currentUserId
+        val electionIdValue = electionId
+        
+        if (userId == null || electionIdValue == null) {
+            Toast.makeText(this, "Error: User or election not found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Reconstruct selections map from bundle
+        val selections = mutableMapOf<String, Map<String, String>>()
+        selectionsDataBundle?.let { bundle ->
+            bundle.keySet().forEach { key ->
+                if (key.startsWith("pos_")) {
+                    val positionId = key.removePrefix("pos_")
+                    val encodedData = bundle.getString(key)
+                    encodedData?.let {
+                        try {
+                            val jsonString = String(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+                            val jsonObject = org.json.JSONObject(jsonString)
+                            val data = mutableMapOf<String, String>()
+                            jsonObject.keys().forEach { jsonKey ->
+                                data[jsonKey] = jsonObject.getString(jsonKey)
+                            }
+                            selections[positionId] = data
+                        } catch (e: Exception) {
+                            android.util.Log.e("Castvote3", "Error parsing selection data: ${e.message}")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Disable submit button during submission
+        btnSubmit.isEnabled = false
+
+        // Submit vote
+        FirestoreVoteHelper.submitVote(
+            userId = userId,
+            electionId = electionIdValue,
+            selections = selections,
+            signatureBase64 = signatureBase64String,
+            onSuccess = { voteId ->
+                android.util.Log.d("Castvote3", "Vote submitted successfully: $voteId")
+                
+                // Prepare receipt data
+                voteReceiptData = ReceiptPdfHelper.ReceiptData(
+                    voteId = voteId,
+                    electionTitle = electionTitle ?: "Election",
+                    userName = currentUserName ?: "User",
+                    userEmail = currentUserEmail ?: "",
+                    submittedAt = Date(),
+                    signatureBase64 = signatureBase64String,
+                    selections = selections
+                )
+                
+                // Show the recorded dialog with receipt
+                showRecordedDialog(voteId)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote3", "Error submitting vote: $error")
+                btnSubmit.isEnabled = true
+                Toast.makeText(this, "Failed to submit vote: $error", Toast.LENGTH_LONG).show()
+            }
+        )
+    }
+
+    /**
      * Displays the VOTE RECORDED receipt dialog using custom_toast_recorded.xml.
      */
-    private fun showRecordedDialog() {
+    private fun showRecordedDialog(voteId: String) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.custom_toast_recorded, null)
         // This dialog CANNOT be dismissed by touching outside.
         val alertDialog = createStyledAlertDialog(dialogView, isCancellable = false)
 
-        // --- MOCK DATA GENERATION ---
-        // TODO: Replace this mock logic with actual data fetched from the backend after submission.
-        val refCode = "ELEC-2025-" + (1000000 + (Math.random() * 9000000).toInt())
+        // Format receipt data
+        val refCode = voteId
         val dateFormat = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
         val refDate = dateFormat.format(Date())
-        // Use a shortened version of the actual signature data for the "receipt"
         val refSignature = signatureBase64String?.take(8) + "..." ?: "N/A"
 
-        // --- Set Mock Data ---
+        // Set receipt data
         dialogView.findViewById<TextView>(R.id.ReferenceCode).text = refCode
         dialogView.findViewById<TextView>(R.id.ReferenceDate).text = refDate
         dialogView.findViewById<TextView>(R.id.ReferenceSignature).text = refSignature
@@ -195,21 +308,14 @@ class Castvote3 : AppCompatActivity() {
 
         // Download PDF Button (btn_action_primary)
         dialogView.findViewById<AppCompatButton>(R.id.btn_action_primary).setOnClickListener {
-            // TODO: Implement PDF generation/download logic here
-            Toast.makeText(this, "Your PDF receipt has been downloaded.", Toast.LENGTH_SHORT).show()
             alertDialog.dismiss()
-
-            // Navigate away after final action
-            navigateTo(Homepage::class.java, isFinalExit = true)
+            downloadPdfReceipt()
         }
 
         // Send to Email Button (btn_action_secondary)
         dialogView.findViewById<AppCompatButton>(R.id.btn_action_secondary).setOnClickListener {
-            // TODO: Implement email sending logic here
-            alertDialog.dismiss() // Dismiss the recorded dialog
-            showSuccessToastAndNavigate() // <-- CALLS THE NEW TOAST FUNCTION
-
-            // Navigation is handled inside showSuccessToastAndNavigate
+            alertDialog.dismiss()
+            sendReceiptViaEmail()
         }
 
         alertDialog.show()
@@ -249,6 +355,177 @@ class Castvote3 : AppCompatActivity() {
             // Execute the final action (Navigation/Exit)
             navigateTo(Homepage::class.java, isFinalExit = true)
         }, 40) // 40 milliseconds is usually enough for the Toast to register
+    }
+
+    /**
+     * Generate and download PDF receipt
+     */
+    private fun downloadPdfReceipt() {
+        val receiptData = voteReceiptData
+        if (receiptData == null) {
+            Toast.makeText(this, "Error: Receipt data not available", Toast.LENGTH_SHORT).show()
+            navigateTo(Homepage::class.java, isFinalExit = true)
+            return
+        }
+
+        // Show loading message
+        Toast.makeText(this, "Generating PDF receipt...", Toast.LENGTH_SHORT).show()
+
+        ReceiptPdfHelper.generateReceiptPdf(
+            context = this,
+            receiptData = receiptData,
+            onSuccess = { filePath ->
+                // Share/download the PDF file
+                sharePdfFile(filePath)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote3", "Error generating PDF: $error")
+                Toast.makeText(this, "Failed to generate PDF: $error", Toast.LENGTH_LONG).show()
+                navigateTo(Homepage::class.java, isFinalExit = true)
+            }
+        )
+    }
+
+    /**
+     * Share/download PDF file using Android's share intent
+     */
+    private fun sharePdfFile(filePath: String) {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) {
+                Toast.makeText(this, "PDF file not found", Toast.LENGTH_SHORT).show()
+                navigateTo(Homepage::class.java, isFinalExit = true)
+                return
+            }
+
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                FileProvider.getUriForFile(
+                    this,
+                    "${applicationContext.packageName}.fileprovider",
+                    file
+                )
+            } else {
+                Uri.fromFile(file)
+            }
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, "Vote Receipt - ${voteReceiptData?.voteId}")
+                putExtra(Intent.EXTRA_TEXT, "Please find attached your vote receipt.")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            // Also create a download intent for direct download
+            val downloadIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            // Use chooser to let user choose between share/download
+            val chooserIntent = Intent.createChooser(shareIntent, "Save or Share Receipt").apply {
+                putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(downloadIntent))
+            }
+
+            startActivity(chooserIntent)
+            
+            // Show success message after a delay
+            Handler(Looper.getMainLooper()).postDelayed({
+                Toast.makeText(this, "Your PDF receipt has been saved.", Toast.LENGTH_SHORT).show()
+                navigateTo(Homepage::class.java, isFinalExit = true)
+            }, 1000)
+        } catch (e: Exception) {
+            android.util.Log.e("Castvote3", "Error sharing PDF: ${e.message}", e)
+            Toast.makeText(this, "Error sharing PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            navigateTo(Homepage::class.java, isFinalExit = true)
+        }
+    }
+
+    /**
+     * Send receipt via email
+     */
+    private fun sendReceiptViaEmail() {
+        val receiptData = voteReceiptData
+        val userEmail = currentUserEmail
+
+        if (receiptData == null) {
+            Toast.makeText(this, "Error: Receipt data not available", Toast.LENGTH_SHORT).show()
+            navigateTo(Homepage::class.java, isFinalExit = true)
+            return
+        }
+
+        if (userEmail.isNullOrBlank()) {
+            Toast.makeText(this, "Error: Email address not found", Toast.LENGTH_SHORT).show()
+            navigateTo(Homepage::class.java, isFinalExit = true)
+            return
+        }
+
+        // Show loading message
+        Toast.makeText(this, "Preparing email...", Toast.LENGTH_SHORT).show()
+
+        // Generate PDF first
+        ReceiptPdfHelper.generateReceiptPdf(
+            context = this,
+            receiptData = receiptData,
+            onSuccess = { filePath ->
+                // Read PDF as byte array
+                val pdfBytes = ReceiptPdfHelper.getPdfAsByteArray(filePath)
+                
+                if (pdfBytes == null) {
+                    Toast.makeText(this, "Error: Failed to read PDF file", Toast.LENGTH_SHORT).show()
+                    ReceiptPdfHelper.deletePdfFile(filePath)
+                    navigateTo(Homepage::class.java, isFinalExit = true)
+                    return@generateReceiptPdf
+                }
+
+                // Convert PDF to base64 for email
+                val pdfBase64 = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
+                
+                // Prepare vote details for email
+                val voteDetails = mutableMapOf<String, Any>(
+                    "voteId" to receiptData.voteId,
+                    "electionTitle" to receiptData.electionTitle,
+                    "submittedAt" to SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", Locale.getDefault()).format(receiptData.submittedAt)
+                )
+
+                // Build selections text
+                val selectionsText = receiptData.selections.map { (positionId, candidateData) ->
+                    val positionName = candidateData["positionName"] ?: "Unknown Position"
+                    val candidateName = candidateData["candidateName"] ?: "Unknown Candidate"
+                    "$positionName: $candidateName"
+                }.joinToString("\n")
+
+                voteDetails["selections"] = selectionsText
+                voteDetails["pdfBase64"] = pdfBase64
+                voteDetails["pdfFileName"] = "vote_receipt_${receiptData.voteId}.pdf"
+
+                // Send email using EmailService
+                EmailService.sendVoteConfirmationEmail(
+                    email = userEmail,
+                    userName = receiptData.userName,
+                    voteDetails = voteDetails,
+                    onSuccess = {
+                        // Clean up PDF file
+                        ReceiptPdfHelper.deletePdfFile(filePath)
+                        // Show success message
+                        showSuccessToastAndNavigate()
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("Castvote3", "Error sending email: $error")
+                        // Clean up PDF file
+                        ReceiptPdfHelper.deletePdfFile(filePath)
+                        Toast.makeText(this, "Failed to send email: $error", Toast.LENGTH_LONG).show()
+                        navigateTo(Homepage::class.java, isFinalExit = true)
+                    }
+                )
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote3", "Error generating PDF for email: $error")
+                Toast.makeText(this, "Failed to generate PDF: $error", Toast.LENGTH_LONG).show()
+                navigateTo(Homepage::class.java, isFinalExit = true)
+            }
+        )
     }
 
     /**

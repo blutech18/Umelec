@@ -1,5 +1,7 @@
 package com.example.umelec
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,7 +10,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import android.widget.Toast // 🔥 NEW: Import for Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -31,63 +33,111 @@ class Tallies : AppCompatActivity() {
     // --- BACKEND/DATABASE INTEGRATION POINTS ---
     // ----------------------------------------------------------------------
 
-    /** * DB/BACKEND GUIDE:
-     * Fetch the current state of the election from the database or configuration.
-     * Use ElectionPhase.ONGOING for "Live Tallies" and ElectionPhase.ENDED for "Final Tallies".
-     */
-    private val currentPhase =
-        //ElectionPhase.ENDED // Current setting
-        ElectionPhase.ONGOING // Uncomment this line to test the ONGOING phase behavior
-
-    /** * DB/BACKEND GUIDE:
-     * Fetch the timestamp (in milliseconds) of the latest data update from the database.
-     * This is used to display the "As of [Date], [Time]" text.
-     */
-    private val lastUpdateTimeMillis = System.currentTimeMillis()
-
-    /** * DB/BACKEND GUIDE:
-     * This Map holds the results. It should be populated by querying your database:
-     * - Key (String): The position name (e.g., "Chairperson").
-     * - Value (List<TallyCandidate>): A list of all candidates for that position,
-     * ALREADY SORTED by vote count (DESCENDING) from the database for efficiency.
-     */
-    private val talliesData = mapOf(
-        "Chairperson" to listOf(
-            TallyCandidate("Jane Doe", 580, R.drawable.ic_launcher_background),
-            TallyCandidate("John Smith", 450, R.drawable.ic_launcher_background),
-            TallyCandidate("Alex Johnson", 320, R.drawable.ic_launcher_background)
-        ),
-        "Vice-Chairperson" to listOf(
-            TallyCandidate("Mark Tan", 710, R.drawable.ic_launcher_background),
-            TallyCandidate("Sarah Lee", 600, R.drawable.ic_launcher_background)
-        ),
-        // ⭐️ ADDED DATA FOR SCROLL TESTING ⭐️
-        "Secretary" to listOf(
-            TallyCandidate("David Chan", 900, R.drawable.ic_launcher_background),
-            TallyCandidate("Emily Wong", 510, R.drawable.ic_launcher_background),
-            TallyCandidate("Peter King", 300, R.drawable.ic_launcher_background)
-        ),
-        "Treasurer" to listOf(
-            TallyCandidate("Maria Dela Cruz", 1200, R.drawable.ic_launcher_background), // <-- MAX VOTES HERE
-            TallyCandidate("Jose Rizal", 850, R.drawable.ic_launcher_background)
-        ),
-        "Auditor" to listOf(
-            TallyCandidate("Kenji Sato", 770, R.drawable.ic_launcher_background),
-            TallyCandidate("Lina Reyes", 760, R.drawable.ic_launcher_background),
-            TallyCandidate("Mike Chen", 650, R.drawable.ic_launcher_background),
-            TallyCandidate("Nancy Lim", 590, R.drawable.ic_launcher_background)
-        )
-    )
+    private var currentPhase = ElectionPhase.ONGOING
+    private var lastUpdateTimeMillis = System.currentTimeMillis()
+    private var talliesData = emptyMap<String, List<TallyCandidate>>()
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tallies)
 
-        displayOverallVotesCount()
-        setupVoteTallyBehavior()
-        // setupFooterNavigation() // REMOVED
-        setupHeaderBehavior()
-        setupTalliesCards()
+        setupFooterNavigation()
+        
+        // Load data from Firestore
+        loadTalliesData()
+    }
+
+    /**
+     * Load tallies data from Firestore
+     */
+    private fun loadTalliesData() {
+        // Determine election phase
+        FirestoreElectionHelper.determineElectionState(
+            onSuccess = { state ->
+                currentPhase = when (state) {
+                    ElectionState.ONGOING -> ElectionPhase.ONGOING
+                    ElectionState.ENDED -> ElectionPhase.ENDED
+                    else -> ElectionPhase.ONGOING
+                }
+
+                // Get election ID
+                FirestoreElectionHelper.getCurrentElectionId(
+                    onSuccess = { electionId ->
+                        currentElectionId = electionId
+                        if (electionId != null) {
+                            // Get vote tallies
+                            FirestoreVoteHelper.getVoteTallies(
+                                electionId = electionId,
+                                onSuccess = { tallies ->
+                                    // Group tallies by position and convert to TallyCandidate
+                                    val talliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
+                                    
+                                    tallies.forEach { tally ->
+                                        val positionName = tally.positionName
+                                        if (!talliesMap.containsKey(positionName)) {
+                                            talliesMap[positionName] = mutableListOf()
+                                        }
+                                        talliesMap[positionName]?.add(
+                                            TallyCandidate(
+                                                name = tally.candidateName,
+                                                votes = tally.voteCount,
+                                                photoResId = R.drawable.ic_profile
+                                            )
+                                        )
+                                    }
+
+                                    // Sort candidates by vote count (descending) per position
+                                    talliesData = talliesMap.mapValues { (_, candidates) ->
+                                        candidates.sortedByDescending { it.votes }
+                                    }
+
+                                    // Update last update time
+                                    lastUpdateTimeMillis = System.currentTimeMillis()
+
+                                    // Setup UI
+                                    displayOverallVotesCount()
+                                    setupVoteTallyBehavior()
+                                    setupHeaderBehavior()
+                                    setupTalliesCards()
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("Tallies", "Error loading tallies: $error")
+                                    talliesData = emptyMap()
+                                    displayOverallVotesCount()
+                                    setupVoteTallyBehavior()
+                                    setupHeaderBehavior()
+                                    setupTalliesCards()
+                                }
+                            )
+                        } else {
+                            android.util.Log.e("Tallies", "No active election")
+                            talliesData = emptyMap()
+                            displayOverallVotesCount()
+                            setupVoteTallyBehavior()
+                            setupHeaderBehavior()
+                            setupTalliesCards()
+                        }
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("Tallies", "Error getting election ID: $error")
+                        talliesData = emptyMap()
+                        displayOverallVotesCount()
+                        setupVoteTallyBehavior()
+                        setupHeaderBehavior()
+                        setupTalliesCards()
+                    }
+                )
+            },
+            onFailure = { error ->
+                android.util.Log.e("Tallies", "Error determining election state: $error")
+                talliesData = emptyMap()
+                displayOverallVotesCount()
+                setupVoteTallyBehavior()
+                setupHeaderBehavior()
+                setupTalliesCards()
+            }
+        )
     }
 
     // ----------------------------------------------------------------------
@@ -172,24 +222,18 @@ class Tallies : AppCompatActivity() {
         // Only clear the container holding the dynamic content, leaving the VoteTally card untouched.
         outerContainer?.removeAllViews()
 
-        // 🔥 FIX: Define horizontal margin (20dp) once and convert to pixels.
-        val horizontalMarginPx = 20.toPx()
-
         talliesData.forEach { (position, candidates) ->
             val sortedCandidates = candidates.sortedByDescending { it.votes }
 
-            // Inflate the position card template. Use 'null' for root since we'll apply margins later.
+            // Assuming R.layout.tallies_card_template is the XML layout for one position card
             val positionCardView = createPositionCardView(position, sortedCandidates)
 
-            // Apply layout parameters including the bottom and horizontal margins.
-            // This is the step that makes the margins (removed from XML) work.
+            // Apply margin at the bottom of each dynamically created card
             positionCardView.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 bottomMargin = 20.toPx()
-                marginStart = horizontalMarginPx // 🔥 ADDED horizontal margin
-                marginEnd = horizontalMarginPx   // 🔥 ADDED horizontal margin
             }
 
             outerContainer?.addView(positionCardView)
@@ -204,7 +248,6 @@ class Tallies : AppCompatActivity() {
         val inflater = LayoutInflater.from(this)
 
         // 1. Inflate the full card template
-        // Note: The root parameter is null, so XML margins are ignored, but we fix that in setupTalliesCards.
         val cardView = inflater.inflate(R.layout.tallies_card_template, null) as LinearLayout
 
         // 2. Set the position title
@@ -298,6 +341,28 @@ class Tallies : AppCompatActivity() {
     private fun formatDateTime(timeMillis: Long): String {
         val formatter = SimpleDateFormat("MMMM dd, yyyy, hh:mm a", Locale.getDefault())
         return formatter.format(Date(timeMillis))
+    }
+
+    private fun setupFooterNavigation() {
+        val navHome: LinearLayout? = findViewById(R.id.nav_home)
+        val navVote: LinearLayout? = findViewById(R.id.nav_vote)
+        val navCandidates: LinearLayout? = findViewById(R.id.nav_candidates)
+        val navResults: LinearLayout? = findViewById(R.id.nav_results)
+        val navFaq: LinearLayout? = findViewById(R.id.nav_faq)
+
+        val navigateTo = { activityClass: Class<*> ->
+            if (activityClass != this::class.java) {
+                val intent = Intent(this, activityClass)
+                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                startActivity(intent)
+            }
+        }
+
+        navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
+        navVote?.setOnClickListener { navigateTo(Vote::class.java) }
+        navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
+        navResults?.setOnClickListener { navigateTo(Results::class.java) }
+        navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
     }
 
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()

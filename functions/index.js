@@ -246,50 +246,67 @@ const emailTemplates = {
     `,
   }),
 
-  VOTE_CONFIRMATION: (data) => ({
-    subject: data.subject || "Vote Confirmation - UMelec",
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Vote Confirmation</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #00537A; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-          <h1 style="margin: 0;">UMelec</h1>
-        </div>
-        <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px;">
-          <h2 style="color: #00537A;">Vote Confirmation</h2>
-          <p>Hello ${data.userName},</p>
-          <p>Your vote has been successfully recorded. Thank you for participating in the election.</p>
-          <div style="background-color: white; padding: 20px; border-left: 4px solid #27A688; margin: 20px 0;">
-            <p><strong>Vote Details:</strong></p>
-            ${data.voteDetails ? `<p>${data.voteDetails}</p>` : ""}
-            ${data.timestamp ? `<p><strong>Date:</strong> ${data.timestamp}</p>` : ""}
+  VOTE_CONFIRMATION: (data) => {
+    let voteDetailsHtml = "";
+    if (data.electionTitle) {
+      voteDetailsHtml += `<p><strong>Election:</strong> ${data.electionTitle}</p>`;
+    }
+    if (data.selections) {
+      voteDetailsHtml += `<p><strong>Your Voting Choices:</strong></p><ul>${data.selections.split("\n").map(choice => `<li>${choice}</li>`).join("")}</ul>`;
+    }
+    if (data.voteId) {
+      voteDetailsHtml += `<p><strong>Reference Code:</strong> ${data.voteId}</p>`;
+    }
+    if (data.submittedAt) {
+      voteDetailsHtml += `<p><strong>Submission Date:</strong> ${data.submittedAt}</p>`;
+    }
+    
+    return {
+      subject: data.subject || "Vote Confirmation - UMelec",
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Vote Confirmation</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #00537A; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+            <h1 style="margin: 0;">UMelec</h1>
           </div>
-          <p style="color: #666; font-size: 12px;">
-            This is your official vote confirmation. Please keep this email for your records.
-          </p>
-        </div>
-      </body>
-      </html>
-    `,
-    text: `
-      Vote Confirmation - UMelec
-      
-      Hello ${data.userName},
-      
-      Your vote has been successfully recorded. Thank you for participating in the election.
-      
-      Vote Details:
-      ${data.voteDetails || ""}
-      ${data.timestamp ? `Date: ${data.timestamp}` : ""}
-      
-      This is your official vote confirmation. Please keep this email for your records.
-    `,
-  }),
+          <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px;">
+            <h2 style="color: #00537A;">Vote Confirmation</h2>
+            <p>Hello ${data.userName},</p>
+            <p>Your vote has been successfully recorded. Thank you for participating in the election.</p>
+            <div style="background-color: white; padding: 20px; border-left: 4px solid #27A688; margin: 20px 0;">
+              <p><strong>Vote Details:</strong></p>
+              ${voteDetailsHtml}
+            </div>
+            <p style="color: #666; font-size: 12px;">
+              This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
+            </p>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+        Vote Confirmation - UMelec
+        
+        Hello ${data.userName},
+        
+        Your vote has been successfully recorded. Thank you for participating in the election.
+        
+        Vote Details:
+        ${data.electionTitle ? `Election: ${data.electionTitle}` : ""}
+        ${data.selections || ""}
+        ${data.voteId ? `Reference Code: ${data.voteId}` : ""}
+        ${data.submittedAt ? `Submission Date: ${data.submittedAt}` : ""}
+        
+        This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
+      `,
+    };
+  },
 
   ELECTION_REMINDER: (data) => ({
     subject: data.subject || "Election Reminder - UMelec",
@@ -467,6 +484,27 @@ exports.sendEmail = onCall(async (request) => {
       html: emailContent.html,
       text: emailContent.text,
     };
+
+    // Handle PDF attachment for VOTE_CONFIRMATION emails
+    if (emailType === "VOTE_CONFIRMATION" && emailTemplateData.pdfBase64 && emailTemplateData.pdfFileName) {
+      try {
+        // Decode base64 PDF
+        const pdfBuffer = Buffer.from(emailTemplateData.pdfBase64, "base64");
+        
+        mailOptions.attachments = [
+          {
+            filename: emailTemplateData.pdfFileName,
+            content: pdfBuffer,
+            contentType: "application/pdf",
+          },
+        ];
+        
+        console.log(`PDF attachment added: ${emailTemplateData.pdfFileName} (${pdfBuffer.length} bytes)`);
+      } catch (attachmentError) {
+        console.error("Error preparing PDF attachment:", attachmentError.message);
+        // Continue without attachment rather than failing the entire email
+      }
+    }
 
     // Send email
     const info = await transporter.sendMail(mailOptions);

@@ -21,11 +21,11 @@ class Platform : AppCompatActivity() {
         val candidateId = intent.getStringExtra("CANDIDATE_ID")
 
         if (candidateId != null) {
-            // 2. Fetch or simulate candidate data based on the ID
-            val candidateDetails = fetchCandidateData(candidateId)
-
-            // 3. Populate the UI elements with the fetched data
-            populatePlatform(candidateDetails)
+            // 2. Fetch candidate data from Firestore
+            fetchCandidateData(candidateId)
+        } else {
+            // Show error if no candidate ID provided
+            finish()
         }
 
         // ⭐️ NEW: Setup the back button functionality
@@ -52,48 +52,46 @@ class Platform : AppCompatActivity() {
     }
 
     // ----------------------------------------------------------------------
-    // --- DATA FETCHING (Replace this with your actual backend API call) ---
+    // --- DATA FETCHING FROM FIRESTORE ---
     // ----------------------------------------------------------------------
 
     /**
-     * Simulates fetching a full candidate profile from a database or API.
+     * Fetches candidate platform details from Firestore.
      * @param id The unique ID of the candidate.
-     * @return A CandidatePlatformDetails object containing all required UI data.
      */
-    private fun fetchCandidateData(id: String): CandidatePlatformDetails {
-        // ⭐️ In a real application, you would replace this entire 'when' block
-        // with a call to your backend API using the 'id'.
-
-        return when (id) {
-            "JANE_D" -> CandidatePlatformDetails(
-                candidateId = "JANE_D",
-                name = "Jane Doe",
-                position = "Marketing Director",
-                courseInfo = "III - CCIS",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Graduated with honors. Former Editor-in-Chief of the student paper and team lead for two successful university events.",
-                advocacy = "My platform focuses on modernizing student services through digitalization and creating a more inclusive community by funding new cultural organizations."
-            )
-            "JOHN_S" -> CandidatePlatformDetails(
-                candidateId = "JOHN_S",
-                name = "John Smith",
-                position = "Marketing Director",
-                courseInfo = "IV - CCIS",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Lead programmer for the university's attendance system. Holds multiple certifications in project management and database administration.",
-                advocacy = "I advocate for better student technological infrastructure, including faster campus Wi-Fi and subsidized cloud storage for all students."
-            )
-            // Add other candidates here as necessary...
-            else -> CandidatePlatformDetails( // Default/Error case
-                candidateId = id,
-                name = "Candidate Not Found",
-                position = "N/A",
-                courseInfo = "N/A",
-                profilePictureResource = R.drawable.ic_profile,
-                credentials = "Data not available.",
-                advocacy = "Data not available."
-            )
-        }
+    private fun fetchCandidateData(id: String) {
+        FirestoreCandidateHelper.getCandidatePlatformDetails(
+            candidateId = id,
+            onSuccess = { details ->
+                if (details != null) {
+                    populatePlatform(details)
+                } else {
+                    // Show error candidate
+                    populatePlatform(CandidatePlatformDetails(
+                        candidateId = id,
+                        name = "Candidate Not Found",
+                        position = "N/A",
+                        courseInfo = "N/A",
+                        profilePictureResource = R.drawable.ic_profile,
+                        credentials = "Data not available.",
+                        advocacy = "Data not available."
+                    ))
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Platform", "Error fetching candidate data: $error")
+                // Show error candidate
+                populatePlatform(CandidatePlatformDetails(
+                    candidateId = id,
+                    name = "Error Loading Candidate",
+                    position = "N/A",
+                    courseInfo = "N/A",
+                    profilePictureResource = R.drawable.ic_profile,
+                    credentials = "Failed to load data.",
+                    advocacy = "Please try again later."
+                ))
+            }
+        )
     }
 
     // ----------------------------------------------------------------------

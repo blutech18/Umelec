@@ -33,8 +33,8 @@ class Candidates : AppCompatActivity() {
         // Initialize header UI components and set up listeners
         setupUI()
 
-        // 🆕 POPULATE POSITIONS DYNAMICALLY
-        populatePositions()
+        // 🆕 POPULATE POSITIONS DYNAMICALLY FROM FIRESTORE
+        loadPositions()
 
         // Setup the persistent footer navigation
         setupFooterNavigation()
@@ -44,30 +44,47 @@ class Candidates : AppCompatActivity() {
     // --- DYNAMIC POSITION POPULATION LOGIC ---
     // ----------------------------------------------------------------------
 
-    private fun populatePositions() {
-        // 1. Get a reference to the main container
-        val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+    private fun loadPositions() {
+        // Get current election ID
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                if (electionId != null) {
+                    // Get all positions for this election
+                    FirestoreCandidateHelper.getPositionsForElection(
+                        electionId = electionId,
+                        onSuccess = { positions ->
+                            val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                            positionContainer.removeAllViews()
 
-        // 2. Define your list of Positions (EASY TO REPLACE WITH BACKEND DATA)
-        val positionList = listOf(
-            PositionItem(positionName = "Chairperson"),
-            PositionItem(positionName = "Vice Chairperson"),
-            PositionItem(positionName = "Secretary"),
-            PositionItem(positionName = "Treasurer"),
+                            // Convert to PositionItem list
+                            val positionList = positions.map { position ->
+                                PositionItem(positionName = position.title)
+                            }
 
-            // ⬇️ START: COMMENT OUT THE NEXT POSITION TO TEST SCROLLING ⬇️
-            PositionItem(positionName = "Public Relations Officer")
-            // ⬆️ END: COMMENT OUT THE ABOVE POSITION TO TEST SCROLLING ⬆️
+                            // Populate positions
+                            positionList.forEach { position ->
+                                val positionView = createPositionButtonView(this, position.positionName)
+                                positionContainer.addView(positionView)
+                            }
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Candidates", "Error loading positions: $error")
+                            val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                            positionContainer.removeAllViews()
+                        }
+                    )
+                } else {
+                    android.util.Log.e("Candidates", "No active election")
+                    val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                    positionContainer.removeAllViews()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Candidates", "Error getting election ID: $error")
+                val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                positionContainer.removeAllViews()
+            }
         )
-
-        // 3. Clear existing children if necessary (e.g., if you had a sample in XML)
-        positionContainer.removeAllViews()
-
-        // 4. Iterate and add the views
-        positionList.forEach { position ->
-            val positionView = createPositionButtonView(this, position.positionName)
-            positionContainer.addView(positionView)
-        }
     }
 
     /**

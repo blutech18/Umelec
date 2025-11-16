@@ -1,117 +1,104 @@
 package com.example.umelec
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-
-
-
+import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat // Required for accessing custom fonts
 
 // --- DATA STRUCTURES ---
 
-/**
- * Data class to hold FAQ content and its category
- */
+// Data class to hold FAQ content and its category
 data class FaqItem(
-    val category: String, // "General" or "Voting" (or any other dynamic category)
+    val category: String, // "General" or "Voting"
     val question: String,
     val answer: String
 )
 
-// Category Constants (used for grouping)
+// Category Constants
 private const val CATEGORY_GENERAL = "General"
 private const val CATEGORY_VOTING = "Voting"
 
 
 class Faq : AppCompatActivity() {
 
+    // 1. 💡 Initial Declaration (Preserved as per user request)
     private lateinit var notificationManager: NotificationManager
 
+    // ----------------------------------------------------------------------
     // --- LIFECYCLE ---
+    // ----------------------------------------------------------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_faq)
 
+        // 2. 💡 Instantiation (Preserved as per user request)
         notificationManager = NotificationManager(this)
 
+        // Initialize UI components and set up listeners
         setupUI()
+
+        // Setup the persistent footer navigation
         setupFooterNavigation()
 
-        populateFaqs()
+        // POPULATE FAQS DYNAMICALLY FROM FIRESTORE
+        loadFaqs()
     }
 
     // ----------------------------------------------------------------------
-    // --- CORE LOGIC (REQUIRED TO KEEP) ---
+    // --- DYNAMIC FAQ POPULATION LOGIC ---
     // ----------------------------------------------------------------------
 
     /**
-     * Initializes header elements: Profile Icon and Notification Icon.
-     * (Preserved Profile/Notification logic)
+     * Load FAQ data from Firestore
      */
-    private fun setupUI() {
-        val profileIcon: ImageView = findViewById(R.id.profileIcon)
-        val notificationIcon: ImageView = findViewById(R.id.notificationIcon)
+    private fun loadFaqs() {
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("faqs")
+            .whereEqualTo("isActive", true)
+            .orderBy("order", com.google.firebase.firestore.Query.Direction.ASCENDING)
+            .get()
+            .addOnSuccessListener { documents ->
+                val faqList = documents.documents.mapNotNull { doc ->
+                    val data = doc.data ?: return@mapNotNull null
+                    val category = data["category"] as? String ?: CATEGORY_GENERAL
+                    val question = data["question"] as? String ?: return@mapNotNull null
+                    val answer = data["answer"] as? String ?: return@mapNotNull null
+                    FaqItem(
+                        category = category,
+                        question = question,
+                        answer = answer
+                    )
+                }
 
-        // --- Profile Icon Click Listener ---
-        profileIcon.setOnClickListener {
-            val intent = Intent(this, Profile::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-        }
+                // If no FAQs found, use default FAQs as fallback
+                val finalFaqList = if (faqList.isEmpty()) {
+                    getDefaultFaqData()
+                } else {
+                    faqList
+                }
 
-        // --- Notification Icon Click Listener ---
-        notificationIcon.setOnClickListener {
-            notificationManager.toggleNotificationDropdown(it as ImageView)
-        }
-    }
-
-    /**
-     * Sets up click listeners for all elements in the footer navigation bar.
-     * (Preserved Footer logic)
-     */
-    private fun setupFooterNavigation() {
-        val navHome: LinearLayout = findViewById(R.id.nav_home)
-        val navVote: LinearLayout = findViewById(R.id.nav_vote)
-        val navCandidates: LinearLayout = findViewById(R.id.nav_candidates)
-        val navResults: LinearLayout = findViewById(R.id.nav_results)
-        val navFaq: LinearLayout = findViewById(R.id.nav_faq)
-
-        val navigateTo = { activityClass: Class<*> ->
-            if (activityClass != this::class.java) {
-                val intent = Intent(this, activityClass)
-                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                startActivity(intent)
-                overridePendingTransition(0, 0)
+                populateFaqs(finalFaqList)
             }
-        }
-
-        navHome.setOnClickListener { navigateTo(Homepage::class.java) }
-        navVote.setOnClickListener { navigateTo(Vote::class.java) }
-        navCandidates.setOnClickListener { navigateTo(Candidates::class.java) }
-        navResults.setOnClickListener { navigateTo(Results::class.java) }
-        navFaq.setOnClickListener { /* Do nothing, already here */ }
+            .addOnFailureListener { error ->
+                android.util.Log.e("Faq", "Error loading FAQs: $error")
+                // Use default FAQs on error
+                populateFaqs(getDefaultFaqData())
+            }
     }
 
-    // ----------------------------------------------------------------------
-    // --- DYNAMIC FAQ POPULATION AND DATABASE ACCESS GUIDES ---
-    // ----------------------------------------------------------------------
-
     /**
-     * Guides the backend/database implementation.
-     *
-     * 🚨 BACKEND/DATABASE INTEGRATION POINT 🚨
-     * Replace this hardcoded list with your data retrieval logic:
-     * E.g., return faqRepository.getAllFaqs()
+     * Default FAQ data as fallback
      */
-    private fun getFaqData(): List<FaqItem> {
+    private fun getDefaultFaqData(): List<FaqItem> {
         return listOf(
-            // General FAQs
             FaqItem(
                 category = CATEGORY_GENERAL,
                 question = "What is Umelec and is it secure?",
@@ -122,7 +109,6 @@ class Faq : AppCompatActivity() {
                 question = "Which devices support the app?",
                 answer = "Umelec is compatible with all devices running Android 7.0 (Nougat) or newer. Please ensure your operating system is up-to-date for the best experience."
             ),
-            // Voting Process FAQs
             FaqItem(
                 category = CATEGORY_VOTING,
                 question = "How do I cast my vote?",
@@ -137,98 +123,195 @@ class Faq : AppCompatActivity() {
                 category = CATEGORY_VOTING,
                 question = "Where can I see the election results?",
                 answer = "Live tallies and final results will be posted in the 'Results' section once the voting period has officially closed."
-            ),
+            )
         )
     }
 
+    private fun populateFaqs(faqList: List<FaqItem>) {
+        val generalContainer: LinearLayout = findViewById(R.id.GeneralContainer)
+        val votingContainer: LinearLayout = findViewById(R.id.VotingContainer)
+
+        if (generalContainer.childCount > 1) {
+            generalContainer.removeViews(1, generalContainer.childCount - 1)
+        }
+        if (votingContainer.childCount > 1) {
+            votingContainer.removeViews(1, votingContainer.childCount - 1)
+        }
+
+        faqList.forEach { faq ->
+            val faqView = createFaqItemView(this, faq.question, faq.answer)
+            when (faq.category) {
+                CATEGORY_GENERAL -> generalContainer.addView(faqView)
+                CATEGORY_VOTING -> votingContainer.addView(faqView)
+            }
+        }
+    }
+
     /**
-     * Main function to clear existing content and dynamically populate all FAQs
-     * grouped by their category.
+     * Dynamically creates the interactive FAQ item view.
+     * Implements the expand/collapse logic using the arrowToggle.
      */
-    private fun populateFaqs() {
-        val contentContainer: LinearLayout = findViewById(R.id.ContentContainer)
+    private fun createFaqItemView(context: Context, question: String, answer: String): View {
 
-        // 1. Clear any existing static content inside the main container
-        contentContainer.removeAllViews()
+        // Fetch custom font once (assuming R.font.montserrat_semi_bold exists)
+        val font = ResourcesCompat.getFont(context, R.font.poppins_regular)
 
-        // 2. Group all FAQ items by their category title
-        val groupedFaqs = getFaqData().groupBy { it.category }
+        // --- 1. Arrow Toggle (ImageView) ---
+        val arrowToggle = ImageView(context).apply {
+            id = View.generateViewId()
+            layoutParams = ConstraintLayout.LayoutParams(24.toPx(), 24.toPx())
+            setImageResource(R.drawable.selector_arrow_toggle)
+            contentDescription = "Toggle visibility"
+            isClickable = true
+            isFocusable = true
+        }
 
-        // 3. Dynamically inflate and add categories and their items
-        groupedFaqs.forEach { (categoryTitle, faqItems) ->
-            // Create the container for the current category
-            val categoryView = createCategoryView(categoryTitle, contentContainer)
+        // --- 2. Question Text ---
+        val questionText = TextView(context).apply {
+            id = View.generateViewId()
+            layoutParams = ConstraintLayout.LayoutParams(
+                0, // MATCH_CONSTRAINT
+                ConstraintLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = 8.toPx()
+            }
+            text = question
+            textSize = 16f // 18sp size from XML
+            setTextColor(Color.parseColor("#313131"))
+            setTypeface(font) // Set custom font and bold style
+        }
 
-            // Add all FAQ items to the created category container
-            faqItems.forEach { faq ->
-                val faqItemView = createFaqItemView(faq.question, faq.answer, categoryView)
-                categoryView.addView(faqItemView)
+        // --- 3. Question Header Layout (ConstraintLayout) ---
+        // This container holds the Question and Arrow
+        val questionHeaderLayout = ConstraintLayout(context).apply {
+            id = View.generateViewId()
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+
+            // Set up constraints for questionText
+            addView(questionText)
+            (questionText.layoutParams as ConstraintLayout.LayoutParams).apply {
+                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                endToStart = arrowToggle.id
             }
 
-            // Add the fully populated category view to the main content container
-            contentContainer.addView(categoryView)
+            // Set up constraints for arrowToggle
+            addView(arrowToggle)
+            (arrowToggle.layoutParams as ConstraintLayout.LayoutParams).apply {
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            }
+        }
+
+        // --- 4. Answer Text (Hidden by Default) ---
+        val answerText = TextView(context).apply {
+            id = View.generateViewId()
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 10.toPx()
+            }
+            text = answer
+            textSize = 12f // Slightly smaller 16sp size for body text
+            setTextColor(Color.parseColor("#313131"))
+            setTypeface(font) // Set custom font and normal style
+
+            // KEY: Answer is hidden by default
+            visibility = View.GONE
+        }
+
+
+        // --- 5. Faq Layout (Outer Container) ---
+        val faqLayout = LinearLayout(context).apply {
+            id = View.generateViewId()
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = 20.toPx()
+            }
+            orientation = LinearLayout.VERTICAL
+            background = ContextCompat.getDrawable(context, R.drawable.faq_bg)
+            setPadding(16.toPx(), 16.toPx(), 16.toPx(), 16.toPx())
+
+            // Add the Question Header and the Answer
+            addView(questionHeaderLayout)
+            addView(answerText)
+        }
+
+        // --- 6. TOGGLE LOGIC (Interactivity) ---
+        // FIX: Attach listener only to the arrowToggle, not the whole header layout.
+        arrowToggle.setOnClickListener {
+            // Check current visibility state of the answer
+            if (answerText.visibility == View.VISIBLE) {
+                // Collapse: Hide answer, point arrow down
+                answerText.visibility = View.GONE
+                arrowToggle.isSelected = false // Switches to down arrow
+            } else {
+                // Expand: Show answer, point arrow up
+                answerText.visibility = View.VISIBLE
+                arrowToggle.isSelected = true // Switches to up arrow
+            }
+        }
+
+        return faqLayout
+    }
+
+    // ----------------------------------------------------------------------
+    // --- BASE ACTIVITY LOGIC (PRESERVED AS REQUESTED) ---
+    // ----------------------------------------------------------------------
+
+    /**
+     * Initializes header elements: User Name, Profile Icon, and Notification Icon.
+     */
+    private fun setupUI() {
+        val profileIcon: ImageView = findViewById(R.id.profileIcon)
+        val notificationIcon: ImageView = findViewById(R.id.notificationIcon)
+
+        // --- Profile Icon Click Listener ---
+        profileIcon.setOnClickListener {
+            val intent = Intent(this, Profile::class.java)
+            startActivity(intent)
+        }
+
+        // 3. 💡 Notification Icon Click Listener (PRESERVED)
+        // This is where we call the reusable function
+        notificationIcon.setOnClickListener {
+            notificationManager.toggleNotificationDropdown(it as ImageView)
         }
     }
 
     /**
-     * Creates and configures a dynamic category view using R.layout.faq_container_voter.
+     * Sets up click listeners for all elements in the footer navigation bar.
      */
-    private fun createCategoryView(categoryName: String, parent: ViewGroup): LinearLayout {
-        val inflater = LayoutInflater.from(this)
+    private fun setupFooterNavigation() {
+        val navHome: LinearLayout = findViewById(R.id.nav_home)
+        val navVote: LinearLayout = findViewById(R.id.nav_vote)
+        val navCandidates: LinearLayout = findViewById(R.id.nav_candidates)
+        val navResults: LinearLayout = findViewById(R.id.nav_results)
+        val navFaq: LinearLayout = findViewById(R.id.nav_faq)
 
-        // Inflate faq_container_voter.xml. Pass the parent and attach=false to ensure
-        // layout params (margins) for the category container are respected.
-        val categoryContainer = inflater.inflate(R.layout.faq_container_voter, parent, false) as LinearLayout
-
-        // Find and set the category title
-        val categoryTitleView = categoryContainer.findViewById<TextView>(R.id.CategoryTitle)
-        categoryTitleView.text = categoryName
-
-        return categoryContainer
-    }
-
-    /**
-     * Creates and configures a dynamic FAQ item view using R.layout.faq_item_voter.
-     * Implements the expand/collapse logic using the arrowToggle.
-     *
-     * @param parent The category container where this FAQ item will be placed (used to apply margins).
-     */
-    private fun createFaqItemView(question: String, answer: String, parent: ViewGroup): LinearLayout {
-        val inflater = LayoutInflater.from(this)
-
-        // FIX: Pass the 'parent' and set 'attachToRoot=false'. This is crucial
-        // for the LinearLayout.LayoutParams (like layout_marginBottom="20dp")
-        // defined in faq_item_voter.xml to be correctly read and applied.
-        val faqLayoutGeneral = inflater.inflate(R.layout.faq_item_voter, parent, false) as LinearLayout
-
-        val questionText = faqLayoutGeneral.findViewById<TextView>(R.id.QuestionTextGeneral)
-        val answerText = faqLayoutGeneral.findViewById<TextView>(R.id.AnswerTextGeneral)
-        val arrowToggle = faqLayoutGeneral.findViewById<ImageView>(R.id.arrowToggle)
-        val questionHeaderLayout = faqLayoutGeneral.findViewById<ConstraintLayout>(R.id.QuestionHeaderLayout)
-
-        // Set content and initial state
-        questionText.text = question
-        answerText.text = answer
-        answerText.visibility = View.GONE // Hidden by default
-        arrowToggle.isSelected = false // Initial state for the selector
-
-        // --- ARROW TOGGLE LOGIC (REQUIRED TO KEEP) ---
-        // Listener for the arrow toggle (or the whole header)
-        val toggleAction = {
-            val isAnswerVisible = answerText.visibility == View.VISIBLE
-            answerText.visibility = if (isAnswerVisible) View.GONE else View.VISIBLE
-            // Toggle the state of the arrow (selector_arrow_toggle handles the rotation/image change)
-            arrowToggle.isSelected = !isAnswerVisible
+        val navigateTo = { activityClass: Class<*> ->
+            if (activityClass != this::class.java) {
+                val intent = Intent(this, activityClass)
+                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                startActivity(intent)
+            }
         }
 
-        // Apply the toggle action to the whole header for better touch target (as per activity_faq.xml)
-        questionHeaderLayout.setOnClickListener { toggleAction() }
-        // Also apply it to the arrow icon itself
-        arrowToggle.setOnClickListener { toggleAction() }
-
-        return faqLayoutGeneral
+        // FOOTER NAVIGATION LOGIC PRESERVED AS REQUESTED
+        navHome.setOnClickListener { navigateTo(Homepage::class.java) }
+        navVote.setOnClickListener { navigateTo(Vote::class.java) }
+        navCandidates.setOnClickListener { navigateTo(Candidates::class.java) }
+        navResults.setOnClickListener { navigateTo(Results::class.java) }
     }
 
-    // Utility extension function to convert DP to pixels (REQUIRED TO KEEP)
+    // Utility extension function to convert DP to pixels
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
 }
