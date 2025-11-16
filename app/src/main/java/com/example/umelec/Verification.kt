@@ -4,15 +4,8 @@ import android.os.Bundle
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import android.content.Intent
-import android.graphics.Color
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.View
 import android.widget.Button
 import android.widget.TextView
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
-import android.app.AlertDialog // <-- IMPORTANT: Add this import
 
 class Verification : AppCompatActivity() {
 
@@ -60,6 +53,7 @@ class Verification : AppCompatActivity() {
             startActivity(intent)
             // Note: You might want to finish() this activity here if the user shouldn't return
             // finish()
+            overridePendingTransition(0, 0)
         }
     }
 }

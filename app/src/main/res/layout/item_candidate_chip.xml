@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/CandidateNameLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/CandidatesNames"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="[Candidate Name]"
+        android:textSize="12sp"
+        android:textColor="#313131"
+        android:fontFamily="@font/poppins_regular"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btnFaqEdit"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="20dp"/>
+
+    <ImageView
+        android:id="@+id/btnFaqEdit"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/ic_edit"
+        android:contentDescription="Edit Candidate"
+        app:layout_constraintEnd_toStartOf="@+id/btnFaqRemove"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:tint="#00537A"
+        android:layout_marginEnd="12dp" />
+
+    <ImageView
+        android:id="@+id/btnFaqRemove"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/ic_remove"
+        android:contentDescription="Remove Candidate"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:tint="#DC3545" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

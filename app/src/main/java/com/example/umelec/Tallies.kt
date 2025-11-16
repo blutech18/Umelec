@@ -1,7 +1,5 @@
 package com.example.umelec
 
-import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,7 +8,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast // 🔥 NEW: Import for Toast
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -86,8 +84,8 @@ class Tallies : AppCompatActivity() {
         setContentView(R.layout.activity_tallies)
 
         displayOverallVotesCount()
-        setupVoteTallyBehavior() // 🔥 NEW CALL
-        setupFooterNavigation()
+        setupVoteTallyBehavior()
+        // setupFooterNavigation() // REMOVED
         setupHeaderBehavior()
         setupTalliesCards()
     }
@@ -174,18 +172,24 @@ class Tallies : AppCompatActivity() {
         // Only clear the container holding the dynamic content, leaving the VoteTally card untouched.
         outerContainer?.removeAllViews()
 
+        // 🔥 FIX: Define horizontal margin (20dp) once and convert to pixels.
+        val horizontalMarginPx = 20.toPx()
+
         talliesData.forEach { (position, candidates) ->
             val sortedCandidates = candidates.sortedByDescending { it.votes }
 
-            // Assuming R.layout.tallies_card_template is the XML layout for one position card
+            // Inflate the position card template. Use 'null' for root since we'll apply margins later.
             val positionCardView = createPositionCardView(position, sortedCandidates)
 
-            // Apply margin at the bottom of each dynamically created card
+            // Apply layout parameters including the bottom and horizontal margins.
+            // This is the step that makes the margins (removed from XML) work.
             positionCardView.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 bottomMargin = 20.toPx()
+                marginStart = horizontalMarginPx // 🔥 ADDED horizontal margin
+                marginEnd = horizontalMarginPx   // 🔥 ADDED horizontal margin
             }
 
             outerContainer?.addView(positionCardView)
@@ -200,6 +204,7 @@ class Tallies : AppCompatActivity() {
         val inflater = LayoutInflater.from(this)
 
         // 1. Inflate the full card template
+        // Note: The root parameter is null, so XML margins are ignored, but we fix that in setupTalliesCards.
         val cardView = inflater.inflate(R.layout.tallies_card_template, null) as LinearLayout
 
         // 2. Set the position title
@@ -293,28 +298,6 @@ class Tallies : AppCompatActivity() {
     private fun formatDateTime(timeMillis: Long): String {
         val formatter = SimpleDateFormat("MMMM dd, yyyy, hh:mm a", Locale.getDefault())
         return formatter.format(Date(timeMillis))
-    }
-
-    private fun setupFooterNavigation() {
-        val navHome: LinearLayout? = findViewById(R.id.nav_home)
-        val navVote: LinearLayout? = findViewById(R.id.nav_vote)
-        val navCandidates: LinearLayout? = findViewById(R.id.nav_candidates)
-        val navResults: LinearLayout? = findViewById(R.id.nav_results)
-        val navFaq: LinearLayout? = findViewById(R.id.nav_faq)
-
-        val navigateTo = { activityClass: Class<*> ->
-            if (activityClass != this::class.java) {
-                val intent = Intent(this, activityClass)
-                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                startActivity(intent)
-            }
-        }
-
-        navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
-        navVote?.setOnClickListener { navigateTo(Vote::class.java) }
-        navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
-        navResults?.setOnClickListener { navigateTo(Results::class.java) }
-        navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
     }
 
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()

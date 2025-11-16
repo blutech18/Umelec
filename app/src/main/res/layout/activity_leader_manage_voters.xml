@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_bg"
+    tools:context=".Leader_manage_voters">
+
+    <!-- Header Content (Fixed at the top) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/HeaderContentLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/FAQsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Management"
+            android:textSize="32sp"
+            android:fontFamily="@font/montserrat_bold"
+            android:textColor="#FAFCFE"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <ImageView
+            android:id="@+id/profileIcon"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/ic_profile"
+            android:contentDescription="Profile"
+            app:tint="#FAFCFE"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:clickable="true"
+            android:focusable="true"
+            android:stateListAnimator="@animator/button_press_animator"/>
+
+        <ImageView
+            android:id="@+id/notificationIcon"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/ic_notification"
+            android:contentDescription="Notification"
+            app:tint="#FAFCFE"
+            app:layout_constraintEnd_toStartOf="@id/profileIcon"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:stateListAnimator="@animator/button_press_animator"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!-- 🔹 SCROLLABLE WHITE CONTAINER (Main Content) 🔹 -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/WhiteContainerScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/rounded_white_bg"
+        android:layout_marginTop="100dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/FooterLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- CONTENT CONTAINER: ADD ALL YOUR SCROLLABLE CONTENT HERE -->
+        <LinearLayout
+            android:id="@+id/ContentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_white_outlined_bg"
+                android:layout_marginTop="20dp"
+                android:layout_marginHorizontal="40dp"
+                android:padding="5dp"
+                android:layout_gravity="center"
+                >
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnVoters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:text="Voters"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:layout_weight="1"
+                    android:background="@drawable/blue_rounded_button"
+                    android:textAllCaps="false"
+                    android:fontFamily="@font/poppins_regular"
+                    android:stateListAnimator="@animator/button_press_animator" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnCandidates"
+                    android:layout_width="wrap_content"
+                    android:layout_height="25dp"
+                    android:text="Candidates"
+                    android:textColor="#313131"
+                    android:textSize="16sp"
+                    android:layout_weight="1"
+                    android:background="@drawable/rounded_white_bg"
+                    android:textAllCaps="false"
+                    android:fontFamily="@font/poppins_regular"
+                    android:stateListAnimator="@animator/button_press_animator"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/TotalEligibleVotersCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/rounded_gray_bg"
+                android:padding="16dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:clipToPadding="false"
+                app:layout_constraintTop_toBottomOf="@+id/FloatingCardContainer"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginHorizontal="20dp"
+                android:outlineProvider="background"
+                android:elevation="10dp"
+                android:translationZ="2dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Eligible Voters: "
+                    android:textSize="20sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/montserrat_semi_bold"/>
+                <TextView
+                    android:id="@+id/TotalEligibleVotersValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="[VOTERS]"
+                    android:textSize="20sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/montserrat_semi_bold"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="125dp"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <!-- LEFT LAYOUT: Students Already Voted -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/rounded_gray_bg"
+                    android:gravity="center"
+                    android:paddingVertical="5dp"
+                    android:outlineProvider="background"
+                    android:elevation="10dp"
+                    android:translationZ="2dp"
+                    android:layout_marginStart="20dp"
+                    >
+
+                    <!-- Percent -->
+                    <TextView
+                        android:id="@+id/tvPercentVoted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="#27A688"
+                        android:textSize="24sp"
+                        android:fontFamily="@font/montserrat_semi_bold"/>
+
+                    <!-- Label -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Students already \nvoted"
+                        android:textColor="#313131"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/poppins_regular"
+                        android:gravity="center"/>
+                </LinearLayout>
+
+                <!-- RIGHT LAYOUT: Students Not Yet Voted -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/rounded_gray_bg"
+                    android:layout_marginStart="16dp"
+                    android:gravity="center"
+                    android:paddingVertical="5dp"
+                    android:outlineProvider="background"
+                    android:elevation="10dp"
+                    android:translationZ="2dp"
+                    android:layout_marginEnd="20dp">
+
+                    <!-- Percent -->
+                    <TextView
+                        android:id="@+id/tvPercentNotVoted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="#D33131"
+                        android:textSize="24sp"
+                        android:fontFamily="@font/montserrat_semi_bold"/>
+
+                    <!-- Label -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Students have not \nyet voted"
+                        android:textColor="#313131"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/poppins_regular"
+                        android:gravity="center"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/VotedStudentsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/rounded_gray_bg"
+                android:padding="16dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginTop="20dp"
+                android:clipToPadding="false"
+                app:layout_constraintTop_toBottomOf="@+id/FloatingCardContainer"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginHorizontal="20dp"
+                android:outlineProvider="background"
+                android:elevation="10dp"
+                android:translationZ="2dp">
+
+
+                <LinearLayout
+                    android:id="@+id/BarChartContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:id="@+id/tvYAxisLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="100dp"
+                            android:text="Year"
+                            android:textSize="12sp"
+                            android:textColor="#313131"
+                            android:fontFamily="@font/poppins_regular"
+                            android:rotation="90"
+                            android:gravity="center"
+                            android:layout_marginEnd="8dp"/>
+
+                        <LinearLayout
+                            android:id="@+id/BarArea"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <include layout="@layout/bar_item_template"
+                                android:id="@+id/barItem1st"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="3dp"/>
+                            <include layout="@layout/bar_item_template"
+                                android:id="@+id/barItem2nd"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="3dp"/>
+                            <include layout="@layout/bar_item_template"
+                                android:id="@+id/barItem3rd"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="3dp"/>
+                            <include layout="@layout/bar_item_template"
+                                android:id="@+id/barItem4th"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="3dp"/>
+
+                        </LinearLayout>
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/tvXAxisLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Number of Students Voted"
+                        android:gravity="center_horizontal"
+                        android:textSize="12sp"
+                        android:textColor="#313131"
+                        android:fontFamily="@font/poppins_regular"
+                        android:layout_marginBottom="8dp"/>
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvVotedStudentsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Voted Students by Year"
+                    android:textSize="20sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/montserrat_semi_bold"
+                    android:layout_marginBottom="10dp"
+                    android:layout_gravity="center"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total Voted: "
+                        android:textSize="12sp"
+                        android:textColor="#313131"
+                        android:fontFamily="@font/poppins_regular"/>
+
+                    <TextView
+                        android:id="@+id/tvTotalVotedCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="34"
+                        android:textSize="12sp"
+                        android:textColor="#313131"
+                        android:fontFamily="@font/poppins_regular"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/VoterManagementCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/rounded_gray_bg"
+                android:padding="16dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginTop="20dp"
+                android:clipToPadding="false"
+                app:layout_constraintTop_toBottomOf="@+id/FloatingCardContainer"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginHorizontal="20dp"
+                android:outlineProvider="background"
+                android:elevation="10dp"
+                android:translationZ="2dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Voter List"
+                    android:textSize="20sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/montserrat_semi_bold"
+                    android:layout_marginBottom="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="These are the list of voters."
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="start"
+                    android:layout_marginTop="10dp">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnViewList"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="View list"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:background="@drawable/blue_rounded_button"
+                        android:textAllCaps="false"
+                        android:fontFamily="@font/poppins_bold"
+                        android:stateListAnimator="@animator/button_press_animator" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+
+    <!-- FOOTER (Fixed at the bottom with elevation for shadow effect) -->
+    <LinearLayout
+        android:id="@+id/FooterLayout"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:orientation="horizontal"
+        android:background="@drawable/footer"
+        android:gravity="center"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/nav_home"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_home"
+                android:contentDescription="Home"
+                app:tint="#666666" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Home"
+                android:textSize="12sp"
+
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:layout_marginTop="2dp"
+                android:fontFamily="@font/poppins_regular"
+                android:textColor="#333333"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_setup"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_setup"
+                android:contentDescription="Vote"
+                app:tint="#666666" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Setup"
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_regular"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_manage"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_manage"
+                android:contentDescription="Candidates"
+                app:tint="#0098E0" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  Manage  "
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:background="@drawable/blue_rounded_button"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_regular"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_monitor"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_monitor"
+                android:contentDescription="Results"
+                app:tint="#666666" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Monitor"
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_regular"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_faq"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_faq"
+                android:contentDescription="FAQs"
+                app:tint="#666666" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  FAQs  "
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_regular"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

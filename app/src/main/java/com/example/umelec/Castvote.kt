@@ -19,8 +19,8 @@ import androidx.core.content.ContextCompat
 
 // --- MOCK DATA: Replace this with data fetched from your backend ---
 private val MOCK_VOTING_DATA = listOf(
-    VotingPosition("PRES", "President", listOf(
-        CandidateChoices("PRES_C1", "Jane Doe"),
+    VotingPosition("PRES", "Presidentaaaaaaaaaaaaaaaaaaaaaaaaa", listOf(
+        CandidateChoices("PRES_C1", "Jane Doeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
         CandidateChoices("PRES_C2", "John Smith"),
     )),
     VotingPosition("VPRES", "Vice President", listOf(
@@ -234,6 +234,7 @@ class Castvote : AppCompatActivity() {
                     putStringArrayListExtra("candidates", ArrayList(selections.values))
                 }
                 startActivity(intent)
+                overridePendingTransition(0, 0)
             } else {
             }
         }
@@ -284,6 +285,7 @@ class Castvote : AppCompatActivity() {
             showUnsavedChangesDialog()
         } else {
             finish()
+            overridePendingTransition(0, 0)
         }
     }
 

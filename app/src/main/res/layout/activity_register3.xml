@@ -149,7 +149,8 @@
                     android:background="@drawable/blue_rounded_button"
                     android:textAllCaps="false"
                     android:fontFamily="@font/poppins_bold"
-                    android:enabled="false"/>
+                    android:enabled="false"
+                    android:stateListAnimator="@animator/button_press_animator"/>
             </LinearLayout>
 
             <TextView
@@ -172,8 +173,82 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:paddingTop="4dp"
+                android:background="?attr/selectableItemBackground" />
+            <TextView
+                android:id="@+id/tvReviewPrivacy"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/privacy_link"
+                android:textSize="16sp"
+                android:fontFamily="@font/poppins_bold"
+                android:textColor="#313131"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingTop="4dp"
                 android:paddingBottom="10dp"
                 android:background="?attr/selectableItemBackground" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="top">
+
+                <CheckBox
+                    android:id="@+id/cbAgreeTerms"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="#0098E0"
+                    android:layout_marginEnd="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="top">
+                    <TextView
+                        android:id="@+id/tvTermsAgreementText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_regular"
+                        android:textColor="#313131"
+                        android:textSize="16sp"
+                        android:text="@string/terms_text" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <CheckBox
+                    android:id="@+id/cbAgreePrivacy"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="#0098E0"
+                    android:layout_marginEnd="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="top">
+                    <TextView
+                        android:id="@+id/tvPrivacyAgreementText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_regular"
+                        android:textColor="#313131"
+                        android:textSize="16sp"
+                        android:text="@string/privacy_text" />
+
+                </LinearLayout>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -202,10 +277,15 @@
                         android:fontFamily="@font/poppins_regular"
                         android:textColor="#313131"
                         android:textSize="16sp"
-                        android:text="@string/condition_link" />
+                        android:text="@string/condition_text" />
 
                 </LinearLayout>
             </LinearLayout>
+
+
+
+
+
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -236,7 +316,8 @@
             android:background="@drawable/blue_rounded_button"
             android:fontFamily="@font/poppins_bold"
             app:backgroundTint="@null"
-            android:enabled="false"/>
+            android:enabled="false"
+            android:stateListAnimator="@animator/button_press_animator"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

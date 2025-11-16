@@ -14,16 +14,14 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import android.content.Intent
-import android.widget.Toast
 import android.app.AlertDialog
-// IMPORTS for Keyboard, Focus, and Custom Dialog (Added for click-outside-to-unfocus)
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
 import android.view.MotionEvent
 import android.graphics.Rect
 import android.view.Gravity
 import android.graphics.drawable.ColorDrawable
-import android.view.LayoutInflater // <-- Essential for custom dialog
+import android.view.LayoutInflater
 
 class RegisterActivity2 : AppCompatActivity() {
 
@@ -171,7 +169,10 @@ class RegisterActivity2 : AppCompatActivity() {
 
         // 🔹 Back button
         val btnBack = findViewById<ImageButton>(R.id.btnBack)
-        btnBack.setOnClickListener { finish() }
+        btnBack.setOnClickListener {
+            finish()
+            overridePendingTransition(0, 0)
+        }
 
         // =====================================================================
         // 🚨 1. VIEW INITIALIZATION (USING CLASS-LEVEL DECLARATIONS) 🚨
@@ -814,6 +815,7 @@ class RegisterActivity2 : AppCompatActivity() {
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
                 finish()
+                overridePendingTransition(0, 0)
                 return@setOnClickListener
             }
 

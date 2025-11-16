@@ -48,7 +48,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("com.google.android.material:material:1.13.0")
     implementation("de.hdodenhof:circleimageview:3.1.0")
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.core:core-splashscreen:1.2.0")
     implementation("com.github.gcacace:signature-pad:1.3.1")
     
     // Firebase

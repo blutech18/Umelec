@@ -3,10 +3,7 @@ package com.example.umelec
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -14,8 +11,6 @@ import androidx.core.content.res.ResourcesCompat
 import android.animation.AnimatorInflater
 import android.os.Build
 
-// NOTE: We assume NotificationItem, NotificationType, and NotificationManager
-// are available in the com.example.umelec package.
 
 // --- DATA STRUCTURE FOR POSITIONS ---
 // This is the model you would map your backend/database data to.
@@ -133,6 +128,7 @@ class Candidates : AppCompatActivity() {
                 putExtra("POSITION_NAME", positionName)
             }
             context.startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         return btnPosition
@@ -159,6 +155,7 @@ class Candidates : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         // 3. New: Notification Icon Click Listener (Toggle Dropdown)
@@ -167,40 +164,6 @@ class Candidates : AppCompatActivity() {
             notificationManager.toggleNotificationDropdown(it as ImageView)
         }
     }
-
-
-    /**
-     * 🔥 REMOVED: Helper function to provide visual feedback and then navigate to a new activity.
-     * The custom color change logic has been removed as requested.
-     */
-    // private fun animateAndNavigate(view: View, originalBgResource: Int, targetActivity: Class<*>,
-    //                                extraKey: String? = null,
-    //                                extraValue: String? = null) {
-    //
-    //     val originalBackground = view.background
-    //
-    //     val highlightColor = Color.parseColor("#FCBE6A")
-    //     val highlightDrawable = GradientDrawable().apply {
-    //         setColor(highlightColor)
-    //         if (originalBackground is GradientDrawable) {
-    //             cornerRadii = originalBackground.cornerRadii
-    //         } else {
-    //             cornerRadius = 8.toPx().toFloat()
-    //         }
-    //     }
-    //
-    //     view.background = highlightDrawable
-    //
-    //     Handler(Looper.getMainLooper()).postDelayed({
-    //         view.background = ResourcesCompat.getDrawable(resources, originalBgResource, null)
-    //
-    //         val intent = Intent(this, targetActivity)
-    //         if (extraKey != null && extraValue != null) {
-    //             intent.putExtra(extraKey, extraValue)
-    //         }
-    //         startActivity(intent)
-    //     }, 100)
-    // }
 
     // ----------------------------------------------------------------------
     // --- FOOTER LOGIC ---
@@ -221,6 +184,8 @@ class Candidates : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
+                overridePendingTransition(0, 0)
+
             }
         }
 

@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.util.Base64
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageButton
@@ -27,18 +26,25 @@ class RegisterActivity3 : AppCompatActivity() {
 
     // Views
     private lateinit var btnBack: ImageButton
-    private lateinit var signaturePad: SignaturePad // Updated to use the actual SignaturePad component
+    private lateinit var signaturePad: SignaturePad
     private lateinit var btnClearSignature: AppCompatButton
     private lateinit var tvReviewTnC: TextView
+    private lateinit var tvReviewPrivacy: TextView
     private lateinit var cbAgree: CheckBox
+    private lateinit var cbAgreePrivacy: CheckBox
+    private lateinit var cbAgreeTerms: CheckBox
     private lateinit var btnNext: Button
 
     // State
     private var isSignatureDrawn: Boolean = false
     private var isTermsAgreed: Boolean = false
+    private var isPrivacyAgreed: Boolean = false
+    private var isFinalConditionAgreed: Boolean = false
 
-    // Assumed target class for successful registration
+    // Assumed target classes for navigation
     private val LOGIN_ACTIVITY_CLASS = Login::class.java
+    private val TERMS_ACTIVITY_CLASS = Terms::class.java // Assumed Terms.kt exists
+    private val PRIVACY_ACTIVITY_CLASS = Privacy::class.java // Assumed Privacy.kt exists
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,33 +52,69 @@ class RegisterActivity3 : AppCompatActivity() {
 
         // 1. Initialize Views
         btnBack = findViewById(R.id.btnBack)
-        signaturePad = findViewById(R.id.signaturePad) // Initialized as SignaturePad
+        signaturePad = findViewById(R.id.signaturePad)
         btnClearSignature = findViewById(R.id.btnClearSignature)
+
+        // --- NEW/UPDATED VIEW INITIALIZATION ---
         tvReviewTnC = findViewById(R.id.tvReviewTnC)
-        cbAgree = findViewById(R.id.cbAgree)
+        tvReviewPrivacy = findViewById(R.id.tvReviewPrivacy)
+        cbAgree = findViewById(R.id.cbAgree) // The final condition checkbox
+        cbAgreePrivacy = findViewById(R.id.cbAgreePrivacy)
+        cbAgreeTerms = findViewById(R.id.cbAgreeTerms)
+        // --- END NEW/UPDATED VIEW INITIALIZATION ---
+
         btnNext = findViewById(R.id.btnNext)
 
         // 2. Setup Initial State
         updateNextButtonState()
         btnClearSignature.isEnabled = false
+        // Note: isTermsAgreed now tracks cbAgreeTerms, cbAgreePrivacy, and cbAgree.
+        // Let's ensure the initial state reflects the unchecked boxes.
+        isTermsAgreed = cbAgreeTerms.isChecked
+        isPrivacyAgreed = cbAgreePrivacy.isChecked
+        isFinalConditionAgreed = cbAgree.isChecked
+        updateNextButtonState()
 
 
         // 3. Set Listeners
         btnBack.setOnClickListener {
             finish() // Goes back to the previous activity (RegisterActivity2)
+            overridePendingTransition(0, 0)
         }
 
+        // ⭐️ NEW BEHAVIOR: Navigate to Terms.kt ⭐️
         tvReviewTnC.setOnClickListener {
-            // Shows a Toast as requested
-            Toast.makeText(this, "TnC in working", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, TERMS_ACTIVITY_CLASS)
+            startActivity(intent)
         }
 
-        cbAgree.setOnCheckedChangeListener { _, isChecked ->
+        // ⭐️ NEW BEHAVIOR: Navigate to Privacy.kt ⭐️
+        tvReviewPrivacy.setOnClickListener {
+            val intent = Intent(this, PRIVACY_ACTIVITY_CLASS)
+            startActivity(intent)
+        }
+
+        // --- NEW CHECKBOX LISTENERS ---
+
+        // Listener for the first new CheckBox (Terms)
+        cbAgreeTerms.setOnCheckedChangeListener { _, isChecked ->
             isTermsAgreed = isChecked
             updateNextButtonState()
         }
 
-        // 4. Working Signature Pad Logic
+        // Listener for the second new CheckBox (Privacy)
+        cbAgreePrivacy.setOnCheckedChangeListener { _, isChecked ->
+            isPrivacyAgreed = isChecked
+            updateNextButtonState()
+        }
+
+        // Listener for the original CheckBox (Final Condition)
+        cbAgree.setOnCheckedChangeListener { _, isChecked ->
+            isFinalConditionAgreed = isChecked
+            updateNextButtonState()
+        }
+
+        // 4. Working Signature Pad Logic (untouched)
         signaturePad.setOnSignedListener(object : SignaturePad.OnSignedListener {
             override fun onStartSigning() {
                 // Not needed for state tracking, but useful for UX hints
@@ -93,12 +135,12 @@ class RegisterActivity3 : AppCompatActivity() {
             }
         })
 
-        // 5. Clear Signature Button Logic
+        // 5. Clear Signature Button Logic (untouched)
         btnClearSignature.setOnClickListener {
             signaturePad.clear() // Clears the canvas and triggers the onClear listener
         }
 
-        // 6. Next Button Logic (Data Processing)
+        // 6. Next Button Logic (Data Processing) (untouched except for state check)
         btnNext.setOnClickListener {
             if (isSignatureDrawn && isTermsAgreed) {
                 // Get current Firebase user
@@ -115,12 +157,8 @@ class RegisterActivity3 : AppCompatActivity() {
                 // Disable button during save
                 btnNext.isEnabled = false
 
-                // 1. Capture the signature as a high-quality Bitmap
                 val signatureBitmap: Bitmap = signaturePad.getSignatureBitmap()
-
-                // 2. Convert Bitmap to a suitable format for transfer (e.g., Base64 String)
                 val byteArrayOutputStream = ByteArrayOutputStream()
-                // Use JPEG for smaller file size, quality 90 is a good balance
                 signatureBitmap.compress(Bitmap.CompressFormat.JPEG, 90, byteArrayOutputStream)
                 val byteArray = byteArrayOutputStream.toByteArray()
                 val signatureBase64String: String = Base64.encodeToString(byteArray, Base64.DEFAULT)
@@ -156,14 +194,20 @@ class RegisterActivity3 : AppCompatActivity() {
 
     /**
      * Updates the enabled state of the Next button based on required conditions.
+     * ⭐️ UPDATED LOGIC to check all three CheckBoxes. ⭐️
      */
     private fun updateNextButtonState() {
-        // Button is enabled ONLY when a signature is drawn AND the terms are checked
-        btnNext.isEnabled = isSignatureDrawn && isTermsAgreed
+        // Button is enabled ONLY when:
+        // 1. Signature is drawn (isSignatureDrawn)
+        // 2. Terms CheckBox is checked (isTermsAgreed)
+        // 3. Privacy CheckBox is checked (isPrivacyAgreed)
+        // 4. Final Condition CheckBox is checked (isFinalConditionAgreed)
+
+        btnNext.isEnabled = isSignatureDrawn && isTermsAgreed && isPrivacyAgreed && isFinalConditionAgreed
     }
 
     /**
-     * Custom AlertDialog for Registration Success.
+     * Custom AlertDialog for Registration Success. (untouched)
      */
     private fun showRegistrationSuccessDialog() {
         val layoutInflater = LayoutInflater.from(this)

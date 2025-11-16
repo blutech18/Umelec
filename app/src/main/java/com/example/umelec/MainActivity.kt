@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
         btnRegister.setOnClickListener {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         // Login button
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         btnLogin.setOnClickListener {
             val intent = Intent(this, Login::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
     }
 }

@@ -19,16 +19,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import java.util.concurrent.TimeUnit
 import java.util.Calendar
 
-// ⭐️ Data class for the leading candidate carousel content
-data class LeadingCandidate(
-    val position: String,
-    val name: String,
-    val votes: Int,
-    val profileResId: Int // Resource ID for the drawable/image (e.g., R.drawable.ic_profile)
-)
-
-// ⭐️ Enum to manage the state of the results card
-enum class ResultCardState { UPCOMING, ONGOING, NO_ELECTION, ENDED }
 
 class Results : AppCompatActivity() {
 
@@ -320,6 +310,7 @@ class Results : AppCompatActivity() {
         btnResult.setOnClickListener {
             val intent = Intent(this, OfficialResults::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
     }
 
@@ -464,6 +455,7 @@ class Results : AppCompatActivity() {
         profileIcon?.setOnClickListener {
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         notificationIcon?.setOnClickListener {
@@ -487,6 +479,7 @@ class Results : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
+                overridePendingTransition(0, 0)
             }
         }
 

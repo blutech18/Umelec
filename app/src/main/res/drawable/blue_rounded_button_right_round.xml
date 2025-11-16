@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Enabled state (Gradient Blue) - MODIFIED -->
+    <item android:state_enabled="true">
+        <shape android:shape="rectangle">
+            <corners
+                android:topLeftRadius="0dp"
+                android:bottomLeftRadius="0dp"
+                android:topRightRadius="25dp"
+                android:bottomRightRadius="25dp" />
+
+            <!-- Replaced <solid> with <gradient> for the enabled state -->
+            <gradient
+                android:startColor="#0098E0"
+                android:endColor="#00537A"
+                android:angle="270" />
+            <!-- angle="270" means the gradient goes from top (startColor) to bottom (endColor) -->
+
+        </shape>
+    </item>
+
+    <!-- Disabled state (Gray) -->
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="16dp" />
+            <solid android:color="#5C5C77" />
+        </shape>
+    </item>
+
+</selector>

@@ -78,6 +78,7 @@ class Profile : AppCompatActivity() {
         // Set an OnClickListener for the back button
         btnBack.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
 
         // ⭐️ Set an OnClickListener for the Logout button ⭐️
@@ -199,6 +200,7 @@ class Profile : AppCompatActivity() {
 
         // Finish the current Profile activity
         finish()
+        overridePendingTransition(0, 0)
     }
 
 

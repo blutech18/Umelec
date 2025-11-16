@@ -6,9 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gradient_bg"
-    tools:context=".Homepage">
+    tools:context=".Faq">
 
-    <!-- Header Content (Fixed at the top) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/HeaderContentLayout"
         android:layout_width="match_parent"
@@ -64,7 +63,6 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    <!-- 🔹 SCROLLABLE WHITE CONTAINER (Main Content) 🔹 -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/WhiteContainerScroll"
         android:layout_width="match_parent"
@@ -76,126 +74,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- CONTENT CONTAINER: ADD ALL YOUR SCROLLABLE CONTENT HERE -->
-        <!-- CONTENT CONTAINER: ADD ALL YOUR SCROLLABLE CONTENT HERE -->
         <LinearLayout
             android:id="@+id/ContentContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="30dp">
+            android:orientation="vertical">
 
-            <!-- 1. GENERAL/SYSTEM CONTAINER -->
-            <LinearLayout
-                android:id="@+id/GeneralContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="30dp">
-
-                <TextView
-                    android:id="@+id/GeneralHeader"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="General/System"
-                    android:textSize="20sp"
-                    android:textColor="#0E0E2C"
-                    android:layout_marginBottom="16dp"
-                    android:fontFamily="@font/montserrat_semi_bold" />
-
-                <!-- General/System FAQ Item Template (Can be repeated here) -->
-                <LinearLayout
-                    android:id="@+id/FaqLayoutGeneral"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp"
-                    android:background="@drawable/faq_bg"
-                    android:clipToPadding="false"
-                    android:orientation="vertical"
-                    android:outlineProvider="bounds"
-                    android:padding="16dp">
-
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/QuestionHeaderLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/QuestionTextGeneral"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:fontFamily="@font/montserrat_semi_bold"
-                            android:text="Question"
-                            android:textColor="#313131"
-                            android:textSize="16sp"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintEnd_toStartOf="@+id/arrowToggle" />
-
-                        <ImageView
-                            android:id="@+id/arrowToggle"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:clickable="true"
-                            android:contentDescription="Toggle visibility"
-                            android:focusable="true"
-                            android:src="@drawable/selector_arrow_toggle"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    <TextView
-                        android:id="@+id/AnswerTextGeneral"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/montserrat_semi_bold"
-                        android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-                        android:textColor="#313131"
-                        android:textSize="12sp"
-                        android:layout_marginLeft="20dp"/>
-
-                </LinearLayout>
-            </LinearLayout>
-            <!-- END GENERAL/SYSTEM CONTAINER -->
-
-
-            <!-- 2. VOTING PROCESS CONTAINER -->
-            <LinearLayout
-                android:id="@+id/VotingContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/VotingProcessHeader"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Voting Process"
-                    android:textSize="18sp"
-                    android:textColor="#0E0E2C"
-                    android:layout_marginBottom="16dp"
-                    android:fontFamily="@font/montserrat_semi_bold" />
-
-                <!-- Voting Process FAQ Item Template (Can be repeated here) -->
-
-            </LinearLayout>
-            <!-- END VOTING PROCESS CONTAINER -->
+            <!--inflated-->
 
         </LinearLayout>
-        <!-- END CONTENT CONTAINER -->
-
-        <!-- Note: I removed the final View separator as margins on the containers now provide the necessary spacing. -->
-
     </androidx.core.widget.NestedScrollView>
 
 
-    <!-- FOOTER (Fixed at the bottom with elevation for shadow effect) -->
     <LinearLayout
         android:id="@+id/FooterLayout"
         android:layout_width="match_parent"
@@ -230,7 +120,6 @@
                 android:layout_height="wrap_content"
                 android:text="Home"
                 android:textSize="12sp"
-
                 android:paddingLeft="8dp"
                 android:paddingRight="8dp"
                 android:paddingTop="2dp"

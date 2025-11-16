@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/rounded_white_bg"
+    app:behavior_hideable="true"
+    app:layout_behavior="@string/bottom_sheet_behavior">
+
+    <TextView
+        android:id="@+id/sheetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Position"
+        android:textSize="20sp"
+        android:textColor="#0E0E2C"
+        android:fontFamily="@font/montserrat_bold"
+        android:layout_marginBottom="16dp"
+        android:gravity="center" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/AddPosition"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        style="@style/Widget.App.TextInputLayout.Validation"
+        app:boxBackgroundMode="outline"
+        android:hint="Position"
+        app:placeholderText="Enter Position"
+        app:startIconTint="#8C8CA1"
+        app:errorIconDrawable="@null">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputPosition"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textColor="#000000"
+            android:fontFamily="@font/poppins_regular" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayoutYear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:hint="Year Level"
+        app:placeholderText="Select Year Level"
+        style="@style/Widget.App.TextInputLayout.Validation.ExposedDropdown"
+        app:boxBackgroundMode="outline"
+        app:errorIconDrawable="@null"
+        app:popupTheme="@style/ThemeOverlay.App.DropdownMenu">
+        <AutoCompleteTextView
+            android:id="@+id/inputYear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:textColor="#000000"
+            android:fontFamily="@font/poppins_regular"
+            android:completionThreshold="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/CategoryHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Candidates:"
+            android:textSize="20sp"
+            android:textColor="#0E0E2C"
+            android:fontFamily="@font/montserrat_semi_bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnAddCandidate"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="  Candidate"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:background="@drawable/blue_rounded_button"
+            android:textAllCaps="false"
+            android:fontFamily="@font/poppins_bold"
+            android:drawableStart="@drawable/ic_add"
+            android:drawableTint="#FFFFFF"
+            android:stateListAnimator="@animator/button_press_animator"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+     <LinearLayout
+        android:id="@+id/CandidateWrapper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="20dp">
+
+         <!-- <androidx.constraintlayout.widget.ConstraintLayout
+              android:id="@+id/CandidateNameLayout"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_marginHorizontal="50dp">
+
+              <TextView
+                  android:id="@+id/CandidatesNames"
+                  android:layout_width="0dp"
+                  android:layout_height="wrap_content"
+                  android:layout_marginEnd="8dp"
+                  android:fontFamily="@font/poppins_regular"
+                  android:maxLines="10"
+                  android:text="Candidate Name"
+                  android:textColor="#313131"
+                  android:textSize="12sp"
+                  app:layout_constraintBottom_toBottomOf="parent"
+                  app:layout_constraintStart_toStartOf="parent"
+                  app:layout_constraintTop_toTopOf="parent"
+                  app:layout_constraintEnd_toStartOf="@+id/btnFaqRemove" />
+
+              <ImageView
+                  android:id="@+id/btnFaqEdit"
+                  android:layout_width="24dp"
+                  android:layout_height="24dp"
+                  android:clickable="true"
+                  android:focusable="true"
+                  android:contentDescription="Edit FAQ"
+                  android:src="@drawable/ic_edit"
+                  app:layout_constraintBottom_toBottomOf="parent"
+                  app:layout_constraintEnd_toStartOf="@+id/btnFaqRemove"
+                  app:layout_constraintTop_toTopOf="parent" />
+
+              <ImageView
+                  android:id="@+id/btnFaqRemove"
+                  android:layout_width="24dp"
+                  android:layout_height="24dp"
+                  android:clickable="true"
+                  android:focusable="true"
+                  android:contentDescription="Remove FAQ"
+                  android:src="@drawable/ic_remove"
+                  app:layout_constraintBottom_toBottomOf="parent"
+                  app:layout_constraintEnd_toEndOf="parent"
+                  app:layout_constraintTop_toTopOf="parent" />
+
+          </androidx.constraintlayout.widget.ConstraintLayout>-->
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_action_primary"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="40dp"
+            android:text="Cancel"
+            android:textColor="#0E0E2C"
+            android:textSize="14sp"
+            android:background="@drawable/yellow_rounded_button"
+            android:textAllCaps="false"
+            android:fontFamily="@font/poppins_bold"
+            android:layout_marginEnd="8dp"
+            android:stateListAnimator="@animator/button_press_animator" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_action_secondary"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="40dp"
+            android:layout_marginBottom="15dp"
+            android:text="Add"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:background="@drawable/blue_rounded_button"
+            android:textAllCaps="false"
+            android:fontFamily="@font/poppins_bold"
+            android:stateListAnimator="@animator/button_press_animator" />
+
+    </LinearLayout>
+
+
+</LinearLayout>

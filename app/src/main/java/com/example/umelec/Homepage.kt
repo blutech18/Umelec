@@ -11,11 +11,6 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.constraintlayout.widget.ConstraintLayout
 
 
-// Define the possible states for the election card UI
-//enum class ElectionState { ONGOING, NO_ELECTION, UPCOMING, ENDED }
-
-// Data class to easily handle election details for the ONGOING phase
-//data class ElectionDetails(val title: String, val period: String, val status: String)
 
 // Data class to represent a single candidate's information
 data class Candidate(
@@ -76,8 +71,6 @@ class Homepage : AppCompatActivity() {
 
         // --- NEW FOOTER NAVIGATION SETUP ---
         setupFooterNavigation() // <--- ADD THIS LINE
-
-
         // -----------------------------------
     }
 
@@ -128,6 +121,8 @@ class Homepage : AppCompatActivity() {
             // Create an Intent to start the ProfileActivity class (assuming it's named Profile.kt)
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
+
         }
 
         // 3. 庁 NEW: Notification Icon Click Listener (Integrate NotificationManager)
@@ -249,9 +244,11 @@ class Homepage : AppCompatActivity() {
                 btnVoteNow.setOnClickListener {
 
                     // Assuming Vote.kt is Vote Activity
-                    val intent = Intent(this, Vote::class.java)
+                    val intent = Intent(this, Castvote::class.java)
 
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
+
                 }
 
                 // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
@@ -275,9 +272,9 @@ class Homepage : AppCompatActivity() {
                 btnViewAll.setOnClickListener {
                     // Assuming Candidates.kt is Candidates Activity
                     val intent = Intent(this, Candidates::class.java)
-
-
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
+
                 }
 
 
@@ -339,11 +336,9 @@ class Homepage : AppCompatActivity() {
 
                 // Set View All button click listener
                 btnViewAll.setOnClickListener {
-
-                    // Assuming Candidates.kt is Candidates Activity
                     val intent = Intent(this, Candidates::class.java)
-
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                 }
 
             }
@@ -394,6 +389,7 @@ class Homepage : AppCompatActivity() {
                 btnViewAll.setOnClickListener {
                     val intent = Intent(this, Results::class.java) // Navigate to Results
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                 }
 
 
@@ -407,16 +403,14 @@ class Homepage : AppCompatActivity() {
         // **CODE IT
         return ElectionDetails(
             title = "Student Council Leadership Election",
-
-            period = "October 10 - 15, 2025",
+            period = "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm",
             status = "Active"
         )
     }
 
     private fun fetchUpcomingElectionDate(): String {
         // **CODE IT FOR EASY BACKEND/DATABASE ACCESS**
-
-        return "October 10 - 15, 2025"
+        return "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm"
     }
 
 // --- ELECTION LOGIC END ---
@@ -587,10 +581,6 @@ class Homepage : AppCompatActivity() {
 
 
     // --- FOOTER NAVIGATION LOGIC START ---
-
-    /**
-     * Sets up click listeners for all elements in the footer navigation bar.
-     */
     private fun setupFooterNavigation() {
         // Find all navigation items (LinearLayouts)
         val navHome: LinearLayout = findViewById(R.id.nav_home)
@@ -598,38 +588,21 @@ class Homepage : AppCompatActivity() {
         val navCandidates: LinearLayout = findViewById(R.id.nav_candidates)
         val navResults: LinearLayout = findViewById(R.id.nav_results)
         val navFaq: LinearLayout = findViewById(R.id.nav_faq)
-
-        // Helper function to navigate to a new Activity
-
-
         val navigateTo = { activityClass: Class<*> ->
             // Only start the activity if it's not the current one (to prevent unnecessary restarts)
             if (activityClass != this::class.java) {
                 val intent = Intent(this, activityClass)
                 startActivity(intent)
-
-
+                overridePendingTransition(0, 0)
                 // Optional: Add finish() if you don't want the user to return here via back button
                 // finish()
             }
         }
 
-        // Set Click Listeners
-
-        // Home (Current Activity - No action needed unless reloading is desired)
-        // We can keep this listener
-        // empty or make it re-initialize the current activity.
-        navHome.setOnClickListener {
-            // Since we are already on Homepage.kt, we typically do nothing or smooth scroll to top.
-        }
+        navHome.setOnClickListener {}
         navVote.setOnClickListener { navigateTo(Vote::class.java) }
         navCandidates.setOnClickListener { navigateTo(Candidates::class.java) }
         navResults.setOnClickListener { navigateTo(Results::class.java) }
         navFaq.setOnClickListener { navigateTo(Faq::class.java) }
     }
-
-// --- FOOTER NAVIGATION LOGIC END ---
-
-    // NOTE: The local notification logic (toggleNotificationDropdown and showNotificationDropdown)
-    // has been removed and replaced by the single call to notificationManager.toggleNotificationDropdown(it as ImageView)
 }

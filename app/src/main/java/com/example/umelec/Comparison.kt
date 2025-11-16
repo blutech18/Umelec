@@ -129,6 +129,7 @@ class Comparison : AppCompatActivity() {
         val backButton: ImageButton? = findViewById(R.id.btnBack)
         backButton?.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
     }
 
@@ -152,6 +153,7 @@ class Comparison : AppCompatActivity() {
             val intent = Intent(this, activityClass)
             intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         // Set Click Listeners (Only set listener if view is found)

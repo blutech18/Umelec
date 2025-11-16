@@ -28,3 +28,19 @@ data class ElectionDetails(val title: String, val period: String, val status: St
 
 data class CandidateChoices(val id: String, val name: String)
 data class VotingPosition(val id: String, val title: String, val candidates: List<CandidateChoices>)
+
+// ⭐️ Data class for the leading candidate carousel content (Copied from Results.kt)
+data class LeadingCandidate(
+    val position: String,
+    val name: String,
+    val votes: Int,
+    val profileResId: Int // Resource ID for the drawable/image (e.g., R.drawable.ic_profile)
+)
+
+// ⭐️ Enum to manage the state of the results card (Copied from Results.kt)
+enum class ResultCardState { UPCOMING, ONGOING, NO_ELECTION, ENDED }
+
+data class ElectionDateandTimeDetails(
+    val endDate: String,
+    val endTime: String
+)

@@ -12,6 +12,60 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UMelec">
         <activity
+            android:name=".Changepassword"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_electionsetup_preview"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_electionsetup_position"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_manage_candidates_profile"
+            android:exported="false" />
+        <activity
+            android:name=".Privacy"
+            android:exported="false" />
+        <activity
+            android:name=".Terms"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_manage_voters_list"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_manage_candidates"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_electionsetup_details"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_electionsetup"
+            android:exported="false" />
+        <activity
+            android:name=".AutomatedReports"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_monitor"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_manage_voters"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_Setup"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_faqs"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_profile"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_homepage"
+            android:exported="false" />
+        <activity
+            android:name=".Leader_Verification"
+            android:exported="false" />
+        <activity
             android:name=".Castvote3"
             android:exported="false" />
         <activity

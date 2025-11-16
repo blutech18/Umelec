@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAFCFE"
+    tools:context=".Leader_electionsetup_preview">
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/HeaderLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
+            android:id="@+id/Back_Button_Wrapper"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="back_button_content_description"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="#00537A"
+                android:stateListAnimator="@animator/button_press_animator"/>
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/ReportTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Preview Ballot"
+            android:textSize="32sp"
+            android:fontFamily="@font/montserrat_bold"
+            android:textColor="#313131"
+            android:gravity="center_horizontal"
+            android:maxLines="2"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/Back_Button_Wrapper"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/WhiteContainerScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/rounded_white_bg"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/HeaderLayout"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:fillViewport="true"
+        android:backgroundTint="#FAFCFE">
+
+
+        <LinearLayout
+            android:id="@+id/ReportContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp">
+
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/error_toast_root"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/toast_background_base"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="20dp">
+
+                <View
+                    android:id="@+id/color_strip"
+                    android:layout_width="20dp"
+                    android:layout_height="0dp"
+                    android:background="@drawable/strip_red_rounded_left"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+                <LinearLayout
+                    android:id="@+id/content_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingStart="30dp"
+                    android:paddingEnd="16dp"
+                    android:layout_marginTop="15dp"
+                    android:layout_marginBottom="15dp"
+                    android:gravity="center_vertical"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/color_strip"
+                    app:layout_constraintEnd_toStartOf="parent">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/toast_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SIMULATION MODE - For Leaders use only."
+                            android:textColor="#0E0E2C"
+                            android:textSize="16sp"
+                            android:fontFamily="@font/poppins_regular" />
+
+                    </LinearLayout>
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_marginHorizontal="20dp"
+                android:layout_height="2dp"
+                android:background="#8C8CA1"
+                android:layout_marginBottom="20dp"/>
+
+            <TextView
+                android:id="@+id/ElectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="UMak Student Council \nElections 2025"
+                android:textSize="24sp"
+                android:textColor="#313131"
+                android:layout_marginBottom="20dp"
+                android:fontFamily="@font/montserrat_semi_bold"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select one candidate per position. Review carefully before submitting."
+                android:textSize="12sp"
+                android:textColor="#313131"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- VOTING PROCESS CONTAINER -->
+            <LinearLayout
+                android:id="@+id/VotingContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- The Position Card Template and the Required Warning Template below it -->
+                <LinearLayout
+                    android:id="@+id/PositionCardTemplate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/rounded_gray_bg"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:elevation="2dp"
+                    android:translationZ="1dp"
+                    android:outlineProvider="background">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:id="@+id/PositionTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Position:"
+                            android:textSize="18sp"
+                            android:textColor="#313131"
+                            android:fontFamily="@font/poppins_regular"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="*"
+                            android:textSize="16sp"
+                            android:textColor="#FF0000"
+                            android:gravity="end"
+                            android:fontFamily="@font/montserrat_semi_bold"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#DDDDDD"
+                        android:layout_marginBottom="12dp"/>
+
+                    <!-- This RadioGroup is correctly emptied and populated in Castvote.kt -->
+                    <RadioGroup
+                        android:id="@+id/CandidateRadioGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <!-- Example rows are left for reference, but are replaced by inflation in Castvote.kt -->
+                        <LinearLayout
+                            android:id="@+id/CandidateRow1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp"
+                            />
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE"/>
+                    </RadioGroup>
+
+                </LinearLayout>
+
+                <!-- This is the required warning template that is copied and moved by Castvote.kt -->
+                <LinearLayout
+                    android:id="@+id/Required"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="10dp">
+                    <TextView
+                        android:id="@+id/reqText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="• Select or Abstain Required."
+                        android:textColor="#D32F2F"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/poppins_regular"/>
+
+                </LinearLayout>
+
+                <!-- THE SUBMIT BUTTON HAS BEEN MOVED OUT OF HERE -->
+
+            </LinearLayout>
+            <!-- END VOTING PROCESS CONTAINER -->
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end"
+                android:layout_marginBottom="20dp"
+                android:layout_marginTop="20dp">
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnPreview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Close Preview"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:background="@drawable/blue_rounded_button"
+                    android:textAllCaps="false"
+                    android:fontFamily="@font/poppins_bold"
+                    android:stateListAnimator="@animator/button_press_animator"/>
+            </LinearLayout>
+
+
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

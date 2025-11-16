@@ -155,7 +155,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="days"
+                            android:text="Days"
                             android:textSize="16sp"
                             android:fontFamily="@font/poppins_regular"
                             android:textColor="@android:color/white"
@@ -182,7 +182,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="hours"
+                            android:text="Hours"
                             android:textSize="16sp"
                             android:fontFamily="@font/poppins_regular"
                             android:textColor="@android:color/white"
@@ -209,7 +209,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="minutes"
+                            android:text="Minutes"
                             android:textSize="16sp"
                             android:fontFamily="@font/poppins_regular"
                             android:textColor="@android:color/white"
@@ -236,7 +236,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="seconds"
+                            android:text="Seconds"
                             android:textSize="16sp"
                             android:fontFamily="@font/poppins_regular"
                             android:textColor="@android:color/white"
@@ -252,7 +252,7 @@
                 android:orientation="vertical"
                 android:background="@drawable/rounded_gray_bg"
                 android:padding="16dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="20dp"
                 android:layout_marginTop="20dp"
                 android:clipToPadding="false"
                 app:layout_constraintTop_toBottomOf="@+id/FloatingCardContainer"
@@ -392,7 +392,8 @@
                         android:paddingEnd="20dp"
                         android:background="@drawable/blue_rounded_button"
                         android:textAllCaps="false"
-                        android:fontFamily="@font/poppins_bold"/>
+                        android:fontFamily="@font/poppins_bold"
+                        android:stateListAnimator="@animator/button_press_animator"/>
                 </LinearLayout>
             </LinearLayout>
 
@@ -447,7 +448,8 @@
                         android:paddingEnd="20dp"
                         android:background="@drawable/blue_rounded_button"
                         android:textAllCaps="false"
-                        android:fontFamily="@font/poppins_bold"/>
+                        android:fontFamily="@font/poppins_bold"
+                        android:stateListAnimator="@animator/button_press_animator"/>
                 </LinearLayout>
             </LinearLayout>
 
@@ -578,7 +580,8 @@
                         android:paddingEnd="20dp"
                         android:background="@drawable/blue_rounded_button"
                         android:textAllCaps="false"
-                        android:fontFamily="@font/poppins_bold"/>
+                        android:fontFamily="@font/poppins_bold"
+                        android:stateListAnimator="@animator/button_press_animator"/>
                 </LinearLayout>
             </LinearLayout>
             <View

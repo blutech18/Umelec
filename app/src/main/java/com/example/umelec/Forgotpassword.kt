@@ -171,6 +171,7 @@ class Forgotpassword : AppCompatActivity() {
         // BACK BUTTON SETUP
         btnBack.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
 
         // Initial state: Button is disabled and help text is visible

@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import android.app.AlertDialog
-// IMPORTS for Keyboard, Focus, and Custom Dialog
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
 import android.view.MotionEvent
@@ -184,9 +183,13 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         // 🔹 Navigation Listeners
-        btnBack.setOnClickListener { finish() }
+        btnBack.setOnClickListener {
+            finish()
+            overridePendingTransition(0, 0)
+        }
         loginButton.setOnClickListener {
             startActivity(Intent(this, Login::class.java))
+            overridePendingTransition(0, 0)
         }
 
         btnNext.setOnClickListener {

@@ -33,7 +33,8 @@
                 android:background="@android:color/transparent"
                 android:contentDescription="back_button_content_description"
                 android:src="@drawable/ic_arrow_back"
-                app:tint="#00537A" />
+                app:tint="#00537A"
+                android:stateListAnimator="@animator/button_press_animator"/>
         </FrameLayout>
 
         <TextView

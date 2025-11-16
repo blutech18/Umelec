@@ -43,7 +43,8 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             android:clickable="true"
-            android:focusable="true"/>
+            android:focusable="true"
+            android:stateListAnimator="@animator/button_press_animator"/>
 
         <ImageView
             android:id="@+id/notificationIcon"
@@ -57,7 +58,8 @@
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_marginEnd="8dp"
             android:clickable="true"
-            android:focusable="true"/>
+            android:focusable="true"
+            android:stateListAnimator="@animator/button_press_animator"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

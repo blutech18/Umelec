@@ -137,6 +137,7 @@ class Castvote2 : AppCompatActivity() {
         }
 
         startActivity(intent)
+        overridePendingTransition(0, 0)
     }
 
     private fun setupBackToBallotButton() {
@@ -156,6 +157,7 @@ class Castvote2 : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         startActivity(intent)
         finish() // Finish Castvote2 so they don't return here if Castvote is restarted
+        overridePendingTransition(0, 0)
     }
 
 
@@ -167,6 +169,7 @@ class Castvote2 : AppCompatActivity() {
     private fun setupBackNavigation() {
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
             finish() // Simply closes Castvote2, returning to Castvote
+            overridePendingTransition(0, 0)
         }
     }
 
@@ -177,6 +180,7 @@ class Castvote2 : AppCompatActivity() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 finish() // Simply closes Castvote2, returning to Castvote
+                overridePendingTransition(0, 0)
             }
         }
         onBackPressedDispatcher.addCallback(this, callback)

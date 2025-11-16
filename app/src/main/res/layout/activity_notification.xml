@@ -29,7 +29,8 @@
             app:tint="#0098E0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:stateListAnimator="@animator/button_press_animator"/>
 
         <TextView
             android:id="@+id/NameTitle"

@@ -14,7 +14,8 @@
     android:gravity="center_horizontal"
     android:outlineProvider="background"
     android:elevation="10dp"
-    android:translationZ="2dp">
+    android:translationZ="2dp"
+    android:layout_marginHorizontal="20dp">
 
     <View
         android:layout_width="match_parent"

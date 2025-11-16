@@ -21,6 +21,7 @@ class Notification2 : AppCompatActivity() {
         val backButton: ImageButton = findViewById(R.id.btnBack)
         backButton.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
     }
 

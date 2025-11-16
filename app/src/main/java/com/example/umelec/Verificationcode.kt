@@ -87,6 +87,7 @@ class Verificationcode : AppCompatActivity() {
         val btnBack = findViewById<ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
 
         // =====================================================================
@@ -252,6 +253,7 @@ class Verificationcode : AppCompatActivity() {
             intent.putExtra("actionCode", actionCode)
             startActivity(intent)
             finish()
+            overridePendingTransition(0, 0)
         }
 
         dialog.show()

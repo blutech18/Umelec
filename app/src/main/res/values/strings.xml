@@ -4,8 +4,13 @@
     <string name="register_link"><u>Register</u></string>
     <string name="login_link"><u>Log In</u></string>
     <string name="terms_link"><u>Review COSEL Terms and Conditions</u></string>
-    <string name="condition_link">I certify that all information is true and correct, and I agree to the UMelec Terms &amp; Conditions.<font color="#D33131">*</font> </string>
+    <string name="privacy_link"><u>Review UMelec Privacy Policy</u></string>
+    <string name="condition_text">I certify that all information I provided is true and correct.<font color="#D33131">*</font> </string>
+    <string name="privacy_text">I agree to the UMelec Privacy Policy<font color="#D33131">*</font> </string>
+    <string name="terms_text">I agree to the UMelec Terms &amp; Conditions.<font color="#D33131">*</font> </string>
     <string name="view_link"><u>View all</u></string>
     <string name="download_link"><u>Download Public Audit Log</u></string>
     <string name="timer"><u>TIMER</u></string>
+    <string name="click_link"><u>Click Here</u></string>
+    <string name="masterpdf_link"><u>Download Master PDF</u></string>
 </resources>

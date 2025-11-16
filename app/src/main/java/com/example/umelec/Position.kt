@@ -1,11 +1,9 @@
 package com.example.umelec
 
-import android.animation.AnimatorInflater // 🔥 NEW: Import for AnimatorInflater
+import android.animation.AnimatorInflater
 import android.content.Intent
-import android.os.Build // 🔥 NEW: Import for Build class
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
@@ -14,14 +12,16 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
-// --- DATA STRUCTURE FOR CANDIDATES ---
+// ----------------------------------------------------------------------
+// DATA CLASS FOR CANDIDATES
+// ----------------------------------------------------------------------
+
 data class CandidateItem(
     val candidateId: String,
     val name: String,
     val position: String,
     val courseInfo: String,
-    // val previewText: String, // COMMENTED OUT: Removed the preview text field
-    val profilePictureResource: Int // Use R.drawable.your_image
+    val profilePictureResource: Int
 )
 
 class Position : AppCompatActivity() {
@@ -35,149 +35,108 @@ class Position : AppCompatActivity() {
 
         currentPosition = intent.getStringExtra("POSITION_NAME") ?: "Candidates"
 
-        // 1. Fetch the data once
+        // 1. Fetch data for this position
         allCandidates = getCandidatesForPosition(currentPosition)
 
-        // 2. Setup the header title to display the position
+        // 2. Set header title
         setupHeaderTitle()
 
-        // 3. Setup the back button functionality
+        // 3. Back button
         setupBackNavigation()
 
-        // 4. Populate the candidate cards dynamically (FIXED)
+        // 4. Populate all candidates
         populateCandidates()
 
-        // 5. Setup the compare button logic (FIXED: Removed custom animator)
+        // 5. Compare button logic
         setupCompareButton()
 
-        // 6. Setup the persistent footer navigation
+        // 6. Footer navigation
         setupFooterNavigation()
     }
 
     // ----------------------------------------------------------------------
-    // --- DYNAMIC CARD POPULATION LOGIC (FIXED) ---
+    // POPULATE CANDIDATE CARDS (DYNAMIC)
     // ----------------------------------------------------------------------
 
-    /**
-     * Fetches candidate data and dynamically creates cards, ensuring static elements are preserved.
-     */
     private fun populateCandidates() {
         val registerContainer: LinearLayout? = findViewById(R.id.registerContainer)
-
-        // Exit if the container cannot be found (crash-proof)
         if (registerContainer == null) return
 
-        // 1. Find and temporarily detach the static CompareLayout before clearing
+        // Save CompareLayout temporarily
         val compareLayout: LinearLayout? = registerContainer.findViewById(R.id.CompareLayout)
-
-        // Safely detach the CompareLayout from the registerContainer
         if (compareLayout != null) {
             (compareLayout.parent as? LinearLayout)?.removeView(compareLayout)
         }
 
-        // 2. Clear out the dynamic content and any static card templates (like cardContainer)
+        // Clear old cards
         registerContainer.removeAllViews()
 
-        // 3. Add all dynamic candidate cards
+        // Add candidate cards
         allCandidates.forEach { candidate ->
             val cardView = createCandidateCardView(candidate, registerContainer)
             registerContainer.addView(cardView)
         }
 
-        // 4. Re-add the CompareLayout at the bottom
+        // Add CompareLayout back
         if (compareLayout != null) {
             registerContainer.addView(compareLayout)
         }
     }
 
-
     // ----------------------------------------------------------------------
-    // --- COMPARE BUTTON LOGIC (REVISED) ---
+    // COMPARE BUTTON
     // ----------------------------------------------------------------------
 
-    /**
-     * Finds the Compare button and sets its click listener to show the bottom sheet.
-     */
     private fun setupCompareButton() {
-        // Use AppCompatButton? and safe call ?. to prevent crashes if btnCompare is missing
         val compareButton: AppCompatButton? = findViewById(R.id.btnCompare)
-
-        // Only proceed if the button exists
         compareButton?.setOnClickListener {
-            // REVISION: Removed the call to animateClickFeedback, now calls action directly.
             showCompareBottomSheet()
         }
     }
 
     // ----------------------------------------------------------------------
-    // --- DATA FETCHING (SIMULATED) ---
+    // SAMPLE DATA (REPLACE WITH BACKEND LATER)
     // ----------------------------------------------------------------------
 
     private fun getCandidatesForPosition(positionName: String): List<CandidateItem> {
-        val profileResId = R.drawable.ic_launcher_background // Use a valid resource ID
+        val defaultPic = R.drawable.ic_launcher_background
+
         return listOf(
-            CandidateItem(
-                candidateId = "JANE_D",
-                name = "Jane Doe",
-                position = positionName,
-                courseInfo = "III - CCIS",
-                // previewText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit...", // COMMENTED OUT
-                profilePictureResource = profileResId
-            ),
-            CandidateItem(
-                candidateId = "JOHN_S",
-                name = "John Smith",
-                position = positionName,
-                courseInfo = "IV - CCIS",
-                // previewText = "Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...", // COMMENTED OUT
-                profilePictureResource = profileResId
-            ),
-            CandidateItem(
-                candidateId = "SARAH_L",
-                name = "Sarah Lee",
-                position = positionName,
-                courseInfo = "II - CCIS",
-                // previewText = "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...", // COMMENTED OUT
-                profilePictureResource = profileResId
-            ),
-            CandidateItem(
-                candidateId = "MARK_T",
-                name = "Mark Tan",
-                position = positionName,
-                courseInfo = "I - CCIS",
-                // previewText = "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", // COMMENTED OUT
-                profilePictureResource = profileResId
-            )
+            CandidateItem("JANE_D", "Jane Doe", positionName, "III - CCIS", defaultPic),
+            CandidateItem("JOHN_S", "John Smith", positionName, "IV - CCIS", defaultPic),
+            CandidateItem("SARAH_L", "Sarah Lee", positionName, "II - CCIS", defaultPic),
+            CandidateItem("MARK_T", "Mark Tan", positionName, "I - CCIS", defaultPic)
         )
     }
 
     // ----------------------------------------------------------------------
-    // --- BOTTOM SHEET LOGIC ---
+    // BOTTOM SHEET FOR COMPARISON
     // ----------------------------------------------------------------------
 
     private fun showCompareBottomSheet() {
-        val bottomSheetDialog = BottomSheetDialog(this)
+        val dialog = BottomSheetDialog(this)
         val view = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_compare, null)
-        bottomSheetDialog.setContentView(view)
+
+        dialog.setContentView(view)
 
         val selectedCandidates = mutableListOf<CandidateItem>()
         val selectedViews = mutableListOf<View>()
 
         val compareButton: AppCompatButton = view.findViewById(R.id.btnCompareInSheet)
         val container: LinearLayout = view.findViewById(R.id.candidateSelectionContainer)
-        val titleTextView: TextView = view.findViewById(R.id.sheetTitle)
+        val title: TextView = view.findViewById(R.id.sheetTitle)
 
-        titleTextView.text = "Select candidates to compare"
+        title.text = "Select candidates to compare"
         compareButton.isEnabled = false
 
         allCandidates.forEach { candidate ->
-            val candidateView = createCompareCandidateItem(candidate)
-            container.addView(candidateView)
+            val itemView = createCompareCandidateItem(candidate)
+            container.addView(itemView)
 
-            candidateView.setOnClickListener { v ->
-                val isSelected = selectedCandidates.contains(candidate)
+            itemView.setOnClickListener { v ->
+                val alreadySelected = selectedCandidates.contains(candidate)
 
-                if (isSelected) {
+                if (alreadySelected) {
                     selectedCandidates.remove(candidate)
                     selectedViews.remove(v)
                     v.background = ContextCompat.getDrawable(this, R.drawable.compare_candidate_unselected_bg)
@@ -186,7 +145,7 @@ class Position : AppCompatActivity() {
                     selectedViews.add(v)
                     v.background = ContextCompat.getDrawable(this, R.drawable.rounded_yellow_gradient_bg)
                 } else {
-                    Toast.makeText(this, "You can only select a maximum of two candidates.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "You can only select up to two candidates.", Toast.LENGTH_SHORT).show()
                 }
 
                 compareButton.isEnabled = selectedCandidates.size == 2
@@ -199,38 +158,36 @@ class Position : AppCompatActivity() {
                     putExtra("CANDIDATE_ID_1", selectedCandidates[0].candidateId)
                     putExtra("CANDIDATE_ID_2", selectedCandidates[1].candidateId)
                 }
-                bottomSheetDialog.dismiss()
+                dialog.dismiss()
                 startActivity(intent)
+                overridePendingTransition(0, 0)
             }
         }
 
-        bottomSheetDialog.show()
+        dialog.show()
     }
 
     private fun createCompareCandidateItem(candidate: CandidateItem): View {
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.compare_candidate_item, null)
+        val view = LayoutInflater.from(this).inflate(R.layout.compare_candidate_item, null)
 
-        val nameTextView: TextView? = view.findViewById(R.id.tv_name)
-        // val positionTextView: TextView? = view.findViewById(R.id.tv_position) // COMMENTED OUT: Removed position text view logic for comparison item
-        val profileImageView: ImageView? = view.findViewById(R.id.iv_profile_picture)
+        val nameText: TextView? = view.findViewById(R.id.tv_name)
+        val profilePic: ImageView? = view.findViewById(R.id.iv_profile_picture)
 
-        nameTextView?.text = candidate.name
-        // positionTextView?.text = candidate.position // COMMENTED OUT: Removed position text assignment for comparison item
-        profileImageView?.setImageResource(candidate.profilePictureResource)
+        nameText?.text = candidate.name
+        profilePic?.setImageResource(candidate.profilePictureResource)
 
         view.background = ContextCompat.getDrawable(this, R.drawable.compare_candidate_unselected_bg)
 
-        (view.layoutParams as? LinearLayout.LayoutParams)?.let {
-            it.bottomMargin = 8.toPx()
-            view.layoutParams = it
+        (view.layoutParams as? LinearLayout.LayoutParams)?.apply {
+            bottomMargin = 8.toPx()
+            view.layoutParams = this
         }
 
         return view
     }
 
     // ----------------------------------------------------------------------
-    // --- REMAINING HELPER FUNCTIONS ---
+    // HEADER + BACK BUTTON
     // ----------------------------------------------------------------------
 
     private fun setupHeaderTitle() {
@@ -242,48 +199,48 @@ class Position : AppCompatActivity() {
         val backButton: ImageButton? = findViewById(R.id.btnBack)
         backButton?.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
     }
 
-    private fun createCandidateCardView(candidate: CandidateItem, root: LinearLayout?): View {
-        val inflater = LayoutInflater.from(this)
-        val cardView = inflater.inflate(R.layout.candidate_card_item, root, false) // Assumes candidate_card_item.xml exists
+    // ----------------------------------------------------------------------
+    // INDIVIDUAL CANDIDATE CARD IN MAIN LIST
+    // ----------------------------------------------------------------------
 
-        val profilePic: ImageView? = cardView.findViewById(R.id.iv_profile_picture)
-        val nameText: TextView? = cardView.findViewById(R.id.tv_name)
-        val positionText: TextView? = cardView.findViewById(R.id.tv_position)
-        val courseText: TextView? = cardView.findViewById(R.id.tv_course_info)
-        // val previewText: TextView? = cardView.findViewById(R.id.tv_preview_text) // COMMENTED OUT: Removed TextView find
-        val viewAllLinkContainer: LinearLayout? = cardView.findViewById(R.id.btnViewAllContainer)
+    private fun createCandidateCardView(candidate: CandidateItem, root: LinearLayout?): View {
+        val card = LayoutInflater.from(this).inflate(R.layout.candidate_card_item, root, false)
+
+        val profilePic: ImageView? = card.findViewById(R.id.iv_profile_picture)
+        val nameText: TextView? = card.findViewById(R.id.tv_name)
+        val positionText: TextView? = card.findViewById(R.id.tv_position)
+        val courseText: TextView? = card.findViewById(R.id.tv_course_info)
+        val viewAllContainer: LinearLayout? = card.findViewById(R.id.btnViewAllContainer)
 
         nameText?.text = candidate.name
         positionText?.text = candidate.position
         courseText?.text = candidate.courseInfo
-        // previewText?.text = candidate.previewText // COMMENTED OUT: Removed text assignment
         profilePic?.setImageResource(candidate.profilePictureResource)
 
-        // 🔥 NEW: Apply the StateListAnimator to the card view for press feedback
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
-                // This applies the same press animation as the position buttons
-                cardView.stateListAnimator = AnimatorInflater.loadStateListAnimator(this, R.animator.button_press_animator)
-            } catch (e: Exception) {
-                // Log error if the animator resource is missing (e.g., R.animator.button_press_animator)
-                // Log.e("Position", "Could not load StateListAnimator for card: ${e.message}")
-            }
+                card.stateListAnimator =
+                    AnimatorInflater.loadStateListAnimator(this, R.animator.button_press_animator)
+            } catch (_: Exception) {}
         }
 
-
-        viewAllLinkContainer?.setOnClickListener {
-            // No animation needed for a text link, just navigate immediately
-            val intent = Intent(this, Platform::class.java).apply {
-                putExtra("CANDIDATE_ID", candidate.candidateId)
-            }
+        viewAllContainer?.setOnClickListener {
+            val intent = Intent(this, Platform::class.java)
+            intent.putExtra("CANDIDATE_ID", candidate.candidateId)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
-        return cardView
+        return card
     }
+
+    // ----------------------------------------------------------------------
+    // FOOTER NAVIGATION
+    // ----------------------------------------------------------------------
 
     private fun setupFooterNavigation() {
         val navHome: LinearLayout? = findViewById(R.id.nav_home)
@@ -292,20 +249,23 @@ class Position : AppCompatActivity() {
         val navResults: LinearLayout? = findViewById(R.id.nav_results)
         val navFaq: LinearLayout? = findViewById(R.id.nav_faq)
 
-        val navigateTo = { activityClass: Class<*> ->
-            val intent = Intent(this, activityClass)
+        val go = { cls: Class<*> ->
+            val intent = Intent(this, cls)
             intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
-        navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
-        navVote?.setOnClickListener { navigateTo(Vote::class.java) }
-        navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
-        navResults?.setOnClickListener { navigateTo(Results::class.java) }
-        navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
+        navHome?.setOnClickListener { go(Homepage::class.java) }
+        navVote?.setOnClickListener { go(Vote::class.java) }
+        navCandidates?.setOnClickListener { go(Candidates::class.java) }
+        navResults?.setOnClickListener { go(Results::class.java) }
+        navFaq?.setOnClickListener { go(Faq::class.java) }
     }
 
-    private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
+    // ----------------------------------------------------------------------
+    // MISC UTILITIES
+    // ----------------------------------------------------------------------
 
-    // REMOVED: The animateClickFeedback function has been removed in the previous step.
+    private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
 }

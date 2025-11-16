@@ -20,9 +20,19 @@ import androidx.core.content.ContextCompat
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
 
+// 1. 🚀 NEW: Data class to handle user roles and verification
+data class User(
+    val email: String,
+    val password: String,
+    val role: String, // "VOTER" or "LEADER"
+    val userName: String,
+    val isVerified: Boolean = false // Only relevant for LEADER role
+)
+
 class Login : AppCompatActivity() {
 
     // Firebase Auth Helper (No hardcoded credentials)
+    private val CORRECT_DOMAIN = "@umak.edu.ph"
 
     // Define color constants (Used only for requirements TextView text colors)
     private val COLOR_PRIMARY_BLUE = Color.parseColor("#00537A")
@@ -75,10 +85,13 @@ class Login : AppCompatActivity() {
         }
 
         // --- HELPER FUNCTIONS ---
+
+        // Checks if email matches the required domain
         fun isEmailValid(email: String): Boolean {
-            return email.isNotEmpty() && email.endsWith("@umak.edu.ph", ignoreCase = true)
+            return email.isNotEmpty() && email.endsWith(CORRECT_DOMAIN, ignoreCase = true)
         }
 
+        // Checks if password field is not empty (client-side check)
         fun isPasswordValid(password: String): Boolean {
             return password.isNotEmpty()
         }
@@ -87,12 +100,16 @@ class Login : AppCompatActivity() {
             val emailText = inputEmail.text.toString().trim()
             val passwordText = inputPassword.text.toString()
 
+            // Button is enabled if both fields pass basic validation
             val allFieldsValid = isEmailValid(emailText) && isPasswordValid(passwordText)
 
             btnLogin.isEnabled = allFieldsValid
         }
 
-        fun showLoginSuccessDialog(userEmail: String) {
+        /**
+         * 🚀 Standard Success Dialog for Voter or Verified Leader.
+         */
+        fun showLoginSuccessDialog(userName: String, targetActivity: Class<*>) {
             val layoutInflater = LayoutInflater.from(this)
             val dialogView = layoutInflater.inflate(R.layout.custom_toast_success, null)
 
@@ -108,18 +125,25 @@ class Login : AppCompatActivity() {
             dialogView.findViewById<TextView>(R.id.toast_value).text = "Welcome back!"
 
             val btnAction = dialogView.findViewById<Button>(R.id.btn_action)
-            btnAction.text = "Continue to Homepage"
+            btnAction.text = "Continue to Homepage" // General button text
             btnAction.setOnClickListener {
                 dialog.dismiss()
 
-                val intent = Intent(this, Homepage::class.java)
+                // Navigate to the dynamic target activity
+                val intent = Intent(this, targetActivity)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
                 finish()
+                overridePendingTransition(0, 0)
             }
 
             dialog.show()
         }
+
+        /**
+         * 🚫 REMOVED: showUnverifiedLeaderDialog function is removed per user request.
+         * Unverified leaders now navigate directly to the verification screen.
+         */
 
         fun clearValidationState(layout: TextInputLayout) {
             layout.error = null // Clears RED border/error text
@@ -159,38 +183,28 @@ class Login : AppCompatActivity() {
         // 🚨 2. INITIAL SETUP & LISTENERS 🚨
         // =====================================================================
 
-        //btnBack.setOnClickListener { finish() }
-        btnBack.setOnClickListener {
-            // Check if the current activity is the only one in the task.
-            // If it is, calling finish() will close the app.
-            // In this case, we explicitly launch MainActivity.
+        // [Omitted: Unrelated setup code is unchanged]
 
-            // NOTE: If you are using fragments, this check might need refinement,
-            // but for simple activities, this is often sufficient.
+        btnBack.setOnClickListener {
             if (isTaskRoot) {
                 val intent = Intent(this, MainActivity::class.java)
-                // Add flags to clear any lingering activities and start fresh,
-                // mimicking a clean start.
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
-
-                // 2. 🛑 Disable animation when STARTING MainActivity
-                //overridePendingTransition(0, 0)
+                overridePendingTransition(0, 0)
             } else {
-                // Normal behavior: Go back to the previous activity in the stack.
                 finish()
-
-                // 3. 🛑 Disable animation when FINISHING Login
-                //overridePendingTransition(0, 0)
+                overridePendingTransition(0, 0)
             }
         }
 
 
         forgotPassword.setOnClickListener {
             startActivity(Intent(this, Forgotpassword::class.java))
+            overridePendingTransition(0, 0)
         }
         registerButton.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
+            overridePendingTransition(0, 0)
         }
 
         btnLogin.isEnabled = false
@@ -206,7 +220,7 @@ class Login : AppCompatActivity() {
         }
 
         // ---------------------------------------------------------------------
-        // 🔹 EMAIL FOCUS CHANGE HANDLING
+        // 🔹 EMAIL FOCUS CHANGE HANDLING (MODIFIED DOMAIN REFERENCE)
         // ---------------------------------------------------------------------
 
         inputEmail.setOnFocusChangeListener { _, hasFocus ->
@@ -214,34 +228,27 @@ class Login : AppCompatActivity() {
             val isValid = isEmailValid(email)
 
             if (hasFocus) {
-                // --- WHEN FOCUSED (Typing) ---
                 emailRequirementsContainer.visibility = View.VISIBLE
-                // Border colors handled by TextWatcher while focused
             } else {
-                // --- WHEN UN-FOCUSED (BLUR) ---
                 when {
                     email.isEmpty() -> {
-                        // ❌ EMPTY on BLUR: Show required error, trigger RED border
                         emailRequirementsContainer.visibility = View.VISIBLE
                         reqEmail.setTextColor(COLOR_ERROR_RED)
                         reqEmail.text = "• Field is required"
-                        layoutEmail.error = " " // Triggers RED border
+                        layoutEmail.error = " "
                         layoutEmail.isActivated = false
                     }
                     isValid -> {
-                        // ✅ VALID on BLUR: Hide helper text, trigger GREEN BORDER
                         emailRequirementsContainer.visibility = View.GONE
-
-                        layoutEmail.error = null // Clear red border
-                        layoutEmail.isActivated = true // Triggers GREEN border
+                        layoutEmail.error = null
+                        layoutEmail.isActivated = true
                     }
                     else -> {
-                        // ❌ INVALID on BLUR: Keep error visible, trigger RED border
-                        emailRequirementsContainer.visibility = View.VISIBLE
-                        reqEmail.setTextColor(COLOR_ERROR_RED)
-                        reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
-                        layoutEmail.error = " " // Triggers RED border
-                        layoutEmail.isActivated = false
+                    emailRequirementsContainer.visibility = View.VISIBLE
+                    reqEmail.setTextColor(COLOR_ERROR_RED)
+                    reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
+                    layoutEmail.error = " "
+                    layoutEmail.isActivated = false
                     }
                 }
             }
@@ -249,14 +256,13 @@ class Login : AppCompatActivity() {
         }
 
         // ---------------------------------------------------------------------
-        // 🔹 EMAIL REAL-TIME VALIDATION (LIVE BORDER FEEDBACK IMPLEMENTED)
+        // 🔹 EMAIL REAL-TIME VALIDATION (MODIFIED DOMAIN REFERENCE)
         // ---------------------------------------------------------------------
 
         inputEmail.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                // Clear any error/success state before validating the new text
                 clearValidationState(layoutEmail)
             }
 
@@ -268,20 +274,19 @@ class Login : AppCompatActivity() {
                 when {
                     // ✅ VALID MATCH: Complete and correct domain
                     isValid -> {
-                    reqEmail.setTextColor(COLOR_SUCCESS_GREEN)
-                    reqEmail.text = "✓ Please use your UMak email (@umak.edu.ph)"
-                    emailRequirementsContainer.visibility = View.VISIBLE
+                        reqEmail.setTextColor(COLOR_SUCCESS_GREEN)
+                        reqEmail.text = "✓ Please use your UMak email ($CORRECT_DOMAIN)"
+                        emailRequirementsContainer.visibility = View.VISIBLE
 
-                    // 🟢 LIVE FEEDBACK: Set to Green border
-                    //layoutEmail.error = null        // Clear red border
-                    layoutEmail.boxStrokeColor = COLOR_SUCCESS_GREEN
-                    layoutEmail.isActivated = true  // Triggers GREEN border
-                }
+                        // 🟢 LIVE FEEDBACK: Set to Green border
+                        layoutEmail.boxStrokeColor = COLOR_SUCCESS_GREEN
+                        layoutEmail.isActivated = true  // Triggers GREEN border
+                    }
 
-                // ❌ INVALID FORMAT: Contains text but doesn't end with required domain
-                text.isNotEmpty() && !text.endsWith("@umak.edu.ph", ignoreCase = true) -> {
-                    reqEmail.setTextColor(COLOR_ERROR_RED)
-                    reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
+                    // ❌ INVALID FORMAT: Contains text but doesn't end with required domain
+                    text.isNotEmpty() && !text.endsWith(CORRECT_DOMAIN, ignoreCase = true) -> {
+                        reqEmail.setTextColor(COLOR_ERROR_RED)
+                        reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
                         emailRequirementsContainer.visibility = View.VISIBLE
 
                         // 🔴 LIVE FEEDBACK: Set to Red border
@@ -292,7 +297,7 @@ class Login : AppCompatActivity() {
                     // 🩶 DEFAULT TYPING STATE: Empty or still typing
                     else -> {
                         reqEmail.setTextColor(COLOR_HINT_GRAY)
-                        reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
+                        reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
                         emailRequirementsContainer.visibility = View.VISIBLE
 
                         // Reset to default/primary color border while actively typing
@@ -376,7 +381,42 @@ class Login : AppCompatActivity() {
                     // Clear any error state before navigating
                     layoutEmail.error = null
                     layoutPassword.error = null
-                    showLoginSuccessDialog(user.email ?: email)
+                    
+                    // Get user role and verification status from Firestore
+                    FirebaseAuthHelper.getUserDataFromFirestore(
+                        userId = user.uid,
+                        onSuccess = { userData ->
+                            val role = userData?.get("role") as? String ?: "VOTER"
+                            val isVerified = userData?.get("isVerified") as? Boolean ?: false
+                            val userName = userData?.get("firstname") as? String ?: (user.displayName ?: email)
+                            
+                            // Route based on role and verification status
+                            when (role) {
+                                "LEADER" -> {
+                                    if (isVerified) {
+                                        // 🚀 LEADER (Verified): Show standard success and go to Leader Homepage
+                                        showLoginSuccessDialog(userName, Leader_homepage::class.java)
+                                    } else {
+                                        // 🚀 LEADER (Unverified): Go directly to verification screen
+                                        val intent = Intent(this, Leader_Verification::class.java)
+                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                        startActivity(intent)
+                                        finish()
+                                        overridePendingTransition(0, 0)
+                                    }
+                                }
+                                else -> {
+                                    // 🚀 VOTER: Show standard success and go to Homepage
+                                    showLoginSuccessDialog(userName, Homepage::class.java)
+                                }
+                            }
+                        },
+                        onFailure = { errorMessage ->
+                            // If we can't get user data, default to Voter homepage
+                            val userName = user.displayName ?: email
+                            showLoginSuccessDialog(userName, Homepage::class.java)
+                        }
+                    )
                 },
                 onFailure = { errorMessage ->
                     // Re-enable button

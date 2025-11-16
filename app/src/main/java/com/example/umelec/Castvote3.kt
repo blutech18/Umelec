@@ -21,9 +21,8 @@ import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.collections.ArrayList
-import android.os.Handler // <-- NEW IMPORT
-import android.os.Looper // <-- NEW IMPORT
+import android.os.Handler
+import android.os.Looper
 
 // REMINDER: You MUST add the following dependency to your app/build.gradle file:
 // implementation 'com.github.gcacace:signature-pad:1.2.1'
@@ -65,6 +64,7 @@ class Castvote3 : AppCompatActivity() {
         btnBack.setOnClickListener {
             // Since this only navigates back to Castvote2 (review screen), we simply finish().
             finish()
+            overridePendingTransition(0, 0)
         }
 
         // 5. Working Signature Pad Logic
@@ -220,7 +220,8 @@ class Castvote3 : AppCompatActivity() {
      * DISPLAYS A CUSTOM TOAST and then navigates to the Homepage.
      * Replaces the previous AlertDialog implementation.
      */
-    private fun showSuccessToastAndNavigate() {val inflater = LayoutInflater.from(this)
+    private fun showSuccessToastAndNavigate() {
+        val inflater = LayoutInflater.from(this)
         // Inflate the custom toast layout
         val layout = inflater.inflate(R.layout.custom_toast_success, null)
 
@@ -261,10 +262,12 @@ class Castvote3 : AppCompatActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
+            overridePendingTransition(0, 0)
         } else {
             // Default navigation behavior (e.g., going back to Castvote2)
             startActivity(intent)
             finish() // Since we are navigating back, we finish the current activity
+            overridePendingTransition(0, 0)
         }
     }
 }

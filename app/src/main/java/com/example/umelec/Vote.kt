@@ -7,8 +7,6 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 // NOTE: Assume ElectionState, ElectionDetails, and NotificationManager are defined
 // in other files (e.g., SharedData.kt and NotificationManager.kt).
@@ -39,6 +37,7 @@ class Vote : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         notificationIcon.setOnClickListener {
@@ -124,6 +123,7 @@ class Vote : AppCompatActivity() {
                     // Implement vote initiation logic here (e.g., scroll to content, or next step)
                     val intent = Intent(this, Castvote::class.java)
                     startActivity(intent)
+                    overridePendingTransition(0, 0)
                 }
             }
 
@@ -177,13 +177,13 @@ class Vote : AppCompatActivity() {
     private fun fetchOngoingElectionData(): ElectionDetails {
         return ElectionDetails(
             title = "UMak Student Council Elections",
-            period = "October 10 - 15, 2025",
+            period = "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm",
             status = "Active"
         )
     }
 
     private fun fetchUpcomingElectionDate(): String {
-        return "October 10 - 15, 2025"
+        return "March 10, 2025 1:00 PM to March 20, 2025 8:00 pm"
     }
 
     // --- INTEGRATED BEHAVIOR 3: FOOTER NAVIGATION ---
@@ -200,6 +200,7 @@ class Vote : AppCompatActivity() {
         val navigateTo = { activityClass: Class<*> ->
             val intent = Intent(this, activityClass)
             startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         navHome.setOnClickListener { navigateTo(Homepage::class.java) }

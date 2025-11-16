@@ -248,7 +248,8 @@
                     android:paddingEnd="20dp"
                     android:background="@drawable/blue_rounded_button"
                     android:textAllCaps="false"
-                    android:fontFamily="@font/poppins_bold"/>
+                    android:fontFamily="@font/poppins_bold"
+                    android:stateListAnimator="@animator/button_press_animator"/>
             </LinearLayout>
 
         </LinearLayout>

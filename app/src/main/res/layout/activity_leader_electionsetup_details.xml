@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAFCFE"
+    tools:context=".Leader_electionsetup_details">
+
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/HeaderLayout"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16dp"
+      android:layout_marginStart="16dp"
+      android:layout_marginEnd="20dp"
+      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent">
+
+    <FrameLayout
+        android:id="@+id/Back_Button_Wrapper"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+      <ImageButton
+          android:id="@+id/btnBack"
+          android:layout_width="48dp"
+          android:layout_height="48dp"
+          android:background="@android:color/transparent"
+          android:contentDescription="back_button_content_description"
+          android:src="@drawable/ic_arrow_back"
+          app:tint="#00537A"
+          android:stateListAnimator="@animator/button_press_animator"/>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/ReportTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Setup Details"
+        android:textSize="32sp"
+        android:fontFamily="@font/montserrat_bold"
+        android:textColor="#313131"
+        android:gravity="center_horizontal"
+        android:maxLines="2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/Back_Button_Wrapper"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+  <androidx.core.widget.NestedScrollView
+      android:id="@+id/WhiteContainerScroll"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:background="@drawable/rounded_white_bg"
+      android:layout_marginTop="20dp"
+      app:layout_constraintTop_toBottomOf="@id/HeaderLayout"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintEnd_toEndOf="parent"
+      android:fillViewport="true"
+      android:backgroundTint="#FAFCFE">
+
+
+    <LinearLayout
+        android:id="@+id/ReportContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp">
+
+
+      <TextView
+          android:id="@+id/OverallTitle"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginBottom="20dp"
+          android:fontFamily="@font/montserrat_semi_bold"
+          android:text="Election Title"
+          android:textColor="#313131"
+          android:textSize="24sp"
+          android:layout_gravity="center"
+          android:gravity="center"/>
+
+      <View
+          android:layout_width="match_parent"
+          android:layout_marginHorizontal="20dp"
+          android:layout_height="2dp"
+          android:background="#8C8CA1" />
+
+      <TextView
+          android:id="@+id/VotingPeriodDate"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Voting Period: March 10, 2025 1:00 PM to March 20, 2025 8:00 PM"
+          android:textSize="16sp"
+          android:textColor="#313131"
+          android:fontFamily="@font/poppins_regular"
+          android:layout_marginTop="20dp"/>
+
+
+      <LinearLayout
+          android:id="@+id/PositionSectionLayout"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="vertical"
+          android:layout_marginTop="20dp"
+          android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:fontFamily="@font/montserrat_semi_bold"
+            android:text="Positions:"
+            android:textColor="#313131"
+            android:textSize="24sp" />
+
+      </LinearLayout>
+
+      <View
+          android:layout_width="match_parent"
+          android:layout_marginHorizontal="20dp"
+          android:layout_height="2dp"
+          android:background="#8C8CA1"
+          android:layout_marginBottom="20dp"/>
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal">
+
+        <!-- LEFT SIDE: ICON -->
+        <ImageView
+            android:id="@+id/ivCheckIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_toast_check"
+            android:contentDescription="Check Icon" />
+
+        <!-- RIGHT SIDE: TEXT -->
+        <TextView
+            android:id="@+id/tvEnableAbstain"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Enable Abstain Option (Allow voters to abstain from voting in a position.)"
+            android:textColor="#313131"
+            android:textSize="16sp"
+            android:fontFamily="@font/poppins_regular" />
+
+      </LinearLayout>
+
+    </LinearLayout>
+  </androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

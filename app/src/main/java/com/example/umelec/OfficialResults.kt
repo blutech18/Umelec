@@ -12,8 +12,6 @@ import de.hdodenhof.circleimageview.CircleImageView
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-
 // Data structure for a single winner's result
 data class OfficialResultCandidate(
     val name: String,
@@ -56,7 +54,7 @@ class OfficialResults : AppCompatActivity() {
         // Setup UI elements
         setupHeaderBehavior()
         setupResultsCards()
-        setupFooterNavigation()
+        // setupFooterNavigation() // REMOVED
     }
 
     // ----------------------------------------------------------------------
@@ -68,6 +66,7 @@ class OfficialResults : AppCompatActivity() {
         val btnBack: ImageButton? = findViewById(R.id.btnBack)
         btnBack?.setOnClickListener {
             finish() // Goes back to the previous activity
+            overridePendingTransition(0, 0)
         }
 
         // 2. Results Status Text
@@ -86,14 +85,15 @@ class OfficialResults : AppCompatActivity() {
 
     /**
      * Finds the parent container and dynamically generates a card for each winner.
-     * 🔥 FIX: Sets LayoutParams with a bottom margin for each card.
+     * 🔥 FIX: Sets LayoutParams with bottom AND horizontal margins for each card.
      */
     private fun setupResultsCards() {
         val outerContainer: LinearLayout? = findViewById(R.id.registerContainer)
         outerContainer?.removeAllViews() // Clear any static placeholder card in the XML
 
-        // Define the margin in DP (e.g., 20dp) and convert it to pixels
+        // Define the margin in DP (20dp) and convert it to pixels
         val cardMarginBottomPx = 20.toPx()
+        val cardMarginHorizontalPx = 20.toPx() // 🔥 NEW: Horizontal margin in pixels
 
         winnerData.forEach { winner ->
             val candidateCardView = createCandidateCardView(winner)
@@ -105,9 +105,12 @@ class OfficialResults : AppCompatActivity() {
             ).apply {
                 // 2. Apply the bottom margin
                 bottomMargin = cardMarginBottomPx
+                // 🔥 3. Apply the horizontal margins programmatically
+                marginStart = cardMarginHorizontalPx
+                marginEnd = cardMarginHorizontalPx
             }
 
-            // 3. Apply the parameters to the view
+            // 4. Apply the parameters to the view
             candidateCardView.layoutParams = params
 
             outerContainer?.addView(candidateCardView)
@@ -149,39 +152,14 @@ class OfficialResults : AppCompatActivity() {
     }
 
     /**
-     * 🔥 NEW: Extension function to convert DP units to screen Pixels.
+     * Extension function to convert DP units to screen Pixels.
      * This is required for setting margins programmatically.
      */
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
 
     // ----------------------------------------------------------------------
-    // --- FOOTER NAVIGATION LOGIC (REMAINS THE SAME) ---
+    // --- FOOTER NAVIGATION LOGIC (REMOVED) ---
     // ----------------------------------------------------------------------
 
-    /**
-    Sets up click listeners for all elements in the footer navigation bar.*/
-    private fun setupFooterNavigation() {// Find all navigation items (LinearLayouts)
-        val navHome: LinearLayout? = findViewById(R.id.nav_home)
-        val navVote: LinearLayout? = findViewById(R.id.nav_vote)
-        val navCandidates: LinearLayout? = findViewById(R.id.nav_candidates)
-        val navResults: LinearLayout? = findViewById(R.id.nav_results)
-        val navFaq: LinearLayout? = findViewById(R.id.nav_faq)
-
-        // Helper function to navigate to a new Activity
-        val navigateTo = { activityClass: Class<*> ->
-            if (activityClass != this::class.java) {
-                val intent = Intent(this, activityClass)
-                // Use this flag for smoother tab switching
-                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                startActivity(intent)
-            }
-        }
-
-        // Set Click Listeners (Assuming Activities exist)
-        navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
-        navVote?.setOnClickListener { navigateTo(Vote::class.java) }
-        navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
-        navResults?.setOnClickListener { navigateTo(Tallies::class.java) } // Assuming Results leads to Tallies/OfficialResults
-        navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
-    }
+    // The setupFooterNavigation function was removed as requested.
 }

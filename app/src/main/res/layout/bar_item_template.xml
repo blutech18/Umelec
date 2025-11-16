@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/tvBarLabel"
+        android:layout_width="30dp"
+        android:layout_height="wrap_content"
+        android:text="1st"
+        android:textSize="12sp"
+        android:textColor="#313131"
+        android:fontFamily="@font/poppins_regular"
+        android:layout_marginEnd="8dp"/>
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:background="#ECF1F4"
+            android:alpha="0.8"/>
+
+        <View
+            android:id="@+id/vBarProgress"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:background="@drawable/bargraph_bg"/>
+
+        <TextView
+            android:id="@+id/tvBarValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="4dp"
+            android:text="0"
+            android:textSize="12sp"
+            android:textColor="#313131"
+            android:fontFamily="@font/poppins_regular"/>
+
+    </FrameLayout>
+</LinearLayout>

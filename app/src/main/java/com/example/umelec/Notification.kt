@@ -175,6 +175,7 @@ class Notification : AppCompatActivity() {
                 val intent = Intent(context, Notification2::class.java)
                 intent.putExtra("NOTIFICATION_ID", item.id)
                 context.startActivity(intent)
+                overridePendingTransition(0, 0)
             }
         }
 

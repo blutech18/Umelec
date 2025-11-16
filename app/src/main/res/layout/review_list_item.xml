@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/ReviewlistContainer"
@@ -13,19 +12,24 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="Position Title:"
-        android:textSize="18sp"
-        android:textColor="#313131"
-        android:fontFamily="@font/poppins_regular" />
-
-    <TextView
-        android:id="@+id/ReviewCandidateName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Candidate Name"
+        android:text="Position Title:aaaaaaaaaaaaaaaaa"
         android:textSize="18sp"
         android:textColor="#313131"
         android:fontFamily="@font/poppins_regular"
-        android:gravity="end"/>
+        android:maxLines="5"
+        android:ellipsize="none"
+        android:gravity="start"/>
 
+    <TextView
+        android:id="@+id/ReviewCandidateName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Candidate Nameaaaaaaaaaaaaa"
+        android:maxLines="5"
+        android:ellipsize="none"
+        android:textSize="18sp"
+        android:textColor="#313131"
+        android:fontFamily="@font/poppins_regular"
+        android:gravity="start"/>
 </LinearLayout>
