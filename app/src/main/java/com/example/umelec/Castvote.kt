@@ -21,7 +21,7 @@ class Castvote : AppCompatActivity() {
 
     private lateinit var votingContainer: LinearLayout
     private lateinit var btnSubmit: AppCompatButton
-    private lateinit var allRadioGroups: List<RadioGroup>
+    private var allRadioGroups: List<RadioGroup> = emptyList() // Initialize to empty list to avoid lateinit error
     private var unsavedChanges = false
     private var votingPositions: List<VotingPosition> = emptyList()
     private var currentElectionId: String? = null
@@ -30,56 +30,93 @@ class Castvote : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_castvote)
 
-        // 1. Initialize views
-        votingContainer = findViewById(R.id.VotingContainer)
-        btnSubmit = findViewById(R.id.btnSubmit)
-        val electionTitleView: TextView = findViewById(R.id.ElectionTitle)
+        try {
+            // 1. Initialize views with null checks
+            votingContainer = findViewById(R.id.VotingContainer) ?: run {
+                android.util.Log.e("Castvote", "VotingContainer not found")
+                Toast.makeText(this, "Error loading voting page", Toast.LENGTH_SHORT).show()
+                finish()
+                return
+            }
+            
+            btnSubmit = findViewById(R.id.btnSubmit) ?: run {
+                android.util.Log.e("Castvote", "btnSubmit not found")
+                Toast.makeText(this, "Error loading voting page", Toast.LENGTH_SHORT).show()
+                finish()
+                return
+            }
+            
+            val electionTitleView: TextView? = findViewById(R.id.ElectionTitle)
 
-        // 2. Get current election ID and data
-        FirestoreElectionHelper.getCurrentElectionId(
-            onSuccess = { electionId ->
-                currentElectionId = electionId
-                if (electionId != null) {
-                    // Fetch election title
-                    FirestoreElectionHelper.getCurrentElection(
-                        onSuccess = { electionData ->
-                            electionTitleView.text = electionData?.title ?: "Election"
-                            // Fetch positions and candidates
-                            loadVotingData(electionId)
-                        },
-                        onFailure = { error ->
-                            android.util.Log.e("Castvote", "Error fetching election: $error")
-                            electionTitleView.text = "Election"
-                            loadVotingData(electionId)
-                        }
-                    )
-                } else {
-                    android.util.Log.e("Castvote", "No active election found")
+            // 2. Get current election ID and data
+            FirestoreElectionHelper.getCurrentElectionId(
+                onSuccess = { electionId ->
+                    currentElectionId = electionId
+                    if (electionId != null) {
+                        // Fetch election title
+                        FirestoreElectionHelper.getCurrentElection(
+                            onSuccess = { electionData ->
+                                electionTitleView?.text = electionData?.title ?: "Election"
+                                // Fetch positions and candidates
+                                loadVotingData(electionId)
+                            },
+                            onFailure = { error ->
+                                android.util.Log.e("Castvote", "Error fetching election: $error")
+                                electionTitleView?.text = "Election"
+                                loadVotingData(electionId)
+                            }
+                        )
+                    } else {
+                        android.util.Log.e("Castvote", "No active election found")
+                        Toast.makeText(this, "No active election available", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Castvote", "Error getting election ID: $error")
+                    Toast.makeText(this, "Error loading election data", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            )
+
+            setupBackNavigation()
+            setupSubmitButton()
+            // setupChangeTracking() will be called after allRadioGroups is initialized in loadVotingData()
+            setupModernBackPressHandler()
+        } catch (e: Exception) {
+            android.util.Log.e("Castvote", "Error in onCreate: ${e.message}", e)
+            Toast.makeText(this, "Error initializing voting page", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+    }
+
+    private fun loadVotingData(electionId: String) {
+        android.util.Log.d("Castvote", "Loading voting data for election: $electionId")
+        FirestoreCandidateHelper.getPositionsForElection(
+            electionId = electionId,
+            onSuccess = { positions ->
+                android.util.Log.d("Castvote", "Loaded ${positions.size} positions")
+                if (positions.isEmpty()) {
+                    android.util.Log.w("Castvote", "No positions found for election")
+                    Toast.makeText(this, "No positions available for this election", Toast.LENGTH_SHORT).show()
+                    finish()
+                    return@getPositionsForElection
+                }
+                votingPositions = positions
+                try {
+                    allRadioGroups = inflateVotingCards()
+                    // Now that allRadioGroups is initialized, set up change tracking
+                    setupChangeTracking()
+                } catch (e: Exception) {
+                    android.util.Log.e("Castvote", "Error inflating voting cards: ${e.message}", e)
+                    Toast.makeText(this, "Error loading voting interface", Toast.LENGTH_SHORT).show()
                     finish()
                 }
             },
             onFailure = { error ->
-                android.util.Log.e("Castvote", "Error getting election ID: $error")
-                finish()
-            }
-        )
-
-        setupBackNavigation()
-        setupSubmitButton()
-        setupChangeTracking()
-        setupModernBackPressHandler()
-    }
-
-    private fun loadVotingData(electionId: String) {
-        FirestoreCandidateHelper.getPositionsForElection(
-            electionId = electionId,
-            onSuccess = { positions ->
-                votingPositions = positions
-                allRadioGroups = inflateVotingCards()
-            },
-            onFailure = { error ->
                 android.util.Log.e("Castvote", "Error loading voting data: $error")
-                Toast.makeText(this, "Failed to load voting data", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Failed to load voting data: $error", Toast.LENGTH_LONG).show()
+                finish()
             }
         )
     }
@@ -239,6 +276,12 @@ class Castvote : AppCompatActivity() {
     }
 
     private fun setupChangeTracking() {
+        // Only set up change tracking if we have radio groups
+        if (allRadioGroups.isEmpty()) {
+            android.util.Log.w("Castvote", "setupChangeTracking called but allRadioGroups is empty")
+            return
+        }
+        
         allRadioGroups.forEach { radioGroup ->
             radioGroup.setOnCheckedChangeListener { group, checkedId ->
                 unsavedChanges = true

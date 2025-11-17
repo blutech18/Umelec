@@ -1,5 +1,6 @@
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
+const functionsV1 = require("firebase-functions");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 
@@ -15,12 +16,44 @@ setGlobalOptions({
 // Supports both Firebase Functions config and environment variables
 // Note: For Firebase Functions v2+, use environment variables instead of functions.config()
 const getSMTPConfig = () => {
-  // Get SMTP configuration from environment variables
-  // Set these in Firebase Console: Functions → Configuration → Environment variables
-  const user = process.env.SMTP_USER || "";
-  const password = process.env.SMTP_PASSWORD || "";
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const port = parseInt(process.env.SMTP_PORT || "587");
+  let legacyConfig = {};
+
+  if (typeof functionsV1.config === "function") {
+    try {
+      legacyConfig = functionsV1.config().smtp || {};
+    } catch (configError) {
+      console.warn(
+        "functions.config() unavailable (expected in v2). " +
+        "Proceeding with environment variables only. Details:",
+        configError.message,
+      );
+    }
+  }
+  const smtpUrl = process.env.SMTP_URL || legacyConfig.url || "";
+  if (smtpUrl) {
+    try {
+      const parsed = new URL(smtpUrl);
+      const secure = parsed.protocol === "smtps:";
+
+      return {
+        host: parsed.hostname,
+        port: parsed.port ? parseInt(parsed.port) : (secure ? 465 : 587),
+        secure,
+        auth: {
+          user: decodeURIComponent(parsed.username),
+          pass: decodeURIComponent(parsed.password),
+        },
+      };
+    } catch (urlError) {
+      console.warn("Invalid SMTP_URL, falling back to discrete env vars:", urlError.message);
+    }
+  }
+
+  const user = process.env.SMTP_USER || legacyConfig.user || "";
+  const password = process.env.SMTP_PASSWORD || legacyConfig.password || "";
+  const host = process.env.SMTP_HOST || legacyConfig.host || "smtp.gmail.com";
+  const port = parseInt(process.env.SMTP_PORT || legacyConfig.port || "587");
+  const secure = port === 465;
 
   // Validate that credentials are provided
   if (!user || !password) {
@@ -35,7 +68,7 @@ const getSMTPConfig = () => {
   return {
     host: host,
     port: port,
-    secure: false, // true for 465, false for other ports
+    secure: secure,
     auth: {
       user: user,
       pass: password,
@@ -262,49 +295,49 @@ const emailTemplates = {
     }
     
     return {
-      subject: data.subject || "Vote Confirmation - UMelec",
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vote Confirmation</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background-color: #00537A; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-            <h1 style="margin: 0;">UMelec</h1>
-          </div>
-          <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px;">
-            <h2 style="color: #00537A;">Vote Confirmation</h2>
-            <p>Hello ${data.userName},</p>
-            <p>Your vote has been successfully recorded. Thank you for participating in the election.</p>
-            <div style="background-color: white; padding: 20px; border-left: 4px solid #27A688; margin: 20px 0;">
-              <p><strong>Vote Details:</strong></p>
+    subject: data.subject || "Vote Confirmation - UMelec",
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Vote Confirmation</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #00537A; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+          <h1 style="margin: 0;">UMelec</h1>
+        </div>
+        <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px;">
+          <h2 style="color: #00537A;">Vote Confirmation</h2>
+          <p>Hello ${data.userName},</p>
+          <p>Your vote has been successfully recorded. Thank you for participating in the election.</p>
+          <div style="background-color: white; padding: 20px; border-left: 4px solid #27A688; margin: 20px 0;">
+            <p><strong>Vote Details:</strong></p>
               ${voteDetailsHtml}
-            </div>
-            <p style="color: #666; font-size: 12px;">
-              This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
-            </p>
           </div>
-        </body>
-        </html>
-      `,
-      text: `
-        Vote Confirmation - UMelec
-        
-        Hello ${data.userName},
-        
-        Your vote has been successfully recorded. Thank you for participating in the election.
-        
-        Vote Details:
+          <p style="color: #666; font-size: 12px;">
+              This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
+          </p>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+      Vote Confirmation - UMelec
+      
+      Hello ${data.userName},
+      
+      Your vote has been successfully recorded. Thank you for participating in the election.
+      
+      Vote Details:
         ${data.electionTitle ? `Election: ${data.electionTitle}` : ""}
         ${data.selections || ""}
         ${data.voteId ? `Reference Code: ${data.voteId}` : ""}
         ${data.submittedAt ? `Submission Date: ${data.submittedAt}` : ""}
-        
+      
         This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
-      `,
+    `,
     };
   },
 
@@ -611,5 +644,88 @@ exports.generatePasswordResetCode = onCall(async (request) => {
       "internal",
       `Failed to generate password reset code: ${error.message}`,
     );
+  }
+});
+
+/**
+ * Callable function to aggregate vote tallies for an election.
+ * Allows any authenticated user to fetch tallies without requiring direct read access to votes.
+ */
+exports.getVoteTallies = onCall(async (request) => {
+  try {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated to view tallies.");
+    }
+
+    const data = request.data || {};
+    const electionId = data.electionId;
+
+    if (!electionId || typeof electionId !== "string") {
+      throw new HttpsError("invalid-argument", "Parameter 'electionId' is required.");
+    }
+
+    const votesSnapshot = await admin.firestore()
+      .collection("votes")
+      .where("electionId", "==", electionId)
+      .get();
+
+    const talliesMap = {};
+
+    votesSnapshot.forEach((doc) => {
+      const voteData = doc.data() || {};
+      const selections = voteData.selections || {};
+
+      Object.entries(selections).forEach(([positionId, candidateData]) => {
+        if (!candidateData || typeof candidateData !== "object") {
+          return;
+        }
+
+        const candidateId = candidateData.candidateId;
+        const candidateName = candidateData.candidateName || "Unknown";
+        const positionName = candidateData.positionName || positionId;
+
+        if (!candidateId) {
+          return;
+        }
+
+        if (!talliesMap[positionId]) {
+          talliesMap[positionId] = {
+            positionName,
+            candidates: {},
+          };
+        }
+
+        if (!talliesMap[positionId].candidates[candidateId]) {
+          talliesMap[positionId].candidates[candidateId] = {
+            candidateName,
+            voteCount: 0,
+          };
+        }
+
+        talliesMap[positionId].candidates[candidateId].voteCount += 1;
+      });
+    });
+
+    const tallies = [];
+
+    Object.entries(talliesMap).forEach(([positionId, positionData]) => {
+      Object.entries(positionData.candidates).forEach(([candidateId, candidateInfo]) => {
+        tallies.push({
+          positionId,
+          positionName: positionData.positionName,
+          candidateId,
+          candidateName: candidateInfo.candidateName,
+          voteCount: candidateInfo.voteCount,
+        });
+      });
+    });
+
+    return {tallies};
+  } catch (error) {
+    console.error("Error generating vote tallies:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", error.message || "Failed to get vote tallies.");
   }
 });

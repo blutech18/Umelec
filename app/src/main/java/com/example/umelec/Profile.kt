@@ -78,6 +78,7 @@ class Profile : AppCompatActivity() {
         // Set an OnClickListener for the back button
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -119,6 +120,7 @@ class Profile : AppCompatActivity() {
 
             // We'll keep the yOffset at 100 to lift it up from the bottom edge.
 
+            @Suppress("DEPRECATION")
             view = layout
             show()
         }
@@ -200,6 +202,7 @@ class Profile : AppCompatActivity() {
 
         // Finish the current Profile activity
         finish()
+        @Suppress("DEPRECATION")
         overridePendingTransition(0, 0)
     }
 

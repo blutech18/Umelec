@@ -57,6 +57,7 @@ class Leader_profile : AppCompatActivity() {
         // Set listener for Change Password
         changePasswordButton.setOnClickListener {
             startActivity(Intent(this, Changepassword::class.java))
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -65,6 +66,7 @@ class Leader_profile : AppCompatActivity() {
         // Set an OnClickListener for the back button
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -100,6 +102,7 @@ class Leader_profile : AppCompatActivity() {
         with (Toast(applicationContext)) {
             duration = Toast.LENGTH_SHORT
             setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+            @Suppress("DEPRECATION")
             view = layout
             show()
         }
@@ -154,9 +157,9 @@ class Leader_profile : AppCompatActivity() {
      * Handles the actual logout process and navigates to the main activity.
      */
     private fun performLogout() {
-        // 1. Clear user session/credentials
-        // ⚠️ DB/BACKEND GUIDE: Implement logic here to clear local stored tokens,
-        // session data, or user preferences. This is crucial for security.
+        // 1. Sign out from Firebase
+        FirebaseAuthHelper.signOut()
+        android.util.Log.d("Leader_profile", "User signed out successfully")
 
         // 2. Navigate back to the main login/landing activity
         val intent = Intent(this, MainActivity::class.java)
@@ -168,46 +171,70 @@ class Leader_profile : AppCompatActivity() {
 
         // Finish the current Profile activity
         finish()
+        @Suppress("DEPRECATION")
         overridePendingTransition(0, 0)
     }
 
 
     /**
-     * Populates the leader profile data.
-     *
-     * ⚠️ BACKEND INTEGRATION GUIDE:
-     * 1. Replace the static `leaderProfile` map with the result object from your API call.
-     * 2. This function assumes all required data fields exist and are non-null in the data
-     * structure passed here.
-     * 3. **Error/Null Handling Reminder:** Any network failure or missing/null data fields
-     * (e.g., if `leaderProfile["email"]` is null) should be caught and handled
-     * *before* calling this function (at the API response parsing/network layer).
-     * If data is missing, the backend logic should supply a default value or fail gracefully
-     * before the UI tries to display it.
+     * Populates the leader profile data from Firestore
      */
     private fun populateProfileData() {
-        // ⚠️ DB/BACKEND GUIDE: Replace this static map with data retrieved
-        // from your API/local database for the currently logged-in leader.
-        val leaderProfile = mapOf(
-            "email" to "ccis@umak.edu.ph",
-            "college" to "College of Computing and Information Sciences (CCIS)",
-            "profileAcronym" to "CCIS",
-            "moduleValue" to "Leader"
-        )
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        currentUser?.let { user ->
+            // Get user email
+            val userEmail = user.email ?: ""
+            emailValue.text = userEmail
 
-        // The following lines assume the keys exist and the values are non-null,
-        // which should be guaranteed by the upstream data fetching/cleaning logic.
+            // Get user data from Firestore
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = user.uid,
+                onSuccess = { userData ->
+                    userData?.let { data ->
+                        // Set college
+                        val college = data["college"] as? String ?: "Not specified"
+                        collegeValue.text = college
 
-        // Set the text for Email (Mandatory Field)
-        emailValue.text = leaderProfile["email"] as? String // Safely cast and use null assertion if necessary
+                        // Set profile acronym (first letters of college or name)
+                        val acronym = if (college.isNotEmpty()) {
+                            college.split(" ").take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("")
+                        } else {
+                            val firstName = data["firstname"] as? String ?: ""
+                            val lastName = data["lastname"] as? String ?: ""
+                            if (firstName.isNotEmpty() && lastName.isNotEmpty()) {
+                                "${firstName.first()}${lastName.first()}"
+                            } else {
+                                userEmail.take(2).uppercase()
+                            }
+                        }
+                        profileAcronym.text = acronym
 
-        // Set the text for College
-        collegeValue.text = leaderProfile["college"] as? String
-
-        // Set the text for Profile Acronym (Initial in the circle)
-        profileAcronym.text = leaderProfile["profileAcronym"] as? String
-
-        // Set the text for Module (Role/Status)
-        moduleValue.text = leaderProfile["moduleValue"] as? String
+                        // Set module/role
+                        val role = data["role"] as? String ?: "Leader"
+                        moduleValue.text = role
+                    } ?: run {
+                        // Fallback if no user data
+                        emailValue.text = userEmail
+                        collegeValue.text = "Not specified"
+                        profileAcronym.text = userEmail.take(2).uppercase()
+                        moduleValue.text = "Leader"
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_profile", "Error loading profile: $error")
+                    // Fallback on error
+                    emailValue.text = userEmail
+                    collegeValue.text = "Not specified"
+                    profileAcronym.text = userEmail.take(2).uppercase()
+                    moduleValue.text = "Leader"
+                }
+            )
+        } ?: run {
+            // No user logged in
+            emailValue.text = "Not logged in"
+            collegeValue.text = "Not specified"
+            profileAcronym.text = "NA"
+            moduleValue.text = "Leader"
+        }
     }
 }

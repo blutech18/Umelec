@@ -14,7 +14,11 @@ import android.os.Build
 
 // --- DATA STRUCTURE FOR POSITIONS ---
 // This is the model you would map your backend/database data to.
-data class PositionItem(val positionName: String)
+data class PositionItem(
+    val positionId: String,
+    val positionName: String,
+    val candidateIds: List<String>
+)
 
 class Candidates : AppCompatActivity() {
 
@@ -58,39 +62,72 @@ class Candidates : AppCompatActivity() {
 
                             // Convert to PositionItem list
                             val positionList = positions.map { position ->
-                                PositionItem(positionName = position.title)
+                                PositionItem(
+                                    positionId = position.id,
+                                    positionName = position.title,
+                                    candidateIds = position.candidates.map { it.id }
+                                )
                             }
 
-                            // Populate positions
-                            positionList.forEach { position ->
-                                val positionView = createPositionButtonView(this, position.positionName)
-                                positionContainer.addView(positionView)
+                            if (positionList.isEmpty()) {
+                                showNoPositionsMessage(positionContainer)
+                            } else {
+                                // Populate positions
+                                positionList.forEach { position ->
+                                    val positionView = createPositionButtonView(
+                                        context = this,
+                                        positionId = position.positionId,
+                                        positionName = position.positionName,
+                                        candidateIds = position.candidateIds
+                                    )
+                                    positionContainer.addView(positionView)
+                                }
                             }
                         },
                         onFailure = { error ->
                             android.util.Log.e("Candidates", "Error loading positions: $error")
                             val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
                             positionContainer.removeAllViews()
+                            showNoPositionsMessage(positionContainer)
                         }
                     )
                 } else {
                     android.util.Log.e("Candidates", "No active election")
                     val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
                     positionContainer.removeAllViews()
+                    showNoPositionsMessage(positionContainer)
                 }
             },
             onFailure = { error ->
                 android.util.Log.e("Candidates", "Error getting election ID: $error")
                 val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
                 positionContainer.removeAllViews()
+                showNoPositionsMessage(positionContainer)
             }
         )
+    }
+
+    private fun showNoPositionsMessage(container: LinearLayout) {
+        val messageView = TextView(this).apply {
+            text = "No candidates are available right now."
+            setTextColor(Color.parseColor("#555555"))
+            textSize = 14f
+            setPadding(16.toPx(), 24.toPx(), 16.toPx(), 24.toPx())
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            typeface = ResourcesCompat.getFont(this@Candidates, R.font.poppins_regular)
+        }
+        container.addView(messageView)
     }
 
     /**
      * Programmatically creates a single position button (the equivalent of btnPosition).
      */
-    private fun createPositionButtonView(context: Context, positionName: String): View {
+    private fun createPositionButtonView(
+        context: Context,
+        positionId: String,
+        positionName: String,
+        candidateIds: List<String>
+    ): View {
         // 1. Main container (btnPosition equivalent - LinearLayout)
         val btnPosition = LinearLayout(context).apply {
             id = View.generateViewId() // Generate a unique ID
@@ -142,10 +179,13 @@ class Candidates : AppCompatActivity() {
         btnPosition.setOnClickListener {
             // Navigate directly, relying on the system's default visual press feedback
             val intent = Intent(context, Position::class.java).apply {
+                putExtra("POSITION_ID", positionId)
                 putExtra("POSITION_NAME", positionName)
+                putStringArrayListExtra("CANDIDATE_IDS", ArrayList(candidateIds))
             }
             context.startActivity(intent)
-            overridePendingTransition(0, 0)
+            @Suppress("DEPRECATION")
+            (context as? android.app.Activity)?.overridePendingTransition(0, 0)
         }
 
         return btnPosition
@@ -172,6 +212,7 @@ class Candidates : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -201,6 +242,7 @@ class Candidates : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
+                @Suppress("DEPRECATION")
                 overridePendingTransition(0, 0)
 
             }

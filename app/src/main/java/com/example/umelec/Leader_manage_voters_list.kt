@@ -45,16 +45,9 @@ class Leader_manage_voters_list : AppCompatActivity() {
     private lateinit var layoutSearchVoters: TextInputLayout
 
 
-    // 3. Fake Data (Simulating database fetch)
-    private val allVoters = listOf(
-        Voter("A12345678", "Juan Dela Cruz", "3rd Year", true),
-        Voter("B98765432", "Maria Santos", "4th Year", false),
-        Voter("C11223344", "John Smith", "1st Year", true),
-        Voter("D55667788", "Jane Doe", "2nd Year", true),
-        Voter("E00112233", "Jose Rizal", "3rd Year", false),
-        Voter("F44556677", "Crisostomo Ibarra", "4th Year", true),
-        Voter("G88990011", "Andres Bonifacio", "1st Year", false)
-    )
+    // Voter data
+    private var allVoters = emptyList<Voter>()
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,8 +65,8 @@ class Leader_manage_voters_list : AppCompatActivity() {
 
         // Set up initial UI and listeners
         setupListeners()
-        updateVoterCounts(allVoters)
-        inflateVoterList(allVoters)
+        // Load voters from Firestore
+        loadVoters()
     }
 
     // =========================================================================
@@ -100,6 +93,7 @@ class Leader_manage_voters_list : AppCompatActivity() {
             } else {
                 // If search box is empty, show the full list again
                 inflateVoterList(allVoters)
+                updateVoterCounts(allVoters)
                 hideKeyboardAndClearFocus() // Hide keyboard if user clicks search on empty field
             }
         }
@@ -134,19 +128,109 @@ class Leader_manage_voters_list : AppCompatActivity() {
         }
     }
 
+    /**
+     * Load voters from Firestore
+     */
+    private fun loadVoters() {
+        android.util.Log.d("Leader_manage_voters_list", "Loading voters...")
+        // Get current election ID
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                android.util.Log.d("Leader_manage_voters_list", "Current election ID: $electionId")
+                currentElectionId = electionId
+                if (electionId != null) {
+                    // Load all voters
+                    FirestoreVoterHelper.getAllVoters(
+                        onSuccess = { votersData ->
+                            android.util.Log.d("Leader_manage_voters_list", "Loaded ${votersData.size} voters from Firestore")
+                            // Load voters who have voted
+                            FirestoreVoterHelper.getVotersWhoVoted(
+                                electionId = electionId,
+                                onSuccess = { votedVoters ->
+                                    android.util.Log.d("Leader_manage_voters_list", "Found ${votedVoters.size} voters who voted")
+                                    val votedIds = votedVoters.mapNotNull { it["userId"] as? String }.toSet()
+                                    android.util.Log.d("Leader_manage_voters_list", "Voted user IDs: $votedIds")
+                                    
+                                    // Convert to Voter data class
+                                    allVoters = votersData.map { voterData ->
+                                        val userId = voterData["userId"] as? String ?: ""
+                                        val firstName = voterData["firstname"] as? String ?: ""
+                                        val lastName = voterData["lastname"] as? String ?: ""
+                                        val name = "$firstName $lastName".trim()
+                                        val yearRaw = voterData["year"] as? String ?: "Unknown"
+                                        // Normalize year format: "2nd Year" -> "2nd"
+                                        val year = yearRaw.replace(" Year", "").trim()
+                                        val hasVoted = userId in votedIds
+                                        
+                                        android.util.Log.d("Leader_manage_voters_list", "Voter: $name (ID: $userId) - Voted: $hasVoted")
+                                        Voter(userId, name, year, hasVoted)
+                                    }
+                                    
+                                    android.util.Log.d("Leader_manage_voters_list", "Total voters: ${allVoters.size}, Voted: ${allVoters.count { it.hasVoted }}")
+                                    updateVoterCounts(allVoters)
+                                    inflateVoterList(allVoters)
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("Leader_manage_voters_list", "Error getting voted voters: $error")
+                                    // Still show all voters even if voted check fails
+                                    allVoters = votersData.map { voterData ->
+                                        val userId = voterData["userId"] as? String ?: ""
+                                        val firstName = voterData["firstname"] as? String ?: ""
+                                        val lastName = voterData["lastname"] as? String ?: ""
+                                        val name = "$firstName $lastName".trim()
+                                        val yearRaw = voterData["year"] as? String ?: "Unknown"
+                                        val year = yearRaw.replace(" Year", "").trim()
+                                        Voter(userId, name, year, false)
+                                    }
+                                    updateVoterCounts(allVoters)
+                                    inflateVoterList(allVoters)
+                                }
+                            )
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_manage_voters_list", "Error loading voters: $error")
+                            allVoters = emptyList()
+                            updateVoterCounts(allVoters)
+                            inflateVoterList(allVoters)
+                        }
+                    )
+                } else {
+                    // No active election
+                    android.util.Log.w("Leader_manage_voters_list", "No active election found")
+                    allVoters = emptyList()
+                    updateVoterCounts(allVoters)
+                    inflateVoterList(allVoters)
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_manage_voters_list", "Error getting election ID: $error")
+                allVoters = emptyList()
+                updateVoterCounts(allVoters)
+                inflateVoterList(allVoters)
+            }
+        )
+    }
+
     // Function 2 & 3: Update Voted/Unvoted Counts
     private fun updateVoterCounts(voters: List<Voter>) {
         val votedCount = voters.count { it.hasVoted }
         val unvotedCount = voters.size - votedCount
 
+        android.util.Log.d("Leader_manage_voters_list", "Updating counts: Total=${voters.size}, Voted=$votedCount, Unvoted=$unvotedCount")
         tvVoted.text = votedCount.toString()
         tvNotVoted.text = unvotedCount.toString()
     }
 
     // Function 5: Inflate the Voter List
     private fun inflateVoterList(votersToDisplay: List<Voter>) {
+        android.util.Log.d("Leader_manage_voters_list", "Inflating voter list: ${votersToDisplay.size} voters")
         // Clear existing views before adding new ones
         voterItemLayout.removeAllViews()
+
+        if (votersToDisplay.isEmpty()) {
+            android.util.Log.w("Leader_manage_voters_list", "No voters to display")
+            return
+        }
 
         val inflater = LayoutInflater.from(this)
 
@@ -178,6 +262,7 @@ class Leader_manage_voters_list : AppCompatActivity() {
             // Add the fully configured view to the container
             voterItemLayout.addView(itemView)
         }
+        android.util.Log.d("Leader_manage_voters_list", "Voter list inflation complete")
     }
 
     // Function 6: Search Logic (Client-side filtering simulation)

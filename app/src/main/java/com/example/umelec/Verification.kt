@@ -53,6 +53,7 @@ class Verification : AppCompatActivity() {
             startActivity(intent)
             // Note: You might want to finish() this activity here if the user shouldn't return
             // finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }

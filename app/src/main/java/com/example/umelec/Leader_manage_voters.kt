@@ -25,26 +25,10 @@ class Leader_manage_voters : AppCompatActivity() {
     // --- Data structure for the bar chart (from AutomatedReports.kt) ---
     data class YearVoteData(val yearLabel: String, val voteCount: Int, val barItemViewId: Int)
 
-    // ----------------------------------------------------------------------
-    // ⭐️ BACKEND/DATABASE INTEGRATION POINT: CORE STATS ⭐️
-    // These values should be fetched from the database
-    // ----------------------------------------------------------------------
-    private val totalEligibleVoters = 340 // Total number of students who can vote
-    private val totalVoted = 34 // Total number of students who have voted (New explicit variable)
-
-    // ----------------------------------------------------------------------
-
-    // --- Sample Data for Bar Chart (Replace with data fetched from DB) ---
-    // The sum of 'voteCount' below MUST equal 'totalVoted' above for the bar chart to render correctly.
-    private val yearVoteDistribution = listOf(
-        YearVoteData("1st", 15, R.id.barItem1st),
-        YearVoteData("2nd", 8, R.id.barItem2nd),
-        YearVoteData("3rd", 7, R.id.barItem3rd),
-        YearVoteData("4th", 4, R.id.barItem4th)
-    )
-    // ----------------------------------------------------------------------
-
-    private val notVotedCount = totalEligibleVoters - totalVoted
+    // Voter statistics
+    private var totalEligibleVoters = 0
+    private var totalVoted = 0
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,8 +44,7 @@ class Leader_manage_voters : AppCompatActivity() {
         setupFooterNavigation()
 
         // --- NEW BEHAVIOURS ---
-        setupVoterTurnoutMetrics()
-        setupVotedStudentsCard()
+        loadVoterStatistics()
         setupButtonNavigation()
     }
 
@@ -79,6 +62,7 @@ class Leader_manage_voters : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Leader_profile::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -93,6 +77,81 @@ class Leader_manage_voters : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     /**
+     * Load voter statistics from Firestore
+     */
+    private fun loadVoterStatistics() {
+        android.util.Log.d("Leader_manage_voters", "Loading voter statistics...")
+        // Get current election ID
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                android.util.Log.d("Leader_manage_voters", "Current election ID: $electionId")
+                currentElectionId = electionId
+                if (electionId != null) {
+                    // Load total eligible voters
+                    FirestoreVoterHelper.getTotalEligibleVoters(
+                        onSuccess = { eligibleCount ->
+                            android.util.Log.d("Leader_manage_voters", "Total eligible voters: $eligibleCount")
+                            totalEligibleVoters = eligibleCount
+                            // Load total voted
+                            FirestoreVoterHelper.getTotalVoted(
+                                electionId = electionId,
+                                onSuccess = { votedCount ->
+                                    android.util.Log.d("Leader_manage_voters", "Total voted: $votedCount")
+                                    totalVoted = votedCount
+                                    // Load year distribution
+                                    loadYearDistribution(electionId)
+                                    // Update UI
+                                    setupVoterTurnoutMetrics()
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("Leader_manage_voters", "Error getting voted count: $error")
+                                    totalVoted = 0
+                                    setupVoterTurnoutMetrics()
+                                }
+                            )
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_manage_voters", "Error getting eligible voters: $error")
+                            totalEligibleVoters = 0
+                            setupVoterTurnoutMetrics()
+                        }
+                    )
+                } else {
+                    // No active election
+                    android.util.Log.w("Leader_manage_voters", "No active election found")
+                    totalEligibleVoters = 0
+                    totalVoted = 0
+                    setupVoterTurnoutMetrics()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_manage_voters", "Error getting election ID: $error")
+                totalEligibleVoters = 0
+                totalVoted = 0
+                setupVoterTurnoutMetrics()
+            }
+        )
+    }
+
+    /**
+     * Load year distribution from Firestore
+     */
+    private fun loadYearDistribution(electionId: String) {
+        android.util.Log.d("Leader_manage_voters", "Loading year distribution for election: $electionId")
+        FirestoreVoterHelper.getVoterStatisticsByYear(
+            electionId = electionId,
+            onSuccess = { yearCounts ->
+                android.util.Log.d("Leader_manage_voters", "Year distribution loaded: $yearCounts")
+                setupVotedStudentsCard(yearCounts)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_manage_voters", "Error getting year distribution: $error")
+                setupVotedStudentsCard(emptyMap())
+            }
+        )
+    }
+
+    /**
      * Calculates and displays Total Eligible Voters and the Voted/Not Voted percentages.
      */
     private fun setupVoterTurnoutMetrics() {
@@ -100,12 +159,16 @@ class Leader_manage_voters : AppCompatActivity() {
         val tvPercentVoted: TextView = findViewById(R.id.tvPercentVoted)
         val tvPercentNotVoted: TextView = findViewById(R.id.tvPercentNotVoted)
 
-        // 1. Set Total Eligible Voters (uses the new explicit variable)
+        android.util.Log.d("Leader_manage_voters", "Setting up voter turnout metrics: eligible=$totalEligibleVoters, voted=$totalVoted")
+
+        // 1. Set Total Eligible Voters
         tvTotalEligibleVotersValue.text = totalEligibleVoters.toString()
 
         // 2. Calculate percentages using the calculateTurnout function
         val votedPercentage = calculateTurnout(totalVoted, totalEligibleVoters)
         val notVotedPercentage = 100 - votedPercentage
+
+        android.util.Log.d("Leader_manage_voters", "Calculated percentages: voted=$votedPercentage%, notVoted=$notVotedPercentage%")
 
         // 3. Display percentages
         tvPercentVoted.text = "$votedPercentage%"
@@ -128,34 +191,50 @@ class Leader_manage_voters : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     /**
-     * Implements the bar chart logic to display voted students by year (Imitating setupYearBarChart from AutomatedReports.kt).
+     * Implements the bar chart logic to display voted students by year
      */
-    private fun setupVotedStudentsCard() {
+    private fun setupVotedStudentsCard(yearCounts: Map<String, Int>) {
         val barAreaContainer: LinearLayout = findViewById(R.id.BarArea)
         val tvTotalVotedCount: TextView = findViewById(R.id.tvTotalVotedCount)
 
-        // totalVotes now uses the new explicit variable
-        val totalVotes = totalVoted
+        android.util.Log.d("Leader_manage_voters", "Setting up voted students card: totalVoted=$totalVoted, yearCounts=$yearCounts")
 
-        tvTotalVotedCount.text = totalVotes.toString()
+        tvTotalVotedCount.text = totalVoted.toString()
 
-        if (totalVotes == 0) return
+        if (totalVoted == 0) {
+            android.util.Log.w("Leader_manage_voters", "No votes found, skipping year distribution")
+            return
+        }
+
+        // Map year labels to view IDs
+        val yearViewMap = mapOf(
+            "1st" to R.id.barItem1st,
+            "2nd" to R.id.barItem2nd,
+            "3rd" to R.id.barItem3rd,
+            "4th" to R.id.barItem4th
+        )
 
         // Wait until the container has been laid out to get its width
         barAreaContainer.post {
             val containerWidth = barAreaContainer.width
 
-            // Uses the separate yearVoteDistribution list
-            yearVoteDistribution.forEach { data ->
-                val barItemView = findViewById<View>(data.barItemViewId)
+            yearViewMap.forEach { (yearLabel, viewId) ->
+                val voteCount = yearCounts[yearLabel] ?: 0
+                android.util.Log.d("Leader_manage_voters", "Year $yearLabel: $voteCount votes")
+                
+                val barItemView = findViewById<View>(viewId)
                 val tvBarLabel: TextView = barItemView.findViewById(R.id.tvBarLabel)
                 val progressBar: View = barItemView.findViewById(R.id.vBarProgress)
                 val tvBarValue: TextView = barItemView.findViewById(R.id.tvBarValue)
 
-                tvBarLabel.text = data.yearLabel
-                tvBarValue.text = data.voteCount.toString()
+                tvBarLabel.text = yearLabel
+                tvBarValue.text = voteCount.toString()
 
-                val votePercentage = data.voteCount.toFloat() / totalVotes.toFloat()
+                val votePercentage = if (totalVoted > 0) {
+                    voteCount.toFloat() / totalVoted.toFloat()
+                } else {
+                    0f
+                }
 
                 // Calculate the target width based on the container width and vote percentage
                 val targetWidth = (containerWidth * votePercentage).toInt()
@@ -179,6 +258,7 @@ class Leader_manage_voters : AppCompatActivity() {
         btnViewList.setOnClickListener {
             val intent = Intent(this, Leader_manage_voters_list::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -186,6 +266,7 @@ class Leader_manage_voters : AppCompatActivity() {
         btnCandidates.setOnClickListener {
             val intent = Intent(this, Leader_manage_candidates::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -205,7 +286,8 @@ class Leader_manage_voters : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
             }
         }
 

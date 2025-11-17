@@ -2,6 +2,7 @@ package com.example.umelec
 
 import android.animation.AnimatorInflater // 🔥 NEW: Import for AnimatorInflater
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build // 🔥 NEW: Import for Build class
 import android.os.Bundle
 import android.os.Handler
@@ -26,14 +27,18 @@ data class CandidateItem(
 
 class Position : AppCompatActivity() {
 
-    private lateinit var allCandidates: List<CandidateItem>
+    private var allCandidates: List<CandidateItem> = emptyList()
     private var currentPosition: String = "Position"
+    private var currentPositionId: String? = null
+    private var candidateIdsFromIntent: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_position)
 
         currentPosition = intent.getStringExtra("POSITION_NAME") ?: "Candidates"
+        currentPositionId = intent.getStringExtra("POSITION_ID")
+        candidateIdsFromIntent = intent.getStringArrayListExtra("CANDIDATE_IDS") ?: emptyList()
 
         // 2. Setup the header title to display the position
         setupHeaderTitle()
@@ -48,7 +53,7 @@ class Position : AppCompatActivity() {
         setupFooterNavigation()
 
         // 1. Fetch the data from Firestore
-        loadCandidatesForPosition(currentPosition)
+        loadCandidatesForPosition(currentPosition, currentPositionId, candidateIdsFromIntent)
     }
 
     // ----------------------------------------------------------------------
@@ -75,10 +80,14 @@ class Position : AppCompatActivity() {
         // 2. Clear out the dynamic content and any static card templates (like cardContainer)
         registerContainer.removeAllViews()
 
-        // 3. Add all dynamic candidate cards
-        allCandidates.forEach { candidate ->
-            val cardView = createCandidateCardView(candidate, registerContainer)
-            registerContainer.addView(cardView)
+        if (allCandidates.isEmpty()) {
+            registerContainer.addView(createEmptyStateView())
+        } else {
+            // 3. Add all dynamic candidate cards
+            allCandidates.forEach { candidate ->
+                val cardView = createCandidateCardView(candidate, registerContainer)
+                registerContainer.addView(cardView)
+            }
         }
 
         // 4. Re-add the CompareLayout at the bottom
@@ -110,102 +119,55 @@ class Position : AppCompatActivity() {
     // --- DATA FETCHING FROM FIRESTORE ---
     // ----------------------------------------------------------------------
 
-    private fun loadCandidatesForPosition(positionName: String) {
+    private fun loadCandidatesForPosition(
+        positionName: String,
+        positionIdFromIntent: String?,
+        candidateIds: List<String>
+    ) {
         // First get current election ID
         FirestoreElectionHelper.getCurrentElectionId(
             onSuccess = { electionId ->
                 if (electionId != null) {
-                    // Find position ID by matching position name
-                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                        .collection("candidates")
-                        .whereEqualTo("electionId", electionId)
-                        .whereEqualTo("isActive", true)
-                        .get()
-                        .addOnSuccessListener { documents ->
-                            // Find all unique positions and match by name
-                            val positionsMap = mutableMapOf<String, String>() // positionName -> positionId
-                            documents.documents.forEach { doc ->
-                                val data = doc.data ?: return@forEach
-                                val posName = data["positionName"] as? String ?: return@forEach
-                                val posId = data["positionId"] as? String ?: return@forEach
-                                positionsMap[posName] = posId
-                            }
+                    if (candidateIds.isNotEmpty()) {
+                        fetchCandidatesByIds(candidateIds, positionName)
+                    } else {
+                        val resolvedPositionId = positionIdFromIntent?.takeIf { it.isNotBlank() }
 
-                            val positionId = positionsMap[positionName]
-                            if (positionId != null) {
-                                // Get candidates for this position
-                                FirestoreCandidateHelper.getCandidatesForPosition(
-                                    electionId = electionId,
-                                    positionId = positionId,
-                                    onSuccess = { candidates ->
-                                        // Convert to CandidateItem list with full details
-                                        val candidateItems = mutableListOf<CandidateItem>()
-                                        var loadedCount = 0
+                        if (resolvedPositionId != null) {
+                            fetchCandidatesForPosition(electionId, resolvedPositionId, positionName)
+                        } else {
+                            // Need to map by name if ID was not provided
+                            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("candidates")
+                                .whereEqualTo("electionId", electionId)
+                                .get()
+                                .addOnSuccessListener { documents ->
+                                    val positionsMap = mutableMapOf<String, String>() // positionName -> positionId
+                                    documents.documents.forEach { doc ->
+                                        val data = doc.data ?: return@forEach
+                                        val isActive = data["isActive"] as? Boolean ?: true
+                                        if (!isActive) return@forEach
+                                        val posName = data["positionName"] as? String ?: return@forEach
+                                        val posId = data["positionId"] as? String ?: return@forEach
+                                        positionsMap[posName] = posId
+                                    }
 
-                                        if (candidates.isEmpty()) {
-                                            allCandidates = emptyList()
-                                            populateCandidates()
-                                            return@getCandidatesForPosition
-                                        }
-
-                                        candidates.forEach { candidate ->
-                                            // Get full candidate details including courseInfo
-                                            FirestoreCandidateHelper.getCandidateDetails(
-                                                candidateId = candidate.id,
-                                                onSuccess = { details ->
-                                                    candidateItems.add(
-                                                        CandidateItem(
-                                                            candidateId = details["candidateId"] ?: candidate.id,
-                                                            name = details["name"] ?: candidate.name,
-                                                            position = details["positionName"] ?: positionName,
-                                                            courseInfo = details["courseInfo"] ?: "",
-                                                            profilePictureResource = R.drawable.ic_profile
-                                                        )
-                                                    )
-                                                    loadedCount++
-                                                    if (loadedCount == candidates.size) {
-                                                        allCandidates = candidateItems.sortedBy { it.name }
-                                                        populateCandidates()
-                                                    }
-                                                },
-                                                onFailure = { error ->
-                                                    android.util.Log.e("Position", "Error loading candidate details for ${candidate.id}: $error")
-                                                    // Add with minimal data
-                                                    candidateItems.add(
-                                                        CandidateItem(
-                                                            candidateId = candidate.id,
-                                                            name = candidate.name,
-                                                            position = positionName,
-                                                            courseInfo = "",
-                                                            profilePictureResource = R.drawable.ic_profile
-                                                        )
-                                                    )
-                                                    loadedCount++
-                                                    if (loadedCount == candidates.size) {
-                                                        allCandidates = candidateItems.sortedBy { it.name }
-                                                        populateCandidates()
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    },
-                                    onFailure = { error ->
-                                        android.util.Log.e("Position", "Error loading candidates: $error")
+                                    val positionId = positionsMap[positionName]
+                                    if (positionId != null) {
+                                        fetchCandidatesForPosition(electionId, positionId, positionName)
+                                    } else {
+                                        android.util.Log.e("Position", "Position not found: $positionName")
                                         allCandidates = emptyList()
                                         populateCandidates()
                                     }
-                                )
-                            } else {
-                                android.util.Log.e("Position", "Position not found: $positionName")
-                                allCandidates = emptyList()
-                                populateCandidates()
-                            }
+                                }
+                                .addOnFailureListener { error ->
+                                    android.util.Log.e("Position", "Error finding position: $error")
+                                    allCandidates = emptyList()
+                                    populateCandidates()
+                                }
                         }
-                        .addOnFailureListener { error ->
-                            android.util.Log.e("Position", "Error finding position: $error")
-                            allCandidates = emptyList()
-                            populateCandidates()
-                        }
+                    }
                 } else {
                     android.util.Log.e("Position", "No active election")
                     allCandidates = emptyList()
@@ -218,6 +180,124 @@ class Position : AppCompatActivity() {
                 populateCandidates()
             }
         )
+    }
+
+    private fun fetchCandidatesForPosition(
+        electionId: String,
+        positionId: String,
+        positionName: String
+    ) {
+        FirestoreCandidateHelper.getCandidatesForPosition(
+            electionId = electionId,
+            positionId = positionId,
+            onSuccess = { candidates ->
+                val candidateItems = mutableListOf<CandidateItem>()
+                var loadedCount = 0
+
+                if (candidates.isEmpty()) {
+                    allCandidates = emptyList()
+                    populateCandidates()
+                    return@getCandidatesForPosition
+                }
+
+                candidates.forEach { candidate ->
+                    FirestoreCandidateHelper.getCandidateDetails(
+                        candidateId = candidate.id,
+                        onSuccess = { details ->
+                            candidateItems.add(
+                                CandidateItem(
+                                    candidateId = details["candidateId"] ?: candidate.id,
+                                    name = details["name"] ?: candidate.name,
+                                    position = details["positionName"] ?: positionName,
+                                    courseInfo = details["courseInfo"] ?: "",
+                                    profilePictureResource = R.drawable.ic_profile
+                                )
+                            )
+                            loadedCount++
+                            if (loadedCount == candidates.size) {
+                                allCandidates = candidateItems.sortedBy { it.name }
+                                populateCandidates()
+                            }
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Position", "Error loading candidate details for ${candidate.id}: $error")
+                            candidateItems.add(
+                                CandidateItem(
+                                    candidateId = candidate.id,
+                                    name = candidate.name,
+                                    position = positionName,
+                                    courseInfo = "",
+                                    profilePictureResource = R.drawable.ic_profile
+                                )
+                            )
+                            loadedCount++
+                            if (loadedCount == candidates.size) {
+                                allCandidates = candidateItems.sortedBy { it.name }
+                                populateCandidates()
+                            }
+                        }
+                    )
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Position", "Error loading candidates: $error")
+                allCandidates = emptyList()
+                populateCandidates()
+            }
+        )
+    }
+
+    private fun fetchCandidatesByIds(
+        candidateIds: List<String>,
+        positionName: String
+    ) {
+        if (candidateIds.isEmpty()) {
+            allCandidates = emptyList()
+            populateCandidates()
+            return
+        }
+
+        val candidateItems = mutableListOf<CandidateItem>()
+        var processedCount = 0
+
+        candidateIds.forEach { candidateId ->
+            FirestoreCandidateHelper.getCandidateDetails(
+                candidateId = candidateId,
+                onSuccess = { details ->
+                    candidateItems.add(
+                        CandidateItem(
+                            candidateId = details["candidateId"] ?: candidateId,
+                            name = details["name"] ?: candidateId,
+                            position = details["positionName"] ?: positionName,
+                            courseInfo = details["courseInfo"] ?: "",
+                            profilePictureResource = R.drawable.ic_profile
+                        )
+                    )
+                    processedCount++
+                    if (processedCount == candidateIds.size) {
+                        allCandidates = candidateItems.sortedBy { it.name }
+                        populateCandidates()
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Position", "Error loading candidate detail for $candidateId: $error")
+                    candidateItems.add(
+                        CandidateItem(
+                            candidateId = candidateId,
+                            name = candidateId,
+                            position = positionName,
+                            courseInfo = "",
+                            profilePictureResource = R.drawable.ic_profile
+                        )
+                    )
+                    processedCount++
+                    if (processedCount == candidateIds.size) {
+                        allCandidates = candidateItems.sortedBy { it.name }
+                        populateCandidates()
+                    }
+                }
+            )
+        }
     }
 
     // ----------------------------------------------------------------------
@@ -312,6 +392,21 @@ class Position : AppCompatActivity() {
         backButton?.setOnClickListener {
             finish()
         }
+    }
+
+    private fun createEmptyStateView(): View {
+        val textView = TextView(this)
+        textView.text = "No candidates available for this position at the moment."
+        textView.textSize = 14f
+        textView.setTextColor(Color.parseColor("#666666"))
+        textView.textAlignment = View.TEXT_ALIGNMENT_CENTER
+        val params = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.setMargins(40.toPx(), 40.toPx(), 40.toPx(), 20.toPx())
+        textView.layoutParams = params
+        return textView
     }
 
     private fun createCandidateCardView(candidate: CandidateItem, root: LinearLayout?): View {

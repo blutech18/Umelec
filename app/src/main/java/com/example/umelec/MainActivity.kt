@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
         btnRegister.setOnClickListener {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -43,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         btnLogin.setOnClickListener {
             val intent = Intent(this, Login::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }

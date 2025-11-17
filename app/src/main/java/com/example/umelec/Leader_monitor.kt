@@ -27,45 +27,11 @@ class Leader_monitor : AppCompatActivity() {
     private var countDownTimer: CountDownTimer? = null
     private var candidateItemWidth = 0
 
-    // ⭐️ Simulated data for leading candidates
-    private val leadingCandidates = listOf(
-        LeadingCandidate(
-            position = "Chairperson",
-            name = "Mark Tan",
-            votes = 2540,
-            profileResId = R.drawable.ic_profile
-        ),
-        LeadingCandidate(
-            position = "Treasurer",
-            name = "Sarah Lee",
-            votes = 1800,
-            profileResId = R.drawable.ic_profile
-        ),
-        LeadingCandidate(
-            position = "PRO",
-            name = "Alex Stone",
-            votes = 1500,
-            profileResId = R.drawable.ic_profile
-        )
-    )
+    // Real-time data
+    private var currentElectionId: String? = null
+    private var leadingCandidates = emptyList<LeadingCandidate>()
+    private var resultCardState = ResultCardState.NO_ELECTION
 
-    // ⭐️ Fake Future Dates for Countdown demonstration
-    private val UPCOMING_START_TIME_MS: Long
-    private val ONGOING_END_TIME_MS: Long
-
-    // ⭐️ Set to ONGOING for testing voter turnout card
-    private var resultCardState = ResultCardState.ENDED
-
-    init {
-        // Calculate demonstration dates immediately
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, 5) // 5 days for UPCOMING phase
-        UPCOMING_START_TIME_MS = calendar.timeInMillis
-
-        val calendar2 = Calendar.getInstance()
-        calendar2.add(Calendar.MINUTE, 10) // 10 minutes for ONGOING phase
-        ONGOING_END_TIME_MS = calendar2.timeInMillis
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,8 +47,8 @@ class Leader_monitor : AppCompatActivity() {
         setupUIListeners()
         setupFooterNavigation()
 
-        // ⭐️ Start the UI update logic
-        updateUIForPhase(resultCardState)
+        // Load election state and data
+        loadElectionData()
     }
 
     override fun onDestroy() {
@@ -100,6 +66,7 @@ class Leader_monitor : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Leader_profile::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -121,7 +88,8 @@ class Leader_monitor : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
             }
         }
 
@@ -137,6 +105,89 @@ class Leader_monitor : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
+
+    // ----------------------------------------------------------------------
+    // --- LOAD ELECTION DATA ---
+    // ----------------------------------------------------------------------
+
+    private fun loadElectionData() {
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId != null) {
+                    // Determine election state
+                    FirestoreElectionHelper.determineElectionState(
+                        onSuccess = { state ->
+                            resultCardState = when (state) {
+                                ElectionState.UPCOMING -> ResultCardState.UPCOMING
+                                ElectionState.ONGOING -> ResultCardState.ONGOING
+                                ElectionState.ENDED -> ResultCardState.ENDED
+                                ElectionState.NO_ELECTION -> ResultCardState.NO_ELECTION
+                            }
+                            // Load election dates for countdown
+                            loadElectionDates(electionId)
+                            // Load leading candidates if ongoing/ended
+                            if (resultCardState == ResultCardState.ONGOING || resultCardState == ResultCardState.ENDED) {
+                                loadLeadingCandidates(electionId)
+                            }
+                            updateUIForPhase(resultCardState)
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_monitor", "Error determining election state: $error")
+                            updateUIForPhase(ResultCardState.NO_ELECTION)
+                        }
+                    )
+                } else {
+                    updateUIForPhase(ResultCardState.NO_ELECTION)
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_monitor", "Error getting election ID: $error")
+                updateUIForPhase(ResultCardState.NO_ELECTION)
+            }
+        )
+    }
+
+    private fun loadElectionDates(electionId: String) {
+        FirestoreLeaderHelper.getElectionById(
+            electionId = electionId,
+            onSuccess = { electionData ->
+                electionData?.let { data ->
+                    val startDateTimestamp = data["startDate"] as? com.google.firebase.Timestamp
+                    val endDateTimestamp = data["endDate"] as? com.google.firebase.Timestamp
+                    val startDate = startDateTimestamp?.toDate()
+                    val endDate = endDateTimestamp?.toDate()
+
+                    when (resultCardState) {
+                        ResultCardState.UPCOMING -> {
+                            startDate?.let { setupCountdown(it.time) }
+                        }
+                        ResultCardState.ONGOING -> {
+                            endDate?.let { setupCountdown(it.time) }
+                        }
+                        else -> {}
+                    }
+                }
+            },
+            onFailure = { }
+        )
+    }
+
+    private fun loadLeadingCandidates(electionId: String) {
+        FirestoreVoteHelper.getLeadingCandidates(
+            electionId = electionId,
+            limit = 3,
+            onSuccess = { candidates ->
+                leadingCandidates = candidates
+                if (resultCardState == ResultCardState.ONGOING) {
+                    setupCandidatesPreviewCard()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_monitor", "Error loading leading candidates: $error")
+            }
+        )
+    }
 
     // ----------------------------------------------------------------------
     // --- MAIN PHASE LOGIC ---
@@ -165,7 +216,7 @@ class Leader_monitor : AppCompatActivity() {
             ResultCardState.UPCOMING -> {
                 timeCard.visibility = View.VISIBLE
                 findViewById<TextView>(R.id.TimeTitle).text = "Next election starts in"
-                setupCountdown(UPCOMING_START_TIME_MS)
+                // Countdown will be set by loadElectionDates
             }
             ResultCardState.ONGOING -> {
                 timeCard.visibility = View.VISIBLE
@@ -175,7 +226,7 @@ class Leader_monitor : AppCompatActivity() {
                 voteTurnoutCard.visibility = View.VISIBLE
 
                 findViewById<TextView>(R.id.TimeTitle).text = "Remaining time for the election"
-                setupCountdown(ONGOING_END_TIME_MS)
+                // Countdown will be set by loadElectionDates
                 setupCandidatesPreviewCard()
                 setupTalliesCard(isFinal = false)
 
@@ -359,6 +410,7 @@ class Leader_monitor : AppCompatActivity() {
         btnTally.setOnClickListener {
             val intent = Intent(this, Tallies::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -369,6 +421,7 @@ class Leader_monitor : AppCompatActivity() {
         btnResult.setOnClickListener {
             val intent = Intent(this, OfficialResults::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -379,6 +432,7 @@ class Leader_monitor : AppCompatActivity() {
         btnViewReport.setOnClickListener {
             val intent = Intent(this, AutomatedReports::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -391,35 +445,39 @@ class Leader_monitor : AppCompatActivity() {
      * Updates the data displayed in the Voter Turnout card, including the chart and percentages.
      */
     private fun setupVoterTurnoutCard() {
-        // ⭐️ Reference to the custom chart view
         val donutView: DoughnutChartView = findViewById(R.id.voterTurnoutChart)
         val tvVotedPercent: TextView = findViewById(R.id.tvVotedPercentage)
         val tvNotVotedPercent: TextView = findViewById(R.id.tvNotVotedPercentage)
 
-        // ----------------------------------------------------------------------
-        // ⭐️ BACKEND/DATABASE INTEGRATION POINT ⭐️
-        // ----------------------------------------------------------------------
+        currentElectionId?.let { electionId ->
+            // Load total eligible voters
+            FirestoreVoterHelper.getTotalEligibleVoters(
+                onSuccess = { totalVoters ->
+                    // Load total voted
+                    FirestoreVoterHelper.getTotalVoted(
+                        electionId = electionId,
+                        onSuccess = { votedCount ->
+                            // Calculate percentages
+                            val votedPercentageFloat = if (totalVoters > 0) (votedCount.toFloat() / totalVoters) * 100 else 0f
+                            val votedPercentage = votedPercentageFloat.toInt().coerceIn(0, 100)
+                            val notVotedPercentage = 100 - votedPercentage
 
-        // 1. Database Variables (Replace these with actual async data fetching)
-        val totalVoters = 10
-        val votedCount = 5
+                            // Update the custom Doughnut Chart View
+                            donutView.votedPercentage = votedPercentage
 
-        // 2. Calculate percentages
-        val votedPercentageFloat = if (totalVoters > 0) (votedCount.toFloat() / totalVoters) * 100 else 0f
-
-        // Use an Int for display and chart drawing
-        val votedPercentage = votedPercentageFloat.toInt().coerceIn(0, 100)
-        val notVotedPercentage = 100 - votedPercentage
-
-        // ----------------------------------------------------------------------
-        // ⭐️ END OF DATABASE INTEGRATION POINT ⭐️
-        // ----------------------------------------------------------------------
-
-        // 3. Update the custom Doughnut Chart View
-        donutView.votedPercentage = votedPercentage
-
-        // 4. Update the TextViews
-        tvVotedPercent.text = "$votedPercentage%"
-        tvNotVotedPercent.text = "$notVotedPercentage%"
+                            // Update the TextViews
+                            tvVotedPercent.text = "$votedPercentage%"
+                            tvNotVotedPercent.text = "$notVotedPercentage%"
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_monitor", "Error getting voted count: $error")
+                        }
+                    )
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_monitor", "Error getting eligible voters: $error")
+                }
+            )
+        }
     }
 }

@@ -116,6 +116,7 @@ class Castvote3 : AppCompatActivity() {
         btnBack.setOnClickListener {
             // Since this only navigates back to Castvote2 (review screen), we simply finish().
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -345,6 +346,7 @@ class Castvote3 : AppCompatActivity() {
             duration = Toast.LENGTH_SHORT
             // Set the custom gravity and offset
             setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+            @Suppress("DEPRECATION")
             view = layout
             show()
         }
@@ -539,11 +541,13 @@ class Castvote3 : AppCompatActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         } else {
             // Default navigation behavior (e.g., going back to Castvote2)
             startActivity(intent)
             finish() // Since we are navigating back, we finish the current activity
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }

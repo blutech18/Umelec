@@ -185,10 +185,12 @@ class RegisterActivity : AppCompatActivity() {
         // 🔹 Navigation Listeners
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
         loginButton.setOnClickListener {
             startActivity(Intent(this, Login::class.java))
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

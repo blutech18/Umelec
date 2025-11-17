@@ -2,10 +2,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper function to check if user is a leader
+    function isLeader() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'LEADER';
+    }
+    
     // Users collection - users can read/write their own document
     match /users/{userId} {
       // Allow read/write if user is authenticated and the document ID matches their UID
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow leaders to read all users (for voter statistics)
+      allow read: if isLeader();
       
       // Allow creation during registration (user might not have document yet)
       allow create: if request.auth != null && request.auth.uid == userId;
@@ -49,16 +58,28 @@ service cloud.firestore {
     match /elections/{electionId} {
       // Allow authenticated users to read elections
       allow read: if request.auth != null;
-      // Only allow writes through Cloud Functions or admin
-      allow write: if false;
+      // Allow leaders to create and update elections
+      allow create, update: if isLeader();
+      // Don't allow deletes (elections should be marked inactive instead)
+      allow delete: if false;
+    }
+    
+    // Positions collection
+    match /positions/{positionId} {
+      // Allow authenticated users to read positions
+      allow read: if request.auth != null;
+      // Allow leaders to create, update, and delete positions
+      allow write: if isLeader();
     }
     
     // Candidates collection
     match /candidates/{candidateId} {
       // Allow authenticated users to read candidates
       allow read: if request.auth != null;
-      // Only allow writes through Cloud Functions or admin
-      allow write: if false;
+      // Allow leaders to create and update candidates
+      allow create, update: if isLeader();
+      // Don't allow deletes (candidates should be marked inactive instead)
+      allow delete: if false;
     }
     
     // Votes collection
@@ -70,6 +91,8 @@ service cloud.firestore {
       allow read: if request.auth != null && 
                    (resource.data.userId == request.auth.uid ||
                     request.auth.uid == resource.data.userId);
+      // Allow leaders to read all votes (for vote statistics and tallies)
+      allow read: if isLeader();
       // Users cannot update or delete votes (votes are immutable)
       allow update, delete: if false;
     }
@@ -86,7 +109,15 @@ service cloud.firestore {
     match /faqs/{faqId} {
       // Allow authenticated users to read FAQs
       allow read: if request.auth != null;
-      // Only allow writes through Cloud Functions or admin
+      // Allow leaders to create, update, and delete FAQs
+      allow write: if isLeader();
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Allow authenticated users to read notifications
+      allow read: if request.auth != null;
+      // Only server/admin should create notifications
       allow write: if false;
     }
     

@@ -57,41 +57,38 @@ class Faq : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     /**
-     * Load FAQ data from Firestore
+     * Load FAQ data from Firestore using FirestoreFaqHelper
      */
     private fun loadFaqs() {
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            .collection("faqs")
-            .whereEqualTo("isActive", true)
-            .orderBy("order", com.google.firebase.firestore.Query.Direction.ASCENDING)
-            .get()
-            .addOnSuccessListener { documents ->
-                val faqList = documents.documents.mapNotNull { doc ->
-                    val data = doc.data ?: return@mapNotNull null
-                    val category = data["category"] as? String ?: CATEGORY_GENERAL
-                    val question = data["question"] as? String ?: return@mapNotNull null
-                    val answer = data["answer"] as? String ?: return@mapNotNull null
+        android.util.Log.d("Faq", "Loading FAQs from Firestore...")
+        FirestoreFaqHelper.getAllFaqs(
+            onSuccess = { faqItems ->
+                android.util.Log.d("Faq", "Loaded ${faqItems.size} FAQs from Firestore")
+                // Convert FirestoreFaqHelper.FaqItem to local FaqItem
+                val faqList = faqItems.map { faqItem ->
                     FaqItem(
-                        category = category,
-                        question = question,
-                        answer = answer
+                        category = faqItem.category,
+                        question = faqItem.question,
+                        answer = faqItem.answer
                     )
                 }
 
                 // If no FAQs found, use default FAQs as fallback
                 val finalFaqList = if (faqList.isEmpty()) {
+                    android.util.Log.w("Faq", "No FAQs found, using default FAQs")
                     getDefaultFaqData()
                 } else {
                     faqList
                 }
 
                 populateFaqs(finalFaqList)
-            }
-            .addOnFailureListener { error ->
+            },
+            onFailure = { error ->
                 android.util.Log.e("Faq", "Error loading FAQs: $error")
                 // Use default FAQs on error
                 populateFaqs(getDefaultFaqData())
             }
+        )
     }
 
     /**
@@ -128,22 +125,26 @@ class Faq : AppCompatActivity() {
     }
 
     private fun populateFaqs(faqList: List<FaqItem>) {
-        val generalContainer: LinearLayout = findViewById(R.id.GeneralContainer)
-        val votingContainer: LinearLayout = findViewById(R.id.VotingContainer)
+        val contentContainer: LinearLayout = findViewById(R.id.ContentContainer)
 
-        if (generalContainer.childCount > 1) {
-            generalContainer.removeViews(1, generalContainer.childCount - 1)
-        }
-        if (votingContainer.childCount > 1) {
-            votingContainer.removeViews(1, votingContainer.childCount - 1)
+        // Clear existing views (keep the first child if it's a header)
+        if (contentContainer.childCount > 0) {
+            contentContainer.removeAllViews()
         }
 
-        faqList.forEach { faq ->
+        // Group FAQs by category
+        val groupedFaqs = faqList.groupBy { it.category }
+
+        // Add General FAQs first
+        groupedFaqs[CATEGORY_GENERAL]?.forEach { faq ->
             val faqView = createFaqItemView(this, faq.question, faq.answer)
-            when (faq.category) {
-                CATEGORY_GENERAL -> generalContainer.addView(faqView)
-                CATEGORY_VOTING -> votingContainer.addView(faqView)
-            }
+            contentContainer.addView(faqView)
+        }
+
+        // Add Voting FAQs
+        groupedFaqs[CATEGORY_VOTING]?.forEach { faq ->
+            val faqView = createFaqItemView(this, faq.question, faq.answer)
+            contentContainer.addView(faqView)
         }
     }
 

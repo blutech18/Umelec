@@ -87,6 +87,7 @@ class Verificationcode : AppCompatActivity() {
         val btnBack = findViewById<ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -253,6 +254,7 @@ class Verificationcode : AppCompatActivity() {
             intent.putExtra("actionCode", actionCode)
             startActivity(intent)
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -305,6 +307,7 @@ class Verificationcode : AppCompatActivity() {
                             duration = Toast.LENGTH_SHORT
                             // Set the custom gravity and offset
                             setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+                            @Suppress("DEPRECATION")
                             view = layout
                             show()
                         }

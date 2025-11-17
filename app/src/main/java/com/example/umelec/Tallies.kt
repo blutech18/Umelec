@@ -222,6 +222,18 @@ class Tallies : AppCompatActivity() {
         // Only clear the container holding the dynamic content, leaving the VoteTally card untouched.
         outerContainer?.removeAllViews()
 
+        if (talliesData.isEmpty()) {
+            val emptyView = TextView(this).apply {
+                text = "No tallies are available yet. Please check back later."
+                textSize = 14f
+                setTextColor(Color.parseColor("#666666"))
+                setPadding(24.toPx(), 32.toPx(), 24.toPx(), 32.toPx())
+                textAlignment = View.TEXT_ALIGNMENT_CENTER
+            }
+            outerContainer?.addView(emptyView)
+            return
+        }
+
         talliesData.forEach { (position, candidates) ->
             val sortedCandidates = candidates.sortedByDescending { it.votes }
 

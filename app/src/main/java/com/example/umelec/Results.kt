@@ -101,12 +101,14 @@ class Results : AppCompatActivity() {
         val timeCard: ConstraintLayout = findViewById(R.id.TimeCard)
         val candidatesPreviewCard: LinearLayout = findViewById(R.id.CandidatesPreviewCard)
         val talliesCard: LinearLayout = findViewById(R.id.TalliesCard)
+        val finalTalliesCard: LinearLayout = findViewById(R.id.FinalTalliesCard)
         val resultsCard: LinearLayout = findViewById(R.id.ResultsCard)
         val receiptCard: LinearLayout = findViewById(R.id.ReceiptCard)
 
         timeCard.visibility = View.GONE
         candidatesPreviewCard.visibility = View.GONE
         talliesCard.visibility = View.GONE
+        finalTalliesCard.visibility = View.GONE
         resultsCard.visibility = View.GONE
         receiptCard.visibility = View.GONE
 
@@ -123,6 +125,7 @@ class Results : AppCompatActivity() {
                 timeCard.visibility = View.VISIBLE
                 candidatesPreviewCard.visibility = View.VISIBLE
                 talliesCard.visibility = View.VISIBLE
+                finalTalliesCard.visibility = View.GONE
 
                 findViewById<TextView>(R.id.TimeTitle).text = "Remaining time for the election"
                 setupCountdownForElection(isStartDate = false)
@@ -131,14 +134,15 @@ class Results : AppCompatActivity() {
             }
             ResultCardState.ENDED -> {
                 timeCard.visibility = View.VISIBLE
-                talliesCard.visibility = View.VISIBLE
+                talliesCard.visibility = View.GONE
+                finalTalliesCard.visibility = View.VISIBLE
                 resultsCard.visibility = View.VISIBLE
                 receiptCard.visibility = View.VISIBLE
 
                 findViewById<TextView>(R.id.TimeTitle).text = "Election has ended"
                 updateTimerDisplay(0)
 
-                setupTalliesCard(isFinal = true)
+                setupFinalTalliesCard()
                 setupResultsCard()
                 setupReceiptCard()
             }
@@ -270,6 +274,9 @@ class Results : AppCompatActivity() {
     private fun setupCandidatesPreviewCard() {
         val container: LinearLayout = findViewById(R.id.candidateListContainer)
         val cardLayout: LinearLayout = findViewById(R.id.CandidatesPreviewCard)
+        val textNoCandidates: TextView = findViewById(R.id.textNoCandidates)
+        val textCandidatesEnded: TextView = findViewById(R.id.textCandidatesEnded)
+        val candidateContainer: View = findViewById(R.id.CandidateContainer)
 
         cardLayout.post {
             val viewWidth = cardLayout.width
@@ -282,11 +289,28 @@ class Results : AppCompatActivity() {
 
             container.removeAllViews()
 
-            leadingCandidates.forEach { candidate ->
-                container.addView(createLeadingCandidateView(candidate))
+            if (leadingCandidates.isEmpty()) {
+                candidateContainer.visibility = View.GONE
+                btnPrev.visibility = View.GONE
+                btnNext.visibility = View.GONE
+                textNoCandidates.visibility = View.VISIBLE
+                textCandidatesEnded.visibility =
+                    if (resultCardState == ResultCardState.ENDED) View.VISIBLE else View.GONE
+            } else {
+                candidateContainer.visibility = View.VISIBLE
+                textNoCandidates.visibility = View.GONE
+                textCandidatesEnded.visibility =
+                    if (resultCardState == ResultCardState.ENDED) View.VISIBLE else View.GONE
+
+                leadingCandidates.forEach { candidate ->
+                    container.addView(createLeadingCandidateView(candidate))
+                }
+
+                btnPrev.visibility = if (leadingCandidates.size > 1) View.VISIBLE else View.INVISIBLE
+                btnNext.visibility = if (leadingCandidates.size > 1) View.VISIBLE else View.INVISIBLE
+                setupCandidateScrollControls()
             }
 
-            setupCandidateScrollControls()
         }
     }
 
@@ -356,6 +380,7 @@ class Results : AppCompatActivity() {
             talliesTitle.text = "Final Tallies"
             talliesMessage.text = "Live tallies have been finalized."
             btnTally.text = "View Final Tallies"
+            return
         } else {
             talliesTitle.text = "Live Tallies"
             talliesMessage.text = "Live tallies are available."
@@ -368,12 +393,24 @@ class Results : AppCompatActivity() {
         }
     }
 
+    private fun setupFinalTalliesCard() {
+        val finalMessage = findViewById<TextView>(R.id.finalTalliesMessage)
+        val btnFinalTallies = findViewById<AppCompatButton>(R.id.btnFinalTallies)
+
+        finalMessage.text = "Live tallies have been finalized."
+        btnFinalTallies.setOnClickListener {
+            val intent = Intent(this, Tallies::class.java)
+            startActivity(intent)
+        }
+    }
+
     private fun setupResultsCard() {
         val btnResult = findViewById<AppCompatButton>(R.id.btnResult)
 
         btnResult.setOnClickListener {
             val intent = Intent(this, OfficialResults::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -581,6 +618,7 @@ class Results : AppCompatActivity() {
         profileIcon?.setOnClickListener {
             val intent = Intent(this, Profile::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -605,7 +643,8 @@ class Results : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
             }
         }
 

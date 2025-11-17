@@ -149,6 +149,7 @@ class Comparison : AppCompatActivity() {
         val backButton: ImageButton? = findViewById(R.id.btnBack)
         backButton?.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -173,6 +174,7 @@ class Comparison : AppCompatActivity() {
             val intent = Intent(this, activityClass)
             intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

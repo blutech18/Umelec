@@ -171,6 +171,7 @@ class RegisterActivity2 : AppCompatActivity() {
         val btnBack = findViewById<ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -815,7 +816,8 @@ class RegisterActivity2 : AppCompatActivity() {
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
                 finish()
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 return@setOnClickListener
             }
 

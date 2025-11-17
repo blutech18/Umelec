@@ -102,6 +102,7 @@ class Resetpassword : AppCompatActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish() // Finish ResetPassword activity
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -193,6 +194,7 @@ class Resetpassword : AppCompatActivity() {
 
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

@@ -57,7 +57,7 @@ class Leader_faqs : AppCompatActivity() {
         setupFooterNavigation()
 
         // --- NEW: Dynamic Content Setup ---
-        populateFaqs()
+        loadFaqsFromFirestore()
     }
 
     // --- VIEW INITIALIZATION (Simplified from Leader_homepage.kt) ---
@@ -76,7 +76,6 @@ class Leader_faqs : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Leader_profile::class.java)
             startActivity(intent)
-            overridePendingTransition(0, 0)
         }
 
         // --- Notification Icon Click Listener (Delegates to NotificationManager) ---
@@ -101,7 +100,6 @@ class Leader_faqs : AppCompatActivity() {
                 // Use FLAG_ACTIVITY_REORDER_TO_FRONT for smooth navigation as in Leader_homepage.kt
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
             }
         }
 
@@ -118,42 +116,51 @@ class Leader_faqs : AppCompatActivity() {
     // --- DYNAMIC FAQ MANAGEMENT LOGIC ---
     // ----------------------------------------------------------------------
 
+    // Store FAQs with IDs for update/delete operations
+    private val faqIdMap = mutableMapOf<String, String>() // question+answer -> faqId
+
     /**
-     * Gets fake FAQ data for demonstration.
-     * 💾💻 DATABASE INTEGRATION POINT 💻💾
+     * Load FAQs from Firestore
      */
-    private fun getFaqData(): List<LeaderFaqItem> {
-        return listOf(
-            LeaderFaqItem(
-                categoryTitle = CATEGORY_GENERAL,
-                question = "What is Umelec and who is this app for?",
-                answer = "Umelec is designed for leaders to manage student elections, view results, and monitor the voting process in real-time. It provides a comprehensive dashboard for administration."
-            ),
-            LeaderFaqItem(
-                categoryTitle = CATEGORY_GENERAL,
-                question = "How do I ensure security for my voters?",
-                answer = "All voter data and ballots are encrypted end-to-end. As a leader, you must ensure that access credentials for the app are kept secure."
-            ),
-            LeaderFaqItem(
-                categoryTitle = CATEGORY_SETUP,
-                question = "How do I add a new election?",
-                answer = "Navigate to the 'Setup' tab, click 'Add New Election', and follow the prompts to configure dates, positions, and eligible voters."
-            ),
-            LeaderFaqItem(
-                categoryTitle = CATEGORY_SETUP,
-                question = "Can I modify an election after it starts?",
-                answer = "Critical election parameters cannot be modified once voting begins to ensure integrity. You can, however, update FAQ content or candidate profiles."
-            )
+    private fun loadFaqsFromFirestore() {
+        android.util.Log.d("Leader_faqs", "Loading FAQs from Firestore...")
+        FirestoreFaqHelper.getAllFaqsWithIds(
+            onSuccess = { faqsWithIds ->
+                android.util.Log.d("Leader_faqs", "Loaded ${faqsWithIds.size} FAQs from Firestore")
+                // Clear and rebuild ID map
+                faqIdMap.clear()
+                faqsWithIds.forEach { faqWithId ->
+                    val key = "${faqWithId.faqItem.question}|${faqWithId.faqItem.answer}"
+                    faqIdMap[key] = faqWithId.faqId
+                }
+                
+                val leaderFaqs = faqsWithIds.map { faqWithId ->
+                    LeaderFaqItem(
+                        categoryTitle = faqWithId.faqItem.category,
+                        question = faqWithId.faqItem.question,
+                        answer = faqWithId.faqItem.answer
+                    )
+                }
+                android.util.Log.d("Leader_faqs", "Populating ${leaderFaqs.size} FAQs in UI")
+                populateFaqs(leaderFaqs)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_faqs", "Error loading FAQs: $error")
+                // Show empty state or default FAQs
+                populateFaqs(emptyList())
+            }
         )
     }
 
     /**
      * Clears existing content, loads all FAQs, groups them by category, and dynamically inflates the views.
      */
-    private fun populateFaqs() {
+    private fun populateFaqs(faqs: List<LeaderFaqItem>) {
+        android.util.Log.d("Leader_faqs", "Populating FAQs: ${faqs.size} items")
         val btnAddNewCategory = findViewById<LinearLayout>(R.id.btnAddNewCategory)
 
         if (btnAddNewCategory == null) {
+            android.util.Log.e("Leader_faqs", "btnAddNewCategory not found in layout")
             return
         }
 
@@ -166,10 +173,20 @@ class Leader_faqs : AppCompatActivity() {
         // 2. Remove all views (clears old dynamic content)
         contentContainer.removeAllViews()
 
-        val groupedFaqs = getFaqData().groupBy { it.categoryTitle }
+        if (faqs.isEmpty()) {
+            android.util.Log.w("Leader_faqs", "No FAQs to display")
+            // Re-add the button even if no FAQs
+            contentContainer.addView(btnAddNewCategory)
+            btnAddNewCategory.setOnClickListener { showAddCategoryDialog() }
+            return
+        }
+
+        val groupedFaqs = faqs.groupBy { it.categoryTitle }
+        android.util.Log.d("Leader_faqs", "Grouped FAQs into ${groupedFaqs.size} categories: ${groupedFaqs.keys}")
 
         // 3. Inflate each category and its FAQ items
         groupedFaqs.forEach { (categoryTitle, faqItems) ->
+            android.util.Log.d("Leader_faqs", "Creating category '$categoryTitle' with ${faqItems.size} FAQs")
             val categoryView = createCategoryView(categoryTitle)
 
             faqItems.forEach { faq ->
@@ -185,6 +202,7 @@ class Leader_faqs : AppCompatActivity() {
 
         // Re-set the listener on the re-added button
         btnAddNewCategory.setOnClickListener { showAddCategoryDialog() }
+        android.util.Log.d("Leader_faqs", "FAQ population complete")
     }
 
 
@@ -236,9 +254,8 @@ class Leader_faqs : AppCompatActivity() {
                 // Add before the button, or at the end if the button is somehow not found
                 contentContainer.addView(newCategoryView, if (index != -1) index else contentContainer.childCount)
 
-                // 3. 💾💻 DATABASE INTEGRATION POINT 💻💾
-                // TODO: Send 'categoryName' to the backend to create a new FAQ category.
-                // ------------------------------------
+                // 3. Note: Categories are created automatically when FAQs are added to them
+                // No separate category creation is needed in Firestore
 
                 dialog.dismiss()
             }
@@ -275,9 +292,11 @@ class Leader_faqs : AppCompatActivity() {
                     // 1. Remove the entire category view from the parent container
                     (categoryContainer.parent as ViewGroup).removeView(categoryContainer)
 
-                    // 2. 💾💻 DATABASE INTEGRATION POINT 💻💾
-                    // TODO: Send 'categoryName' (or Category ID) to the backend to remove the category and all associated FAQs.
-                    // ------------------------------------
+                // 2. Note: Category deletion would require deleting all FAQs in that category
+                // For now, this is a UI-only operation. Full implementation would require:
+                // - Getting all FAQ IDs in the category
+                // - Calling FirestoreFaqHelper.deleteFaq for each
+                android.widget.Toast.makeText(this, "Category removal requires backend implementation", android.widget.Toast.LENGTH_SHORT).show()
                 }
             )
         }
@@ -344,9 +363,21 @@ class Leader_faqs : AppCompatActivity() {
                 // Add before the button, or at the end if the button is somehow not found
                 categoryContainer.addView(newFaqItemView, if (index != -1) index else categoryContainer.childCount)
 
-                // 3. 💾💻 DATABASE INTEGRATION POINT 💻💾
-                // TODO: Send 'categoryTitle', 'questionText', and 'answerText' to the backend to create a new FAQ item.
-                // ------------------------------------
+                // 3. Save to Firestore
+                FirestoreFaqHelper.createFaq(
+                    category = categoryTitle,
+                    question = questionText,
+                    answer = answerText,
+                    onSuccess = { faqId ->
+                        android.util.Log.d("Leader_faqs", "FAQ created: $faqId")
+                        // Reload FAQs to get updated list
+                        loadFaqsFromFirestore()
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("Leader_faqs", "Error creating FAQ: $error")
+                        android.widget.Toast.makeText(this, "Error creating FAQ: $error", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                )
 
                 dialog.dismiss()
             }
@@ -410,9 +441,30 @@ class Leader_faqs : AppCompatActivity() {
                 questionTextView.text = newQuestion
                 answerTextView.text = newAnswer
 
-                // 2. 💾💻 DATABASE INTEGRATION POINT 💻💾
-                // TODO: Send the FAQ ID/key, 'newQuestion', and 'newAnswer' to the backend to update the existing FAQ item.
-                // ------------------------------------
+                // 2. Update FAQ in Firestore
+                val oldKey = "$currentQuestion|$currentAnswer"
+                val faqId = faqIdMap[oldKey]
+                if (faqId != null) {
+                    FirestoreFaqHelper.updateFaq(
+                        faqId = faqId,
+                        question = newQuestion,
+                        answer = newAnswer,
+                        onSuccess = {
+                            // Update ID map
+                            faqIdMap.remove(oldKey)
+                            val newKey = "$newQuestion|$newAnswer"
+                            faqIdMap[newKey] = faqId
+                            // Reload FAQs to reflect changes
+                            loadFaqsFromFirestore()
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_faqs", "Error updating FAQ: $error")
+                            android.widget.Toast.makeText(this, "Error updating FAQ: $error", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                } else {
+                    android.widget.Toast.makeText(this, "FAQ ID not found", android.widget.Toast.LENGTH_SHORT).show()
+                }
 
                 dialog.dismiss()
             }
@@ -471,9 +523,29 @@ class Leader_faqs : AppCompatActivity() {
                     // 1. Remove the specific FAQ item view from its parent container
                     (faqLayoutGeneral.parent as ViewGroup).removeView(faqLayoutGeneral)
 
-                    // 2. 💾💻 DATABASE INTEGRATION POINT 💻💾
-                    // TODO: Send the FAQ ID/key to the backend to remove the specific FAQ item.
-                    // ------------------------------------
+                    // 2. Delete FAQ from Firestore
+                    // Use the existing questionText and answerText variables from outer scope
+                    val questionToDelete = questionText.text.toString()
+                    val answerToDelete = answerText.text.toString()
+                    val key = "$questionToDelete|$answerToDelete"
+                    val faqId = faqIdMap[key]
+                    if (faqId != null) {
+                        FirestoreFaqHelper.deleteFaq(
+                            faqId = faqId,
+                            onSuccess = {
+                                // Remove from ID map
+                                faqIdMap.remove(key)
+                                // Reload FAQs to reflect changes
+                                loadFaqsFromFirestore()
+                            },
+                            onFailure = { error ->
+                                android.util.Log.e("Leader_faqs", "Error deleting FAQ: $error")
+                                android.widget.Toast.makeText(this, "Error deleting FAQ: $error", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    } else {
+                        android.widget.Toast.makeText(this, "FAQ ID not found", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
         }

@@ -68,7 +68,6 @@ class AutomatedReports : AppCompatActivity() {
         btnBack.setOnClickListener {
             // When clicked, finish the current activity to return to the previous one
             finish()
-            overridePendingTransition(0, 0)
         }
     }
 
@@ -276,7 +275,7 @@ class AutomatedReports : AppCompatActivity() {
     // ----------------------------------------------------------------------
     private fun setupVoterTurnoutCard() {
         // NOTE: DoughnutChartView is assumed to be a custom class
-        val donutView: View = findViewById(R.id.voterTurnoutChart) // Changed type to View for safety
+        // DoughnutChartView can be accessed via findViewById(R.id.voterTurnoutChart) if needed in the future
         val tvVotedPercent: TextView = findViewById(R.id.tvVotedPercentage)
         val tvNotVotedPercent: TextView = findViewById(R.id.tvNotVotedPercentage)
 

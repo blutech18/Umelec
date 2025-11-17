@@ -47,6 +47,7 @@ class Platform : AppCompatActivity() {
         val backButton: ImageButton = findViewById(R.id.btnBack)
         backButton.setOnClickListener {
             finish() // ⭐️ FIX: Closes the current activity and returns to the previous one
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -142,6 +143,7 @@ class Platform : AppCompatActivity() {
             // Use this flag for smoother tab switching
             intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

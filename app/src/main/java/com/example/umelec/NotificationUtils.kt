@@ -4,27 +4,28 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.text.format.DateFormat
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.PopupWindow
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.res.ResourcesCompat
 import java.util.Date
 import java.util.concurrent.TimeUnit
-import android.text.format.DateFormat
-import androidx.core.content.res.ResourcesCompat
 
-/**
- * Utility class containing reusable logic for managing and displaying the notification dropdown.
- */
 class NotificationManager(private val activity: AppCompatActivity) {
 
-    // --- STATE AND DATA ---
     private var isNotificationDropdownVisible = false
     private var popupWindow: PopupWindow? = null
+    private var isLoading = false
+    private var latestNotifications: List<NotificationItem> = emptyList()
 
-    // Load the custom typeface once for efficiency
     private val poppinsRegularTypeface: Typeface? by lazy {
         try {
             ResourcesCompat.getFont(activity, R.font.poppins_regular)
@@ -33,30 +34,35 @@ class NotificationManager(private val activity: AppCompatActivity) {
         }
     }
 
-    // 💡 CHANGE: Use the centralized data list defined in NotificationData.kt
-    private val notifications = allNotifications
-
-    // --- PUBLIC API ---
-
-    /**
-     * Toggles the visibility of the notification dropdown menu.
-     */
     fun toggleNotificationDropdown(anchorView: ImageView) {
         if (isNotificationDropdownVisible) {
             anchorView.setColorFilter(Color.parseColor("#FAFCFE"))
             popupWindow?.dismiss()
-        } else {
-            showNotificationDropdown(anchorView)
-            isNotificationDropdownVisible = true
+        } else if (!isLoading) {
+            fetchNotificationsAndShow(anchorView)
         }
     }
 
-    // --- PRIVATE IMPLEMENTATION ---
+    private fun fetchNotificationsAndShow(anchorView: ImageView) {
+        val currentUserId = FirebaseAuthHelper.getCurrentUser()?.uid
+        isLoading = true
+        FirestoreNotificationHelper.fetchNotifications(
+            userId = currentUserId,
+            limit = 10,
+            onSuccess = { notifications ->
+                isLoading = false
+                latestNotifications = notifications
+                showNotificationDropdown(anchorView, notifications)
+                isNotificationDropdownVisible = true
+            },
+            onFailure = { error ->
+                isLoading = false
+                Toast.makeText(activity, error, Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
 
-    /**
-     * Creates and displays the custom notification dropdown menu with the new design.
-     */
-    private fun showNotificationDropdown(anchorView: ImageView) {
+    private fun showNotificationDropdown(anchorView: ImageView, notifications: List<NotificationItem>) {
         val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val popupView = inflater.inflate(R.layout.notification_dropdown, null)
 
@@ -74,110 +80,81 @@ class NotificationManager(private val activity: AppCompatActivity) {
         anchorView.setColorFilter(Color.parseColor("#FCBE6A"))
 
         val notificationContainer: LinearLayout = popupView.findViewById(R.id.notificationListContainer)
-        val noNotificationText: TextView = popupView.findViewById(R.id.noNotificationTextView)
-
-        // FONT APPLICATION: Apply font to static text view
-        noNotificationText.typeface = poppinsRegularTypeface
+        val emptyStateContainer: LinearLayout = popupView.findViewById(R.id.dropdownEmptyState)
+        popupView.findViewById<TextView>(R.id.dropdownEmptyTitle)?.typeface = poppinsRegularTypeface
+        popupView.findViewById<TextView>(R.id.dropdownEmptyMessage)?.typeface = poppinsRegularTypeface
 
         notificationContainer.removeAllViews()
 
-        // Limit to the 3 newest notifications
         val itemsToShow = notifications.sortedByDescending { it.timestamp }.take(3)
-
         if (itemsToShow.isEmpty()) {
-            noNotificationText.visibility = View.VISIBLE
+            emptyStateContainer.visibility = View.VISIBLE
         } else {
-            noNotificationText.visibility = View.GONE
-
+            emptyStateContainer.visibility = View.GONE
             itemsToShow.forEachIndexed { index, item ->
                 val notificationItemView = createNotificationItemView(item)
                 notificationContainer.addView(notificationItemView)
-
-                // LOGIC FOR SEPARATORS: Add a separator after every item except the last one
                 if (index < itemsToShow.size - 1) {
-                    val separator = createSeparatorView(activity)
-                    notificationContainer.addView(separator)
+                    notificationContainer.addView(createSeparatorView(activity))
                 }
             }
         }
 
-        // Close Button
-        val closeButton: ImageView = popupView.findViewById(R.id.closeDropdownButton)
-        closeButton.setOnClickListener { popupWindow?.dismiss() }
+        popupView.findViewById<ImageView>(R.id.closeDropdownButton).setOnClickListener {
+            popupWindow?.dismiss()
+        }
 
-        // View All Button (Navigation to Notification.kt)
         val viewAllButton: TextView = popupView.findViewById(R.id.viewAllButton)
-        // FONT APPLICATION: Apply font to View All button
         viewAllButton.typeface = poppinsRegularTypeface
         viewAllButton.setOnClickListener {
-            val intent = Intent(activity, Notification::class.java)
-            activity.startActivity(intent)
+            activity.startActivity(Intent(activity, Notification::class.java))
             popupWindow?.dismiss()
         }
 
         popupWindow?.showAsDropDown(anchorView, -300, 0)
     }
 
-    /**
-     * Dynamically creates the view for a single notification item based on its read status and type.
-     */
     private fun createNotificationItemView(item: NotificationItem): View {
         val context = activity
-
-        // Generate a unique ID for the unread indicator so we can find it later
         val unreadIndicatorId = View.generateViewId()
 
-        // Define LayoutParams
-        val lp = LinearLayout.LayoutParams(
+        val params = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         )
-
         if (!item.isRead) {
-            val cornerRadiusMargin = 3.toPx()
-            lp.leftMargin = cornerRadiusMargin
-            lp.rightMargin = cornerRadiusMargin
+            val margin = 3.toPx()
+            params.leftMargin = margin
+            params.rightMargin = margin
         }
 
-
-        // 1. Root Layout
         val rootView = LinearLayout(context).apply {
             id = View.generateViewId()
-            layoutParams = lp
+            layoutParams = params
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             setPadding(16.toPx(), 8.toPx(), 16.toPx(), 8.toPx())
-
-            if (!item.isRead) {
-                setBackgroundColor(Color.parseColor("#ECF1F4"))
-            } else {
-                setBackgroundColor(Color.TRANSPARENT)
-            }
+            setBackgroundColor(if (item.isRead) Color.TRANSPARENT else Color.parseColor("#ECF1F4"))
 
             setOnClickListener { view ->
-                if (!item.isRead) {
-                    // 1. Update the data source (crucial for Notification.kt to see the change)
-                    val globalItem = allNotifications.find { it.id == item.id }
-                    globalItem?.isRead = true
-                    item.isRead = true // Update the local item object for immediate consistency
-
-                    // 2. Update UI visually (changing color and removing icon)
+                val currentUserId = FirebaseAuthHelper.getCurrentUser()?.uid
+                if (!item.isRead && currentUserId != null) {
+                    item.isRead = true
                     view.setBackgroundColor(Color.TRANSPARENT)
-                    val indicator = view.findViewById<ImageView>(unreadIndicatorId)
-                    indicator?.visibility = View.GONE
+                    view.findViewById<ImageView>(unreadIndicatorId)?.visibility = View.GONE
+                    FirestoreNotificationHelper.markNotificationAsRead(item.id, currentUserId)
                 }
 
-                // 3. Navigate to the detail screen
-                val intent = Intent(context, Notification2::class.java)
-                intent.putExtra("NOTIFICATION_ID", item.id)
+                val intent = Intent(context, Notification2::class.java).apply {
+                    putExtra("NOTIFICATION_ID", item.id)
+                    putExtra("NOTIFICATION_TITLE", item.title)
+                    putExtra("NOTIFICATION_FULL_TEXT", item.fullText)
+                }
                 context.startActivity(intent)
-
-                // 4. Close the dropdown
                 popupWindow?.dismiss()
             }
         }
 
-        // 2. Icon (Left side)
         val iconRes = when (item.type) {
             NotificationType.REMINDER -> R.drawable.ic_notif_reminder
             NotificationType.SUBMISSION -> R.drawable.ic_notif_submitted
@@ -194,16 +171,17 @@ class NotificationManager(private val activity: AppCompatActivity) {
         }
         rootView.addView(icon)
 
-        // 3. Text Container (Title, Preview, Time)
         val textContainer = LinearLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             orientation = LinearLayout.VERTICAL
         }
         rootView.addView(textContainer)
 
-        // 3a. Title
         val titleText = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
             text = item.title
             textSize = 16f
             setTypeface(poppinsRegularTypeface, Typeface.BOLD)
@@ -211,9 +189,11 @@ class NotificationManager(private val activity: AppCompatActivity) {
         }
         textContainer.addView(titleText)
 
-        // 3b. Preview Text (Max 2 lines)
         val previewText = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
             text = item.previewText
             textSize = 12f
             maxLines = 2
@@ -223,9 +203,11 @@ class NotificationManager(private val activity: AppCompatActivity) {
         }
         textContainer.addView(previewText)
 
-        // 3c. Time/Date
         val timeText = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
             text = formatNotificationTime(item.timestamp)
             textSize = 10f
             typeface = poppinsRegularTypeface
@@ -233,10 +215,9 @@ class NotificationManager(private val activity: AppCompatActivity) {
         }
         textContainer.addView(timeText)
 
-        // 4. Unread Indicator (ic_circle)
         if (!item.isRead) {
-            val unreadIndicator = ImageView(context).apply {
-                id = unreadIndicatorId // Assign the generated ID
+            val indicator = ImageView(context).apply {
+                id = unreadIndicatorId
                 layoutParams = LinearLayout.LayoutParams(10.toPx(), 10.toPx()).apply {
                     marginStart = 8.toPx()
                     gravity = android.view.Gravity.CENTER_VERTICAL
@@ -245,43 +226,31 @@ class NotificationManager(private val activity: AppCompatActivity) {
                 setColorFilter(Color.parseColor("#0098E0"))
                 contentDescription = "Unread Indicator"
             }
-            rootView.addView(unreadIndicator)
+            rootView.addView(indicator)
         }
 
         return rootView
     }
 
-    /**
-     * Creates a full-width separator line view.
-     */
     private fun createSeparatorView(context: Context): View {
         return View(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                1.toPx() // 1dp height
+                1.toPx()
             )
             setBackgroundColor(Color.parseColor("#4A4A68"))
         }
     }
 
-
-    /**
-     * Formats the timestamp into "X mins ago" or "Oct 11, 2025".
-     */
     private fun formatNotificationTime(timestamp: Long): CharSequence {
         val now = System.currentTimeMillis()
         val difference = now - timestamp
-
-        // If less than 24 hours ago, show relative time (e.g., 10 minutes ago)
         return if (difference < TimeUnit.DAYS.toMillis(1)) {
             DateUtils.getRelativeTimeSpanString(timestamp, now, DateUtils.MINUTE_IN_MILLIS)
         } else {
-            // Otherwise, show absolute date (e.g., Oct 11, 2025)
-            DateFormat.format("MMM dd, yyyy", timestamp)
+            DateFormat.format("MMM dd, yyyy", Date(timestamp))
         }
     }
 
-
-    // Utility extension function to convert DP to pixels
     private fun Int.toPx(): Int = (this * activity.resources.displayMetrics.density).toInt()
 }

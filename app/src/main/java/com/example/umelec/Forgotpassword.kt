@@ -171,6 +171,7 @@ class Forgotpassword : AppCompatActivity() {
         // BACK BUTTON SETUP
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

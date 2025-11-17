@@ -57,11 +57,6 @@ object EmailService {
                 return
             }
             
-            if (request.emailType == null) {
-                onFailure("Email type is required")
-                return
-            }
-            
             // Build the request payload
             val payload = buildEmailPayload(request)
             

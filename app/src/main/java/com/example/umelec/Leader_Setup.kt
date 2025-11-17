@@ -33,6 +33,7 @@ class Leader_Setup : AppCompatActivity() {
     private lateinit var collegeElectionStatusCard: LinearLayout
     private lateinit var electionStatusValue: TextView
     private lateinit var electionStatusDateTimeValue: TextView
+    private lateinit var leaderCourseTitle: TextView
 
     private lateinit var btnViewElectionSetup: AppCompatButton
 
@@ -54,7 +55,7 @@ class Leader_Setup : AppCompatActivity() {
 
         // 💡 NEW: Update the main content UI based on the current election phase (Copied from Leader_homepage.kt)
         // This is key to showing the CollegeElectionStatusCard logic
-        updateElectionUI(determineElectionState())
+        loadElectionState()
     }
 
     private fun initializeViews() {
@@ -67,9 +68,13 @@ class Leader_Setup : AppCompatActivity() {
         collegeElectionStatusCard = findViewById(R.id.CollegeElectionStatusCard)
 
         // 💡 Initialize Status and Button Views
+        leaderCourseTitle = findViewById(R.id.LeaderCourseTitle)
         electionStatusValue = findViewById(R.id.ElectionStatusValue)
         electionStatusDateTimeValue = findViewById(R.id.ElectionStatusDateTimeValue)
         btnViewElectionSetup = findViewById(R.id.btnViewElectionSetup)
+        
+        // Set Setup page specific title
+        leaderCourseTitle.text = "Election Setup"
 
         // 💡 Dummy Initialization for buttons not used in NO_ELECTION phase, but declared in homepage (Required for strict imitation of declarations)
         // NOTE: These IDs must exist in activity_leader_setup.xml to avoid a crash.
@@ -79,9 +84,29 @@ class Leader_Setup : AppCompatActivity() {
     }
 
     private fun populateHeaderData() {
-        // ⚠️ BACKEND GUIDE: Replace this static data fetch with a call to your data layer
-        val leaderName = "Juan"
-        nameTitle.text = leaderName
+        // Get leader name from Firestore
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        currentUser?.let { user ->
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = user.uid,
+                onSuccess = { userData ->
+                    val firstName = userData?.get("firstname") as? String ?: ""
+                    val lastName = userData?.get("lastname") as? String ?: ""
+                    val fullName = if (firstName.isNotEmpty() || lastName.isNotEmpty()) {
+                        "$firstName $lastName".trim()
+                    } else {
+                        user.email?.substringBefore("@") ?: "Leader"
+                    }
+                    nameTitle.text = fullName
+                },
+                onFailure = { error ->
+                    // Fallback to email
+                    nameTitle.text = currentUser.email?.substringBefore("@") ?: "Leader"
+                }
+            )
+        } ?: run {
+            nameTitle.text = "Leader"
+        }
     }
 
     /**
@@ -92,6 +117,7 @@ class Leader_Setup : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Leader_profile::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -106,84 +132,155 @@ class Leader_Setup : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     /**
-     * ⚠️ IMITATION: Determines the election state.
-     * We will force the state to NO_ELECTION or UPCOMING to show setup relevance,
-     * but strictly follow homepage's logic for the function structure.
+     * Load election state from Firestore
      */
-    private fun determineElectionState(): ElectionState {
-        // Since this is the setup screen, let's imitate a state where setup is relevant.
-        // Using NO_ELECTION to focus on initiating setup.
-        return ElectionState.NO_ELECTION
+    private fun loadElectionState() {
+        FirestoreElectionHelper.determineElectionState(
+            onSuccess = { state ->
+                updateElectionUI(state)
+                // If ongoing, fetch end date details
+                if (state == ElectionState.ONGOING) {
+                    loadOngoingElectionDetails()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_Setup", "Error loading election state: $error")
+                updateElectionUI(ElectionState.NO_ELECTION)
+            }
+        )
     }
 
     /**
-     * ⚠️ IMITATION: Fetches ONGOING election data (Empty function for NO_ELECTION state).
+     * Fetch the actual end date and time from Firestore when election is ONGOING
      */
-    private fun fetchOngoingElectionData(): ElectionDateandTimeDetails {
-        return ElectionDateandTimeDetails(
-            endDate = "October 15, 2025",
-            endTime = "5:00 PM"
+    private fun loadOngoingElectionDetails() {
+        FirestoreElectionHelper.getCurrentElection(
+            onSuccess = { electionDetails ->
+                if (electionDetails != null) {
+                    // Parse the period string to extract end date
+                    // Format: "MMMM dd, yyyy - MMMM dd, yyyy"
+                    val parts = electionDetails.period.split(" - ")
+                    if (parts.size == 2) {
+                        val endDateStr = parts[1]
+                        // Get end time from Firestore directly
+                        FirestoreElectionHelper.getCurrentElectionId(
+                            onSuccess = { electionId ->
+                                electionId?.let { id ->
+                                    FirestoreLeaderHelper.getElectionById(id,
+                                        onSuccess = { electionData ->
+                                            electionData?.let { data ->
+                                                val endDateTimestamp = data["endDate"] as? com.google.firebase.Timestamp
+                                                val endDate = endDateTimestamp?.toDate()
+                                                if (endDate != null) {
+                                                    val formattedDate = FirestoreLeaderHelper.formatDate(endDate)
+                                                    val formattedTime = FirestoreLeaderHelper.formatTime(endDate)
+                                                    electionStatusDateTimeValue.text = "(Ends: $formattedDate at $formattedTime)"
+                                                }
+                                            }
+                                        },
+                                        onFailure = { }
+                                    )
+                                }
+                            },
+                            onFailure = { }
+                        )
+                    }
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_Setup", "Error loading election details: $error")
+            }
         )
     }
 
     /**
      * Updates the visibility, text, and actions of all election-related cards
-     * based on the current ElectionState. (Copied and only using necessary parts)
+     * based on the current ElectionState. Setup page shows setup-specific content.
      */
     private fun updateElectionUI(state: ElectionState) {
-        // The status card is always visible in all phases (Copied from homepage)
+        // The status card is always visible in all phases
         collegeElectionStatusCard.visibility = View.VISIBLE
 
         when (state) {
             ElectionState.NO_ELECTION -> {
-                // Phase 1: No Election (Copied from homepage)
+                // Phase 1: No Election - Show create election option
                 electionStatusDateTimeValue.visibility = View.GONE
                 electionStatusValue.text = "No election"
-                btnViewElectionSetup.text = "Election Setup"
+                btnViewElectionSetup.text = "Create New Election"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
             }
             ElectionState.UPCOMING -> {
-                // Phase 2: Upcoming (Imitating only the relevant status and view button)
+                // Phase 2: Upcoming - Show setup details and management options
                 electionStatusDateTimeValue.visibility = View.GONE
-                // Hide other cards (already done above)
-
                 electionStatusValue.text = "Upcoming"
-                btnViewElectionSetup.text = "View Election Setup"
+                btnViewElectionSetup.text = "Manage Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup_details::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
-                // NOTE: manage candidate/voter buttons are not initialized/handled here
+                // Load setup details (positions, candidates count)
+                loadSetupDetails()
             }
             ElectionState.ONGOING -> {
-                // Phase 3: Ongoing (Imitating only the relevant status and view button)
-                val details = fetchOngoingElectionData()
+                // Phase 3: Ongoing - Show setup details
+                electionStatusDateTimeValue.visibility = View.VISIBLE
                 electionStatusValue.text = "Ongoing"
-                electionStatusDateTimeValue.text = "(Ends: ${details.endDate} at ${details.endTime})"
-
+                // End date/time will be loaded by loadOngoingElectionDetails()
                 btnViewElectionSetup.text = "View Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup_details::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
-                // NOTE: monitor/voter buttons are not initialized/handled here
+                // Load setup details
+                loadSetupDetails()
             }
             ElectionState.ENDED -> {
-                // Phase 4: Ended (Imitating only the relevant status and view button)
+                // Phase 4: Ended - Show setup details
                 electionStatusDateTimeValue.visibility = View.GONE
-
                 electionStatusValue.text = "Ended"
                 btnViewElectionSetup.text = "View Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup_details::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
-                // NOTE: result button is not initialized/handled here
+                // Load setup details
+                loadSetupDetails()
             }
         }
+    }
+
+    /**
+     * Load setup details (positions count, candidates count) to show on Setup page
+     */
+    private fun loadSetupDetails() {
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                electionId?.let { id ->
+                    // Load positions count
+                    FirestoreLeaderHelper.getPositionsForElection(
+                        electionId = id,
+                        onSuccess = { positions ->
+                            android.util.Log.d("Leader_Setup", "Found ${positions.size} positions for election")
+                            // You can display this info in the UI if needed
+                            // For now, we'll just log it
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_Setup", "Error loading positions: $error")
+                        }
+                    )
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_Setup", "Error getting election ID: $error")
+            }
+        )
     }
 
     // ----------------------------------------------------------------------
@@ -202,7 +299,8 @@ class Leader_Setup : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
             }
         }
 

@@ -103,6 +103,7 @@ class Changepassword : AppCompatActivity() {
         with (Toast(applicationContext)) {
             duration = Toast.LENGTH_SHORT
             setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+            @Suppress("DEPRECATION")
             view = layout
             show()
         }
@@ -110,6 +111,7 @@ class Changepassword : AppCompatActivity() {
         Handler(Looper.getMainLooper()).postDelayed({
             // Action: Just finish the current activity
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }, 40)
     }
@@ -209,6 +211,7 @@ class Changepassword : AppCompatActivity() {
 
         btnBack.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

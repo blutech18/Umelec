@@ -398,6 +398,60 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/FinalTalliesCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/rounded_gray_bg"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp"
+                android:layout_marginHorizontal="20dp"
+                android:outlineProvider="background"
+                android:elevation="10dp"
+                android:translationZ="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Final Tallies"
+                    android:textSize="20sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/montserrat_semi_bold"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/finalTalliesMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Live tallies have been finalized."
+                    android:textSize="16sp"
+                    android:textColor="#666666"
+                    android:fontFamily="@font/poppins_regular"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="start"
+                    android:layout_marginTop="12dp">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnFinalTallies"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="View final tallies"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:background="@drawable/blue_rounded_button"
+                        android:textAllCaps="false"
+                        android:fontFamily="@font/poppins_bold"
+                        android:stateListAnimator="@animator/button_press_animator"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/ResultsCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

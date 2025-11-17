@@ -22,25 +22,29 @@ object FirestoreElectionHelper {
     ) {
         firestore.collection(ELECTIONS_COLLECTION)
             .whereEqualTo("isActive", true)
-            .orderBy("startDate", Query.Direction.DESCENDING)
-            .limit(1)
             .get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
+                    Log.d(TAG, "No active elections found")
                     onSuccess(ElectionState.NO_ELECTION)
                     return@addOnSuccessListener
                 }
 
-                val election = documents.documents[0].data ?: run {
+                // Get the most recent election by comparing startDate
+                val mostRecentElection = documents.documents.maxByOrNull { doc ->
+                    val timestamp = doc.getTimestamp("startDate")
+                    timestamp?.toDate()?.time ?: 0L
+                }
+
+                if (mostRecentElection == null) {
+                    Log.d(TAG, "No valid election found")
                     onSuccess(ElectionState.NO_ELECTION)
                     return@addOnSuccessListener
                 }
 
                 val now = Date()
-                // Use DocumentSnapshot getTimestamp method instead of casting
-                val docSnapshot = documents.documents[0]
-                val startDateTimestamp = docSnapshot.getTimestamp("startDate")
-                val endDateTimestamp = docSnapshot.getTimestamp("endDate")
+                val startDateTimestamp = mostRecentElection.getTimestamp("startDate")
+                val endDateTimestamp = mostRecentElection.getTimestamp("endDate")
                 
                 val startDate = startDateTimestamp?.toDate() ?: Date(Long.MAX_VALUE)
                 val endDate = endDateTimestamp?.toDate() ?: Date(0)
@@ -51,6 +55,7 @@ object FirestoreElectionHelper {
                     else -> ElectionState.ONGOING
                 }
 
+                Log.d(TAG, "Election state determined: $state (start: $startDate, end: $endDate)")
                 onSuccess(state)
             }
             .addOnFailureListener { exception ->
@@ -68,25 +73,35 @@ object FirestoreElectionHelper {
     ) {
         firestore.collection(ELECTIONS_COLLECTION)
             .whereEqualTo("isActive", true)
-            .orderBy("startDate", Query.Direction.DESCENDING)
-            .limit(1)
             .get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
+                    Log.d(TAG, "No active elections found for getCurrentElection")
                     onSuccess(null)
                     return@addOnSuccessListener
                 }
 
-                val doc = documents.documents[0]
-                val data = doc.data ?: run {
+                // Get the most recent election by comparing startDate
+                val mostRecentDoc = documents.documents.maxByOrNull { doc ->
+                    val timestamp = doc.getTimestamp("startDate")
+                    timestamp?.toDate()?.time ?: 0L
+                }
+
+                if (mostRecentDoc == null) {
+                    Log.d(TAG, "No valid election document found")
+                    onSuccess(null)
+                    return@addOnSuccessListener
+                }
+
+                val data = mostRecentDoc.data ?: run {
+                    Log.d(TAG, "Election document has no data")
                     onSuccess(null)
                     return@addOnSuccessListener
                 }
 
                 val title = data["title"] as? String ?: ""
-                // Use DocumentSnapshot getTimestamp method instead of casting
-                val startDateTimestamp = doc.getTimestamp("startDate")
-                val endDateTimestamp = doc.getTimestamp("endDate")
+                val startDateTimestamp = mostRecentDoc.getTimestamp("startDate")
+                val endDateTimestamp = mostRecentDoc.getTimestamp("endDate")
                 
                 val startDate = startDateTimestamp?.toDate() ?: Date()
                 val endDate = endDateTimestamp?.toDate() ?: Date()
@@ -104,6 +119,7 @@ object FirestoreElectionHelper {
                     status = status
                 )
 
+                Log.d(TAG, "Current election loaded: $title ($status)")
                 onSuccess(electionDetails)
             }
             .addOnFailureListener { exception ->
@@ -121,15 +137,27 @@ object FirestoreElectionHelper {
     ) {
         firestore.collection(ELECTIONS_COLLECTION)
             .whereEqualTo("isActive", true)
-            .orderBy("startDate", Query.Direction.DESCENDING)
-            .limit(1)
             .get()
             .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
+                    Log.d(TAG, "No active elections found for getCurrentElectionId")
                     onSuccess(null)
                     return@addOnSuccessListener
                 }
-                onSuccess(documents.documents[0].id)
+                
+                // Get the most recent election by comparing startDate
+                val mostRecentDoc = documents.documents.maxByOrNull { doc ->
+                    val timestamp = doc.getTimestamp("startDate")
+                    timestamp?.toDate()?.time ?: 0L
+                }
+                
+                if (mostRecentDoc != null) {
+                    Log.d(TAG, "Current election ID: ${mostRecentDoc.id}")
+                    onSuccess(mostRecentDoc.id)
+                } else {
+                    Log.d(TAG, "No valid election document found")
+                    onSuccess(null)
+                }
             }
             .addOnFailureListener { exception ->
                 Log.e(TAG, "Error getting election ID: ${exception.message}", exception)

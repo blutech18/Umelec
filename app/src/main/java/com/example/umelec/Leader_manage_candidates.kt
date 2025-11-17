@@ -13,17 +13,12 @@ import androidx.appcompat.widget.AppCompatButton
 // Assuming NotificationManager is defined elsewhere in the com.example.umelec package
 
 // ----------------------------------------------------------------------
-// --- DATA CLASSES (RENAMED & EXPANDED FOR MOCK PROFILE DATA) ---
+// --- DATA CLASSES ---
 // ----------------------------------------------------------------------
 data class ManageCandidate(
+    val candidateId: String,
     val name: String,
-    // Simulates checking if the candidate has completed their profile data
-    val hasProfileData: Boolean,
-    // Add mock profile data fields for Leader_manage_candidates_profile to fetch
-    val mockYear: String = "1st Year",
-    val mockCredentials: String = "No credentials provided yet.",
-    val mockPlatform: String = "No platform provided yet.",
-    val mockPhotoUri: String? = null // Null if no photo is uploaded
+    val hasProfileData: Boolean = false
 )
 
 data class ManagePosition(
@@ -42,60 +37,23 @@ class Leader_manage_candidates : AppCompatActivity() {
     private lateinit var btnVoters: AppCompatButton // Added
     private lateinit var contentContainer: LinearLayout // Container for position cards
 
-    // 3. Fake Data (Using the new data class names and mock data)
-    private val positionsData = listOf(
-        ManagePosition("President", listOf(
-            ManageCandidate(
-                name = "Alice Johnson",
-                hasProfileData = true,
-                mockYear = "4th Year",
-                mockCredentials = "• Outstanding Leadership Award\n• Former Class President",
-                mockPlatform = "To champion student welfare through digital transformation.",
-                mockPhotoUri = "content://mock/uploaded/alice_johnson_photo.jpg" // Mock URI
-            ),
-            ManageCandidate(
-                name = "Bob Williams",
-                hasProfileData = false
-            )
-        )),
-        ManagePosition("Vice President", listOf(
-            ManageCandidate(
-                name = "Charlie Brown",
-                hasProfileData = true,
-                mockYear = "3rd Year",
-                mockCredentials = "• Debating Team Captain (2 years)\n• Published Research Assistant",
-                mockPlatform = "Focusing on mental health and academic support initiatives.",
-                mockPhotoUri = "content://mock/uploaded/charlie_brown_photo.jpg"
-            )
-        )),
-        ManagePosition("Secretary", listOf(
-            ManageCandidate(
-                name = "Dana Scully",
-                hasProfileData = false
-            ),
-            ManageCandidate(
-                name = "Fox Mulder",
-                hasProfileData = false
-            )
-        ))
-    )
+    // Store current election ID
+    private var currentElectionId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_leader_manage_candidates)
 
-        // 4. Initialize Notification Manager (using a mock if the class isn't defined)
-        notificationManager = object : NotificationManager(this) {
-            override fun toggleNotificationDropdown(view: ImageView) {}
-        }
+        // 4. Initialize Notification Manager
+        notificationManager = NotificationManager(this)
 
         // 5. Set up all UI and navigation listeners
         initializeViews()
         setupUIListeners()
         setupFooterNavigation()
 
-        // 6. New logic: Inflate content based on fake data
-        inflatePositionsAndCandidates(positionsData)
+        // 6. Load candidates from Firestore
+        loadCandidates()
     }
 
     // --- VIEW INITIALIZATION ---
@@ -113,6 +71,7 @@ class Leader_manage_candidates : AppCompatActivity() {
         // --- Header Listeners ---
         profileIcon.setOnClickListener {
             startActivity(Intent(this, Leader_profile::class.java))
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
         notificationIcon.setOnClickListener {
@@ -125,6 +84,7 @@ class Leader_manage_candidates : AppCompatActivity() {
             // Use FLAG_ACTIVITY_REORDER_TO_FRONT to switch tabs smoothly
             intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -137,7 +97,7 @@ class Leader_manage_candidates : AppCompatActivity() {
         val inflater = LayoutInflater.from(this)
 
         // Clear content container before inflating
-        //contentContainer.removeAllViews()
+        contentContainer.removeAllViews()
 
         positions.forEach { position ->
             // 1. INFLATE POSITION CARD (item_position_card.xml)
@@ -149,16 +109,6 @@ class Leader_manage_candidates : AppCompatActivity() {
             // Set the Position Name
             tvPosition.text = position.name
 
-            // 💡 LOGIC: Click listener to navigate to the profile screen (Updated for EDIT/ADD mode)
-            val openProfile = { candidateName: String, positionName: String, isEdit: Boolean ->
-                val intent = Intent(this, Leader_manage_candidates_profile::class.java)
-                intent.putExtra(Leader_manage_candidates_profile.EXTRA_CANDIDATE_NAME, candidateName)
-                intent.putExtra(Leader_manage_candidates_profile.EXTRA_POSITION_NAME, positionName)
-                // Set the critical mode flag
-                intent.putExtra(Leader_manage_candidates_profile.EXTRA_IS_EDIT_MODE, isEdit)
-                startActivity(intent)
-                overridePendingTransition(0, 0)
-            }
 
 
             // 2. INFLATE CANDIDATE ROWS (item_candidate_row.xml)
@@ -185,9 +135,27 @@ class Leader_manage_candidates : AppCompatActivity() {
 
                 // --- Set Click Listeners ---
                 // If btnEdit is visible, we are in Edit Mode (isEdit=true)
-                btnEdit.setOnClickListener { openProfile(candidate.name, position.name, true) }
+                btnEdit.setOnClickListener { 
+                    val intent = Intent(this, Leader_manage_candidates_profile::class.java)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_CANDIDATE_ID, candidate.candidateId)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_CANDIDATE_NAME, candidate.name)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_POSITION_NAME, position.name)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_IS_EDIT_MODE, true)
+                    startActivity(intent)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+                }
                 // If btnAddProfile is visible, we are in Add Mode (isEdit=false)
-                btnAddProfile.setOnClickListener { openProfile(candidate.name, position.name, false) }
+                btnAddProfile.setOnClickListener { 
+                    val intent = Intent(this, Leader_manage_candidates_profile::class.java)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_CANDIDATE_ID, candidate.candidateId)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_CANDIDATE_NAME, candidate.name)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_POSITION_NAME, position.name)
+                    intent.putExtra(Leader_manage_candidates_profile.EXTRA_IS_EDIT_MODE, false)
+                    startActivity(intent)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+                }
 
                 // Add the candidate row to the list container inside the card
                 candidateListContainer.addView(candidateRowView)
@@ -214,7 +182,8 @@ class Leader_manage_candidates : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
             }
         }
 
@@ -227,10 +196,89 @@ class Leader_manage_candidates : AppCompatActivity() {
         navFaq.setOnClickListener { navigateTo(Leader_faqs::class.java) }
     }
 
-    // Mock NotificationManager to allow the code to compile if you haven't provided its definition
-    open class NotificationManager(private val context: AppCompatActivity) {
-        open fun toggleNotificationDropdown(view: ImageView) {
-            // Placeholder implementation
+    /**
+     * Load candidates from Firestore
+     */
+    private fun loadCandidates() {
+        // Get current election ID
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId != null) {
+                    loadCandidatesForElection(electionId)
+                } else {
+                    // No active election
+                    contentContainer.removeAllViews()
+                    val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                    noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No active election"
+                    noElectionView.findViewById<TextView>(R.id.AnswerTextGeneral).text = "Please create an election first"
+                    contentContainer.addView(noElectionView)
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_manage_candidates", "Error getting election ID: $error")
+            }
+        )
+    }
+
+    /**
+     * Load candidates grouped by position for an election
+     */
+    private fun loadCandidatesForElection(electionId: String) {
+        FirestoreCandidateHelper.getPositionsForElection(
+            electionId = electionId,
+            onSuccess = { positions ->
+                val positionsData = positions.map { position ->
+                    val candidates = position.candidates.map { candidate ->
+                        // Check if candidate has profile data
+                        ManageCandidate(
+                            candidateId = candidate.id,
+                            name = candidate.name,
+                            hasProfileData = false // Will be updated by checking candidate details
+                        )
+                    }
+                    ManagePosition(position.title, candidates)
+                }
+                inflatePositionsAndCandidates(positionsData)
+                // Check profile data for each candidate
+                checkCandidateProfiles(positionsData)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_manage_candidates", "Error loading candidates: $error")
+                contentContainer.removeAllViews()
+            }
+        )
+    }
+
+    /**
+     * Check which candidates have profile data
+     */
+    private fun checkCandidateProfiles(positions: List<ManagePosition>) {
+        positions.forEach { position ->
+            position.candidates.forEach { candidate ->
+                FirestoreCandidateHelper.getCandidatePlatformDetails(
+                    candidateId = candidate.candidateId,
+                    onSuccess = { details ->
+                        if (details != null && (details.credentials.isNotEmpty() || details.advocacy.isNotEmpty())) {
+                            // Refresh UI to show edit button
+                            inflatePositionsAndCandidates(positions.map { 
+                                if (it.name == position.name) {
+                                    ManagePosition(it.name, it.candidates.map { c ->
+                                        if (c.candidateId == candidate.candidateId) {
+                                            candidate.copy(hasProfileData = true)
+                                        } else {
+                                            c
+                                        }
+                                    })
+                                } else {
+                                    it
+                                }
+                            })
+                        }
+                    },
+                    onFailure = { }
+                )
+            }
         }
     }
 }

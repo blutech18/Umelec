@@ -79,6 +79,7 @@ class RegisterActivity3 : AppCompatActivity() {
         // 3. Set Listeners
         btnBack.setOnClickListener {
             finish() // Goes back to the previous activity (RegisterActivity2)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 

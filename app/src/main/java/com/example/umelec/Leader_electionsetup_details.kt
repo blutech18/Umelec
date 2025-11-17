@@ -10,28 +10,16 @@ import androidx.core.content.ContextCompat
 
 class Leader_electionsetup_details : AppCompatActivity() {
 
-    // ⭐️ 1. Data Structures to simulate database data ⭐️
-    data class Candidate(val name: String)
-    data class Position(val name: String, val candidates: List<Candidate>)
-    data class ElectionSetup(
-        val title: String,
-        val startDate: String,
-        val startTime: String,
-        val endDate: String,
-        val endTime: String,
-        val positions: List<Position>,
-        val isAbstainEnabled: Boolean
-    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_leader_electionsetup_details)
 
-        // ⭐️ All setup logic is centralized here ⭐️
-        setupElectionDetails()
+        // Load election details from Firestore
+        loadElectionDetails()
     }
 
-    private fun setupElectionDetails() {
+    private fun loadElectionDetails() {
         // Find Views
         val btnBack: ImageButton = findViewById(R.id.btnBack)
         val tvOverallTitle: TextView = findViewById(R.id.OverallTitle)
@@ -40,53 +28,78 @@ class Leader_electionsetup_details : AppCompatActivity() {
         val ivCheckIcon: ImageView = findViewById(R.id.ivCheckIcon)
         val tvEnableAbstain: TextView = findViewById(R.id.tvEnableAbstain)
 
-        // ----------------------------------------------------------------------
-        // ⭐️ 2. Fake Data (Simulates Database Fetch) ⭐️
-        // ----------------------------------------------------------------------
-        val fakeElectionData = ElectionSetup(
-            title = "Student Council Election 2025",
-            startDate = "March 10, 2025",
-            startTime = "1:00 PM",
-            endDate = "March 20, 2025",
-            endTime = "8:00 PM",
-            positions = listOf(
-                Position("President",
-                    listOf(
-                        Candidate("Anne Garcia"),
-                        Candidate("Ben Torres"))),
-                Position("Vice President",
-                    listOf(
-                        Candidate("Cathy Lim"))),
-                Position("Secretary",
-                    listOf(
-                        Candidate("David Lee"),
-                        Candidate("Elisa Reyes"),
-                        Candidate("Francis Dee")))
-            ),
-            isAbstainEnabled = true // Change to false to test the error icon
-        )
-        // ----------------------------------------------------------------------
-
-        // 1. Back Button Behavior
+        // Back Button Behavior
         btnBack.setOnClickListener {
-            finish() // Goes back to the previous activity
+            finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
-        // 2. Set Overall Title
-        tvOverallTitle.text = fakeElectionData.title
+        // Get current election
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                if (electionId != null) {
+                    FirestoreLeaderHelper.getElectionById(
+                        electionId = electionId,
+                        onSuccess = { electionData ->
+                            electionData?.let { data ->
+                                val title = data["title"] as? String ?: "Election"
+                                val isAbstainEnabled = data["isAbstainEnabled"] as? Boolean ?: false
+                                
+                                // Get dates
+                                val startDateTimestamp = data["startDate"] as? com.google.firebase.Timestamp
+                                val endDateTimestamp = data["endDate"] as? com.google.firebase.Timestamp
+                                val startDate = startDateTimestamp?.toDate()
+                                val endDate = endDateTimestamp?.toDate()
 
-        // 3. Set Voting Period Date
-        // FIX: Using direct string interpolation instead of missing R.string.voting_period_format
-        tvVotingPeriodDate.text =
-            "Voting Period: ${fakeElectionData.startDate} ${fakeElectionData.startTime} to ${fakeElectionData.endDate} ${fakeElectionData.endTime}"
+                                // Set title
+                                tvOverallTitle.text = title
 
-        // 4. Dynamic Position and Candidate Display
-        displayPositionsAndCandidates(positionContainer, fakeElectionData.positions)
+                                // Set voting period
+                                if (startDate != null && endDate != null) {
+                                    val startDateStr = FirestoreLeaderHelper.formatDateTime(startDate)
+                                    val endDateStr = FirestoreLeaderHelper.formatDateTime(endDate)
+                                    tvVotingPeriodDate.text = "Voting Period: $startDateStr to $endDateStr"
+                                }
 
-        // 5. Abstain Option Icon Logic
-        setupAbstainOption(ivCheckIcon, fakeElectionData.isAbstainEnabled)
+                                // Load positions and candidates
+                                loadPositionsAndCandidates(electionId, positionContainer)
+
+                                // Set abstain option
+                                setupAbstainOption(ivCheckIcon, isAbstainEnabled)
+                            }
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_electionsetup_details", "Error loading election: $error")
+                        }
+                    )
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_electionsetup_details", "Error getting election ID: $error")
+            }
+        )
     }
+
+    private fun loadPositionsAndCandidates(electionId: String, container: LinearLayout) {
+        FirestoreCandidateHelper.getPositionsForElection(
+            electionId = electionId,
+            onSuccess = { positions ->
+                val positionList = positions.map { position ->
+                    val candidates = position.candidates.map { Candidate(it.name) }
+                    Position(position.title, candidates)
+                }
+                displayPositionsAndCandidates(container, positionList)
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_electionsetup_details", "Error loading positions: $error")
+            }
+        )
+    }
+
+    // Data structures for display
+    data class Candidate(val name: String)
+    data class Position(val name: String, val candidates: List<Candidate>)
 
     /**
      * Inflates the position cards and candidate rows dynamically.

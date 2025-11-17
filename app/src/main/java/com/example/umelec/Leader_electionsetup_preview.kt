@@ -14,22 +14,6 @@ import androidx.appcompat.widget.AppCompatButton
 import android.view.ViewGroup
 
 
-// --- MOCK DATA: Replace this with data fetched from your backend ---
-private val MOCK_VOTING_DATA = listOf(
-    VotingPosition("PRES", "Presidentaaaaaaaaaaaaaaaaaaaaaaaaa", listOf(
-        CandidateChoices("PRES_C1", "Jane Doeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-        CandidateChoices("PRES_C2", "John Smith"),
-    )),
-    VotingPosition("VPRES", "Vice President", listOf(
-        CandidateChoices("VPRES_C3", "Alice Johnson"),
-        CandidateChoices("VPRES_C4", "Bob Williams"),
-        CandidateChoices("VPRES_C5", "Cathy Brown"),
-    )),
-    VotingPosition("SEC", "Secretary", listOf(
-        CandidateChoices("SEC_C6", "David Lee")
-    ))
-)
-// --- End MOCK DATA ---
 
 class Leader_electionsetup_preview : AppCompatActivity() {
 
@@ -45,28 +29,63 @@ class Leader_electionsetup_preview : AppCompatActivity() {
         btnPreview = findViewById(R.id.btnPreview)
         val electionTitleView: TextView = findViewById(R.id.ElectionTitle)
 
-        // 2. Set dynamic UI elements
-        val currentElectionTitle = "UMak Student Council \nElections 2025"
-        electionTitleView.text = currentElectionTitle
+        // 2. Load election data from Firestore
+        loadElectionData(electionTitleView)
 
-        // 3. Inflate and setup the preview cards
-        inflatePreviewCards()
-
-        // 4. Setup navigation
+        // 3. Setup navigation
         setupNavigation()
+    }
+
+    /**
+     * Load election data from Firestore
+     */
+    private fun loadElectionData(electionTitleView: TextView) {
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                if (electionId != null) {
+                    // Get election title
+                    FirestoreLeaderHelper.getElectionById(
+                        electionId = electionId,
+                        onSuccess = { electionData ->
+                            electionData?.let { data ->
+                                val title = data["title"] as? String ?: "Election"
+                                electionTitleView.text = title
+                            }
+                        },
+                        onFailure = { }
+                    )
+
+                    // Load positions and candidates
+                    FirestoreCandidateHelper.getPositionsForElection(
+                        electionId = electionId,
+                        onSuccess = { positions ->
+                            inflatePreviewCards(positions)
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Leader_electionsetup_preview", "Error loading positions: $error")
+                        }
+                    )
+                } else {
+                    electionTitleView.text = "No Active Election"
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_electionsetup_preview", "Error getting election ID: $error")
+            }
+        )
     }
 
     /**
      * Replicates the inflation logic from Castvote.kt.
      * REMOVED: Disabling the RadioButtons/RadioGroup to allow interaction.
      */
-    private fun inflatePreviewCards() {
+    private fun inflatePreviewCards(positions: List<VotingPosition>) {
         val inflater = LayoutInflater.from(this)
 
         // Clear the container before inflating
         votingContainer.removeAllViews()
 
-        for (position in MOCK_VOTING_DATA) {
+        for (position in positions) {
 
             val positionCardView = inflater.inflate(R.layout.position_card, votingContainer, false) as LinearLayout
 
@@ -159,12 +178,14 @@ class Leader_electionsetup_preview : AppCompatActivity() {
         val btnBack: ImageButton = findViewById(R.id.btnBack)
         btnBack.setOnClickListener {
             finish() // When clicked, finish the current activity to return to the previous one
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
         // Close Preview Button (btnPreview)
         btnPreview.setOnClickListener {
             finish() // Navigates back to the previous activity
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }

@@ -24,12 +24,13 @@ object FirestoreCandidateHelper {
         firestore.collection(CANDIDATES_COLLECTION)
             .whereEqualTo("electionId", electionId)
             .whereEqualTo("positionId", positionId)
-            .whereEqualTo("isActive", true)
             .orderBy("name", Query.Direction.ASCENDING)
             .get()
             .addOnSuccessListener { documents ->
                 val candidates = documents.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
+                    val isActive = data["isActive"] as? Boolean ?: true
+                    if (!isActive) return@mapNotNull null
                     val id = doc.id
                     val name = data["name"] as? String ?: return@mapNotNull null
                     CandidateChoices(id = id, name = name)
@@ -87,7 +88,6 @@ object FirestoreCandidateHelper {
         // First get unique position IDs
         firestore.collection(CANDIDATES_COLLECTION)
             .whereEqualTo("electionId", electionId)
-            .whereEqualTo("isActive", true)
             .get()
             .addOnSuccessListener { documents ->
                 // Group candidates by position
@@ -96,6 +96,8 @@ object FirestoreCandidateHelper {
 
                 documents.documents.forEach { doc ->
                     val data = doc.data ?: return@forEach
+                    val isActive = data["isActive"] as? Boolean ?: true
+                    if (!isActive) return@forEach
                     val positionId = data["positionId"] as? String ?: return@forEach
                     val positionName = data["positionName"] as? String ?: return@forEach
                     val candidateId = doc.id
@@ -137,12 +139,13 @@ object FirestoreCandidateHelper {
     ) {
         firestore.collection(CANDIDATES_COLLECTION)
             .whereEqualTo("electionId", electionId)
-            .whereEqualTo("isActive", true)
             .limit(limit.toLong())
             .get()
             .addOnSuccessListener { documents ->
                 val candidates = documents.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
+                    val isActive = data["isActive"] as? Boolean ?: true
+                    if (!isActive) return@mapNotNull null
                     val name = data["name"] as? String ?: return@mapNotNull null
                     val position = data["positionName"] as? String ?: "Unknown"
                     // Use default drawable - can be enhanced with image URL later
@@ -208,54 +211,30 @@ object FirestoreCandidateHelper {
         onSuccess: (List<WinningCandidate>) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        firestore.collection("votes")
-            .whereEqualTo("electionId", electionId)
-            .get()
-            .addOnSuccessListener { voteDocuments ->
-                // Count votes by position and candidate
-                val voteCounts = mutableMapOf<String, MutableMap<String, Int>>() // positionId -> (candidateId -> count)
-                val positionNamesMap = mutableMapOf<String, String>()
-                val candidateNamesMap = mutableMapOf<String, String>()
-
-                voteDocuments.documents.forEach { voteDoc ->
-                    val voteData = voteDoc.data ?: return@forEach
-                    val selections = voteData["selections"] as? Map<String, Any> ?: return@forEach
-
-                    selections.forEach { (positionId, candidateData) ->
-                        val candidateMap = candidateData as? Map<String, Any> ?: return@forEach
-                        val candidateId = candidateMap["candidateId"] as? String ?: return@forEach
-                        val candidateName = candidateMap["candidateName"] as? String ?: return@forEach
-                        val positionName = candidateMap["positionName"] as? String ?: return@forEach
-
-                        positionNamesMap[positionId] = positionName
-                        candidateNamesMap[candidateId] = candidateName
-
-                        if (!voteCounts.containsKey(positionId)) {
-                            voteCounts[positionId] = mutableMapOf()
+        FirestoreVoteHelper.getVoteTallies(
+            electionId = electionId,
+            onSuccess = { tallies ->
+                val winners = tallies
+                    .groupBy { it.positionId }
+                    .mapNotNull { (positionId, candidateTallies) ->
+                        val topCandidate = candidateTallies.maxByOrNull { it.voteCount }
+                        topCandidate?.let {
+                            WinningCandidate(
+                                name = it.candidateName,
+                                position = it.positionName,
+                                photoResource = R.drawable.ic_profile
+                            )
                         }
-                        voteCounts[positionId]!![candidateId] = 
-                            (voteCounts[positionId]!![candidateId] ?: 0) + 1
                     }
-                }
+                    .sortedBy { it.position }
 
-                // Find winners (highest vote count per position)
-                val winners = voteCounts.mapNotNull { (positionId, candidateCounts) ->
-                    val winner = candidateCounts.maxByOrNull { it.value }
-                    winner?.let {
-                        WinningCandidate(
-                            name = candidateNamesMap[it.key] ?: "Unknown",
-                            position = positionNamesMap[positionId] ?: positionId,
-                            photoResource = R.drawable.ic_profile
-                        )
-                    }
-                }
-
-                onSuccess(winners.sortedBy { it.position })
+                onSuccess(winners)
+            },
+            onFailure = { error ->
+                Log.e(TAG, "Error calculating winners from tallies: $error")
+                onFailure(error)
             }
-            .addOnFailureListener { exception ->
-                Log.e(TAG, "Error calculating winners: ${exception.message}", exception)
-                onFailure(exception.message ?: "Failed to calculate winners")
-            }
+        )
     }
 
     /**
@@ -295,6 +274,44 @@ object FirestoreCandidateHelper {
             .addOnFailureListener { exception ->
                 Log.e(TAG, "Error getting candidate details: ${exception.message}", exception)
                 onFailure(exception.message ?: "Failed to get candidate details")
+            }
+    }
+
+    /**
+     * Update candidate profile information
+     */
+    fun updateCandidateProfile(
+        candidateId: String,
+        courseInfo: String,
+        credentials: String,
+        advocacy: String,
+        photoUrl: String? = null,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        Log.d(TAG, "Updating candidate profile: $candidateId")
+        
+        val updateData = hashMapOf<String, Any>(
+            "courseInfo" to courseInfo,
+            "credentials" to credentials,
+            "advocacy" to advocacy
+        )
+
+        // Add photo URL if provided
+        photoUrl?.let {
+            updateData["photoUrl"] = it
+        }
+
+        firestore.collection(CANDIDATES_COLLECTION)
+            .document(candidateId)
+            .update(updateData)
+            .addOnSuccessListener {
+                Log.d(TAG, "Successfully updated candidate profile: $candidateId")
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Error updating candidate profile: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to update candidate profile")
             }
     }
 }

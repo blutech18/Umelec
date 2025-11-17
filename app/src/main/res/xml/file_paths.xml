@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-files-path name="receipts" path="." />
-    <files-path name="receipts" path="." />
+    <!-- Use unique names for each root so FileProvider registers both -->
+    <external-files-path name="external_receipts" path="." />
+    <files-path name="internal_receipts" path="." />
 </paths>
 

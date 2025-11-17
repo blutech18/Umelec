@@ -5,8 +5,6 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
-// NOTE: NotificationItem, NotificationType, and allNotifications are now defined in NotificationData.kt
-
 class Notification2 : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +19,7 @@ class Notification2 : AppCompatActivity() {
         val backButton: ImageButton = findViewById(R.id.btnBack)
         backButton.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
     }
@@ -34,17 +33,39 @@ class Notification2 : AppCompatActivity() {
             return
         }
 
-        // 💡 CHANGE: Use the centralized list to find the full notification object
-        val notificationItem = allNotifications.find { it.id == notificationId }
+        val titleExtra = intent.getStringExtra("NOTIFICATION_TITLE")
+        val fullTextExtra = intent.getStringExtra("NOTIFICATION_FULL_TEXT")
 
-        if (notificationItem != null) {
-            findViewById<TextView>(R.id.notification_title).text = notificationItem.title
-            // Use the fullText field from the unified data structure
-            findViewById<TextView>(R.id.notification_preview_text).text = notificationItem.fullText
+        val userId = FirebaseAuthHelper.getCurrentUser()?.uid
+
+        if (!titleExtra.isNullOrBlank() && !fullTextExtra.isNullOrBlank()) {
+            findViewById<TextView>(R.id.notification_title).text = titleExtra
+            findViewById<TextView>(R.id.notification_preview_text).text = fullTextExtra
+            if (!userId.isNullOrEmpty()) {
+                FirestoreNotificationHelper.markNotificationAsRead(notificationId, userId)
+            }
         } else {
-            // This fallback handles any ID not found in the master list
-            findViewById<TextView>(R.id.notification_title).text = "Error: Content Not Found"
-            findViewById<TextView>(R.id.notification_preview_text).text = "The system received ID '$notificationId' but no matching notification was found in the data source."
+            FirestoreNotificationHelper.getNotificationById(
+                notificationId = notificationId,
+                userId = userId,
+                onSuccess = { notification ->
+                    if (notification != null) {
+                        findViewById<TextView>(R.id.notification_title).text = notification.title
+                        findViewById<TextView>(R.id.notification_preview_text).text = notification.fullText
+                        if (!userId.isNullOrEmpty()) {
+                            FirestoreNotificationHelper.markNotificationAsRead(notificationId, userId)
+                        }
+                    } else {
+                        findViewById<TextView>(R.id.notification_title).text = "Error: Content Not Found"
+                        findViewById<TextView>(R.id.notification_preview_text).text =
+                            "The system received ID '$notificationId' but no matching notification was found."
+                    }
+                },
+                onFailure = {
+                    findViewById<TextView>(R.id.notification_title).text = "Error"
+                    findViewById<TextView>(R.id.notification_preview_text).text = it
+                }
+            )
         }
     }
 }

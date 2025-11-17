@@ -48,6 +48,62 @@ class Leader_homepage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Check if user is logged in
+        if (!FirebaseAuthHelper.isUserLoggedIn()) {
+            // User not logged in, redirect to login
+            val intent = Intent(this, Login::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+            return
+        }
+        
+        // Check user role and redirect non-leaders to voter homepage
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        currentUser?.let { user ->
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = user.uid,
+                onSuccess = { userData ->
+                    val role = userData?.get("role") as? String ?: "VOTER"
+                    val isVerified = userData?.get("isVerified") as? Boolean ?: false
+                    
+                    // If user is not a leader, redirect to voter homepage
+                    if (role != "LEADER") {
+                        val intent = Intent(this, Homepage::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    } else if (!isVerified) {
+                        // If leader is not verified, redirect to verification screen
+                        val intent = Intent(this, Leader_Verification::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        // Continue with leader homepage setup
+                        initializeLeaderHomepage()
+                    }
+                },
+                onFailure = { error ->
+                    // If we can't get user data, redirect to login
+                    android.util.Log.e("Leader_homepage", "Error getting user data: $error")
+                    val intent = Intent(this, Login::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+            )
+        } ?: run {
+            // No current user, redirect to login
+            val intent = Intent(this, Login::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
+    }
+    
+    private fun initializeLeaderHomepage() {
         setContentView(R.layout.activity_leader_homepage)
 
         // 3. Initialize Notification Manager (Copied from Faq.kt)
@@ -62,7 +118,7 @@ class Leader_homepage : AppCompatActivity() {
         populateHeaderData()
 
         // 💡 NEW: Update the main content UI based on the current election phase
-        updateElectionUI(determineElectionState())
+        loadElectionState()
     }
 
     private fun initializeViews() {
@@ -89,9 +145,29 @@ class Leader_homepage : AppCompatActivity() {
     }
 
     private fun populateHeaderData() {
-        // ⚠️ BACKEND GUIDE: Replace this static data fetch with a call to your data layer
-        val leaderName = "Juan"
-        nameTitle.text = leaderName
+        // Get leader name from Firestore
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        currentUser?.let { user ->
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = user.uid,
+                onSuccess = { userData ->
+                    val firstName = userData?.get("firstname") as? String ?: ""
+                    val lastName = userData?.get("lastname") as? String ?: ""
+                    val fullName = if (firstName.isNotEmpty() || lastName.isNotEmpty()) {
+                        "$firstName $lastName".trim()
+                    } else {
+                        user.email?.substringBefore("@") ?: "Leader"
+                    }
+                    nameTitle.text = fullName
+                },
+                onFailure = { error ->
+                    // Fallback to email
+                    nameTitle.text = currentUser.email?.substringBefore("@") ?: "Leader"
+                }
+            )
+        } ?: run {
+            nameTitle.text = "Leader"
+        }
     }
 
     /**
@@ -103,6 +179,7 @@ class Leader_homepage : AppCompatActivity() {
         profileIcon.setOnClickListener {
             val intent = Intent(this, Leader_profile::class.java)
             startActivity(intent)
+            @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
         }
 
@@ -117,25 +194,64 @@ class Leader_homepage : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     /**
-     * ⚠️ BACKEND INTEGRATION POINT:
-     * This function should be replaced with a real API call to determine the current
-     * election phase (ONGOING, UPCOMING, NO_ELECTION, ENDED) for the leader's college.
-     * For demonstration, it is currently hardcoded.
+     * Load election state from Firestore
      */
-    private fun determineElectionState(): ElectionState {
-        return ElectionState.ONGOING // Change this value to test different phases
+    private fun loadElectionState() {
+        FirestoreElectionHelper.determineElectionState(
+            onSuccess = { state ->
+                updateElectionUI(state)
+                // If ongoing, fetch end date details
+                if (state == ElectionState.ONGOING) {
+                    loadOngoingElectionDetails()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_homepage", "Error loading election state: $error")
+                updateElectionUI(ElectionState.NO_ELECTION)
+            }
+        )
     }
 
     /**
-     * ⚠️ BACKEND INTEGRATION POINT:
-     * This function should fetch the actual end date and time from the database
-     * when the election is ONGOING.
-     * * The return type uses the renamed data class.
+     * Fetch the actual end date and time from Firestore when election is ONGOING
      */
-    private fun fetchOngoingElectionData(): ElectionDateandTimeDetails {
-        return ElectionDateandTimeDetails(
-            endDate = "October 15, 2025",
-            endTime = "5:00 PM"
+    private fun loadOngoingElectionDetails() {
+        FirestoreElectionHelper.getCurrentElection(
+            onSuccess = { electionDetails ->
+                if (electionDetails != null) {
+                    // Parse the period string to extract end date
+                    // Format: "MMMM dd, yyyy - MMMM dd, yyyy"
+                    val parts = electionDetails.period.split(" - ")
+                    if (parts.size == 2) {
+                        val endDateStr = parts[1]
+                        // Get end time from Firestore directly
+                        FirestoreElectionHelper.getCurrentElectionId(
+                            onSuccess = { electionId ->
+                                electionId?.let { id ->
+                                    FirestoreLeaderHelper.getElectionById(id,
+                                        onSuccess = { electionData ->
+                                            electionData?.let { data ->
+                                                val endDateTimestamp = data["endDate"] as? com.google.firebase.Timestamp
+                                                val endDate = endDateTimestamp?.toDate()
+                                                if (endDate != null) {
+                                                    val formattedDate = FirestoreLeaderHelper.formatDate(endDate)
+                                                    val formattedTime = FirestoreLeaderHelper.formatTime(endDate)
+                                                    electionStatusDateTimeValue.text = "(Ends: $formattedDate at $formattedTime)"
+                                                }
+                                            }
+                                        },
+                                        onFailure = { }
+                                    )
+                                }
+                            },
+                            onFailure = { }
+                        )
+                    }
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_homepage", "Error loading election details: $error")
+            }
         )
     }
 
@@ -161,7 +277,8 @@ class Leader_homepage : AppCompatActivity() {
                 btnViewElectionSetup.text = "Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
             }
             ElectionState.UPCOMING -> {
@@ -174,40 +291,44 @@ class Leader_homepage : AppCompatActivity() {
                 btnViewElectionSetup.text = "View Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup_details::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
                 btnManageCandidates.setOnClickListener {
                     startActivity(Intent(this, Leader_manage_candidates::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
                 btnManageVoter.setOnClickListener {
                     startActivity(Intent(this, Leader_manage_voters::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
             }
             ElectionState.ONGOING -> {
                 // Phase 3: Ongoing
                 voterManagementCard.visibility = View.VISIBLE
                 electionMonitoringCard.visibility = View.VISIBLE
+                electionStatusDateTimeValue.visibility = View.VISIBLE
 
-                // 💡 UPDATED: Variable declaration uses the renamed data class
-                val details = fetchOngoingElectionData()
                 electionStatusValue.text = "Ongoing"
-                electionStatusDateTimeValue.text = "(Ends: ${details.endDate} at ${details.endTime})"
-
+                // End date/time will be loaded by loadOngoingElectionDetails()
 
                 btnViewElectionSetup.text = "View Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup_details::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
                 btnOpenDashboard.setOnClickListener {
                     startActivity(Intent(this, Leader_monitor::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
                 btnManageVoter.setOnClickListener {
                     startActivity(Intent(this, Leader_monitor::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
             }
             ElectionState.ENDED -> {
@@ -219,11 +340,13 @@ class Leader_homepage : AppCompatActivity() {
                 btnViewElectionSetup.text = "View Election Setup"
                 btnViewElectionSetup.setOnClickListener {
                     startActivity(Intent(this, Leader_electionsetup_details::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
                 btnOpenDashboardResult.setOnClickListener {
                     startActivity(Intent(this, AutomatedReports::class.java))
-                    overridePendingTransition(0, 0)
+                    @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                 }
             }
         }
@@ -245,7 +368,8 @@ class Leader_homepage : AppCompatActivity() {
                 val intent = Intent(this, activityClass)
                 intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 startActivity(intent)
-                overridePendingTransition(0, 0)
+                @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
             }
         }
 

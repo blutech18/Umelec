@@ -42,6 +42,8 @@ class Homepage : AppCompatActivity() {
     // Shared width variable for candidate and result preview
     private var candidateItemWidth = 0
     private var currentElectionId: String? = null
+    private var hasVotedInCurrentElection = false
+    private var lastKnownElectionState: ElectionState? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -57,6 +59,49 @@ class Homepage : AppCompatActivity() {
             return
         }
         
+        // Check user role and redirect leaders to their homepage
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        currentUser?.let { user ->
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = user.uid,
+                onSuccess = { userData ->
+                    val role = userData?.get("role") as? String ?: "VOTER"
+                    val isVerified = userData?.get("isVerified") as? Boolean ?: false
+                    
+                    // If user is a leader, redirect to leader homepage
+                    if (role == "LEADER") {
+                        if (isVerified) {
+                            val intent = Intent(this, Leader_homepage::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        } else {
+                            val intent = Intent(this, Leader_Verification::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        }
+                    } else {
+                        // Continue with voter homepage setup
+                        initializeHomepage()
+                    }
+                },
+                onFailure = { error ->
+                    // If we can't get user data, continue with voter homepage (default)
+                    android.util.Log.e("Homepage", "Error getting user data: $error")
+                    initializeHomepage()
+                }
+            )
+        } ?: run {
+            // No current user, redirect to login
+            val intent = Intent(this, Login::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
+    }
+    
+    private fun initializeHomepage() {
         // Set the content view
         setContentView(R.layout.activity_homepage)
 
@@ -68,21 +113,7 @@ class Homepage : AppCompatActivity() {
 
 
         // --- NEW ELECTION INITIALIZATION ---
-        // Get current election ID and state from Firestore
-        FirestoreElectionHelper.getCurrentElectionId(
-            onSuccess = { electionId ->
-                currentElectionId = electionId
-                if (electionId != null) {
-                    determineElectionState()
-                } else {
-                    updateElectionUI(ElectionState.NO_ELECTION)
-                }
-            },
-            onFailure = { error ->
-                android.util.Log.e("Homepage", "Error getting election ID: $error")
-                updateElectionUI(ElectionState.NO_ELECTION)
-            }
-        )
+        loadElectionContext()
         // -----------------------------------
 
         // --- NEW FOOTER NAVIGATION SETUP ---
@@ -150,14 +181,51 @@ class Homepage : AppCompatActivity() {
 
     // --- ELECTION LOGIC START ---
 
+    private fun loadElectionContext() {
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                if (electionId == null) {
+                    hasVotedInCurrentElection = false
+                } else {
+                    refreshUserVoteStatus()
+                }
+                determineElectionState()
+            },
+            onFailure = { error ->
+                android.util.Log.e("Homepage", "Error getting election ID: $error")
+                determineElectionState()
+            }
+        )
+    }
+
+    private fun refreshUserVoteStatus() {
+        val electionId = currentElectionId ?: return
+        val userId = FirebaseAuthHelper.getCurrentUser()?.uid ?: return
+
+        FirestoreElectionHelper.hasUserVoted(
+            userId = userId,
+            electionId = electionId,
+            onSuccess = { hasVoted ->
+                hasVotedInCurrentElection = hasVoted
+                lastKnownElectionState?.let { updateElectionUI(it) }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Homepage", "Error checking vote status: $error")
+            }
+        )
+    }
+
     // Determine election state from Firestore
     private fun determineElectionState() {
         FirestoreElectionHelper.determineElectionState(
             onSuccess = { state ->
+                lastKnownElectionState = state
                 updateElectionUI(state)
             },
             onFailure = { error ->
                 android.util.Log.e("Homepage", "Error determining election state: $error")
+                lastKnownElectionState = ElectionState.NO_ELECTION
                 updateElectionUI(ElectionState.NO_ELECTION)
             }
         )
@@ -231,10 +299,6 @@ class Homepage : AppCompatActivity() {
         val votingPeriodValue: TextView = findViewById(R.id.votingPeriodValue)
         val statusValue: TextView = findViewById(R.id.statusValue)
 
-        // View for UPCOMING election date data
-
-        val upcomingDateValue: TextView = findViewById(R.id.UpcomingDateValue)
-
         when (state) {
 
             ElectionState.ONGOING -> {
@@ -252,15 +316,26 @@ class Homepage : AppCompatActivity() {
                     electionTitleValue.text = electionData.title
                     votingPeriodValue.text = electionData.period
 
-                    // 🚀 UPDATED LOGIC (From Vote.kt): Status text and button text
-                    statusValue.text = "Ongoing"
-                    statusValue.setTextColor(Color.parseColor("#333333"))
-                    btnVoteNow.text = "Vote now"
+                    if (hasVotedInCurrentElection) {
+                        statusValue.text = "Already voted"
+                        statusValue.setTextColor(Color.parseColor("#C62828"))
+                        btnVoteNow.text = "Already voted"
+                        btnVoteNow.isEnabled = false
+                        btnVoteNow.alpha = 0.5f
+                        btnVoteNow.setOnClickListener(null)
+                    } else {
+                        // 🚀 UPDATED LOGIC (From Vote.kt): Status text and button text
+                        statusValue.text = "Ongoing"
+                        statusValue.setTextColor(Color.parseColor("#333333"))
+                        btnVoteNow.text = "Vote now"
+                        btnVoteNow.isEnabled = true
+                        btnVoteNow.alpha = 1.0f
 
-                    // Set click listener for Vote Now button
-                    btnVoteNow.setOnClickListener {
-                        val intent = Intent(this, Vote::class.java)
-                        startActivity(intent)
+                        // Set click listener for Vote Now button
+                        btnVoteNow.setOnClickListener {
+                            val intent = Intent(this, Vote::class.java)
+                            startActivity(intent)
+                        }
                     }
 
                     // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)

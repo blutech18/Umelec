@@ -28,51 +28,12 @@ import com.google.android.material.textfield.TextInputLayout
 
 class Leader_manage_candidates_profile : AppCompatActivity() {
 
-    // --- Intent Keys & Mock Data Lookup ---
+    // --- Intent Keys ---
     companion object {
+        const val EXTRA_CANDIDATE_ID = "CANDIDATE_ID"
         const val EXTRA_CANDIDATE_NAME = "CANDIDATE_NAME"
         const val EXTRA_POSITION_NAME = "POSITION_NAME"
         const val EXTRA_IS_EDIT_MODE = "IS_EDIT_MODE"
-
-        /**
-         * 💡 MOCK DATA LOOKUP: This simulates querying a database to get a candidate's profile.
-         * It uses the mock data structure defined in Leader_manage_candidates.kt.
-         * In a real application, this function would call your backend/repository.
-         */
-        fun getMockProfileData(candidateName: String): ManageCandidate? {
-            // Re-creating the fake data structure here for lookup in this activity
-            val allPositionsData = listOf(
-                ManagePosition("President", listOf(
-                    ManageCandidate(
-                        name = "Alice Johnson",
-                        hasProfileData = true,
-                        mockYear = "4th Year",
-                        mockCredentials = "• Outstanding Leadership Award\n• Former Class President",
-                        mockPlatform = "To champion student welfare through digital transformation.",
-                        mockPhotoUri = "content://mock/uploaded/alice_johnson_photo.jpg"
-                    ),
-                    ManageCandidate(name = "Bob Williams", hasProfileData = false)
-                )),
-                ManagePosition("Vice President", listOf(
-                    ManageCandidate(
-                        name = "Charlie Brown",
-                        hasProfileData = true,
-                        mockYear = "3rd Year",
-                        mockCredentials = "• Debating Team Captain (2 years)\n• Published Research Assistant",
-                        mockPlatform = "Focusing on mental health and academic support initiatives.",
-                        mockPhotoUri = "content://mock/uploaded/charlie_brown_photo.jpg"
-                    )
-                )),
-                ManagePosition("Secretary", listOf(
-                    ManageCandidate(name = "Dana Scully", hasProfileData = false),
-                    ManageCandidate(name = "Fox Mulder", hasProfileData = false)
-                ))
-            )
-
-            return allPositionsData
-                .flatMap { it.candidates }
-                .firstOrNull { it.name == candidateName && it.hasProfileData }
-        }
     }
 
     // --- View References ---
@@ -90,6 +51,7 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
 
     // --- State Variables ---
     private var isEditMode: Boolean = false
+    private var candidateId: String = ""
     private var candidateName: String = ""
     private var positionName: String = ""
     private var uploadedPhotoUri: Uri? = null
@@ -142,6 +104,7 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
 
     // --- DATA PROCESSING AND MODE SETUP ---
     private fun processIntentData() {
+        candidateId = intent.getStringExtra(EXTRA_CANDIDATE_ID) ?: ""
         candidateName = intent.getStringExtra(EXTRA_CANDIDATE_NAME) ?: "Candidate Name"
         positionName = intent.getStringExtra(EXTRA_POSITION_NAME) ?: "Position"
         isEditMode = intent.getBooleanExtra(EXTRA_IS_EDIT_MODE, false)
@@ -153,8 +116,8 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
         if (isEditMode) {
             tvReportTitle.text = "Edit Candidate Profile"
             btnAdd.text = "Save Changes"
-            // 💡 Fetch unique data for the specific candidate
-            loadMockCandidateData()
+            // Load candidate data from Firestore
+            loadCandidateData()
         } else {
             tvReportTitle.text = "Add Candidate Profile"
             btnAdd.text = "Add Profile"
@@ -163,27 +126,49 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
     }
 
     /**
-     * MOCK function to simulate loading existing candidate data for editing.
-     * Now uses the lookup function to get dynamic data.
+     * Load candidate data from Firestore
      */
-    private fun loadMockCandidateData() {
-        val profile = getMockProfileData(candidateName)
-
-        if (profile != null) {
-            // Fill form fields with mock data
-            inputYear.setText(profile.mockYear, false)
-            inputCredentials.setText(profile.mockCredentials, TextView.BufferType.EDITABLE)
-            inputPlatform.setText(profile.mockPlatform, TextView.BufferType.EDITABLE)
-
-            // Mock photo upload if URI exists
-            profile.mockPhotoUri?.let { uriString ->
-                // In a real scenario, you might need permission to persist access to this URI.
-                val mockUri = Uri.parse(uriString)
-                handlePhotoUploadSuccess(mockUri)
-            }
+    private fun loadCandidateData() {
+        if (candidateId.isEmpty()) {
+            android.util.Log.w("Leader_manage_candidates_profile", "Candidate ID is empty, cannot load data")
+            return
         }
-        // Note: If profile is null, it means either they shouldn't be in edit mode
-        // or there's no data, so fields remain empty.
+
+        android.util.Log.d("Leader_manage_candidates_profile", "Loading candidate data for ID: $candidateId")
+        FirestoreCandidateHelper.getCandidatePlatformDetails(
+            candidateId = candidateId,
+            onSuccess = { details ->
+                if (details != null) {
+                    android.util.Log.d("Leader_manage_candidates_profile", "Loaded candidate: ${details.name}")
+                    // Fill form fields with candidate data
+                    inputYear.setText(details.courseInfo, false)
+                    inputCredentials.setText(details.credentials, TextView.BufferType.EDITABLE)
+                    inputPlatform.setText(details.advocacy, TextView.BufferType.EDITABLE)
+                    
+                    // Update button state after loading data
+                    updateButtonState()
+                    
+                    // Note: Photo URL would need to be loaded separately if stored in Firebase Storage
+                    // For now, we'll just show that photo is optional in edit mode
+                    if (details.advocacy.isNotEmpty() && details.credentials.isNotEmpty() && details.courseInfo.isNotEmpty()) {
+                        // If all text fields are filled, make photo optional for edit mode
+                        if (isEditMode) {
+                            // In edit mode, photo is optional if other fields are filled
+                            val isYearSelected = inputYear.text.toString().isNotEmpty()
+                            val isCredentialsFilled = inputCredentials.text.toString().trim().isNotEmpty()
+                            val isPlatformFilled = inputPlatform.text.toString().trim().isNotEmpty()
+                            btnAdd.isEnabled = isYearSelected && isCredentialsFilled && isPlatformFilled
+                        }
+                    }
+                } else {
+                    android.util.Log.w("Leader_manage_candidates_profile", "Candidate details are null")
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_manage_candidates_profile", "Error loading candidate: $error")
+                Toast.makeText(this, "Error loading candidate data: $error", Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // --- DROPDOWN & INPUT SETUP (No change) ---
@@ -243,11 +228,7 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
 
         // Final Button Listener
         btnAdd.setOnClickListener {
-            if (isEditMode) {
-                mockSaveToBackend(isEdit = true)
-            } else {
-                mockSaveToBackend(isEdit = false)
-            }
+            saveCandidateProfile()
         }
     }
 
@@ -257,13 +238,64 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
         val isPlatformFilled = inputPlatform.text.toString().trim().isNotEmpty()
         val isPhotoUploaded = uploadedPhotoUri != null
 
-        btnAdd.isEnabled = isYearSelected && isCredentialsFilled && isPlatformFilled && isPhotoUploaded
+        // In edit mode, photo is optional if other fields are filled
+        // In add mode, photo is required
+        if (isEditMode) {
+            btnAdd.isEnabled = isYearSelected && isCredentialsFilled && isPlatformFilled
+        } else {
+            btnAdd.isEnabled = isYearSelected && isCredentialsFilled && isPlatformFilled && isPhotoUploaded
+        }
     }
 
-    // --- TOAST & MOCK BACKEND LOGIC (No change) ---
-    private fun mockSaveToBackend(isEdit: Boolean) {
-        /* ... BACKEND GUIDE COMMENT ... */
-        showSuccessToastAndNavigate(isEdit)
+    // --- SAVE TO FIRESTORE ---
+    private fun saveCandidateProfile() {
+        if (candidateId.isEmpty()) {
+            android.util.Log.e("Leader_manage_candidates_profile", "Candidate ID is empty")
+            Toast.makeText(this, "Error: Candidate ID missing", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val year = inputYear.text.toString().trim()
+        val credentials = inputCredentials.text.toString().trim()
+        val platform = inputPlatform.text.toString().trim()
+
+        if (year.isEmpty() || credentials.isEmpty() || platform.isEmpty()) {
+            Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // In add mode, photo is required
+        if (!isEditMode && uploadedPhotoUri == null) {
+            Toast.makeText(this, "Please upload a photo", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        btnAdd.isEnabled = false
+        Toast.makeText(this, if (isEditMode) "Saving changes..." else "Adding profile...", Toast.LENGTH_SHORT).show()
+
+        android.util.Log.d("Leader_manage_candidates_profile", "Saving candidate profile: $candidateId")
+        android.util.Log.d("Leader_manage_candidates_profile", "Year: $year, Credentials: $credentials, Platform: $platform")
+
+        // Note: Photo upload to Firebase Storage would be handled separately
+        // For now, we'll just save the text data
+        // If photo URI is available, it would be uploaded to Firebase Storage first, then the URL would be passed here
+        
+        FirestoreCandidateHelper.updateCandidateProfile(
+            candidateId = candidateId,
+            courseInfo = year,
+            credentials = credentials,
+            advocacy = platform,
+            photoUrl = null, // TODO: Upload photo to Firebase Storage and get URL
+            onSuccess = {
+                android.util.Log.d("Leader_manage_candidates_profile", "Candidate profile saved successfully: $candidateId")
+                showSuccessToastAndNavigate(isEditMode)
+            },
+            onFailure = { error ->
+                btnAdd.isEnabled = true
+                android.util.Log.e("Leader_manage_candidates_profile", "Error saving profile: $error")
+                Toast.makeText(this, "Error saving: $error", Toast.LENGTH_LONG).show()
+            }
+        )
     }
 
     private fun showSuccessToastAndNavigate(isEdit: Boolean) {
@@ -287,6 +319,7 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
         with (Toast(applicationContext)) {
             duration = Toast.LENGTH_SHORT
             setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+            @Suppress("DEPRECATION")
             view = layout
             show()
         }

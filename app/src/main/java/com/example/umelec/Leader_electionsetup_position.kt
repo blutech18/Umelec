@@ -35,6 +35,7 @@ class Leader_electionsetup_position : AppCompatActivity() {
 
     // List to store all added positions
     private val positionsList = ArrayList<PositionDetails>()
+    private var electionId: String? = null
 
     // View references
     private lateinit var btnBack: ImageButton
@@ -48,14 +49,15 @@ class Leader_electionsetup_position : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_leader_electionsetup_position)
 
+        // Get election ID from intent
+        electionId = intent.getStringExtra("electionId")
+
         // Initialize views
         btnBack = findViewById(R.id.btnBack)
         btnAddPosition = findViewById(R.id.btnAddPosition)
         noPositionLayout = findViewById(R.id.NoPositionLayout)
         positionCardContainer = findViewById(R.id.ReportContainer) // Assuming ReportContainer is the LinearLayout parent
         btnSubmit = findViewById(R.id.btnSubmit)
-
-        // Removed logic to find and remove PositionCardTemplate
 
         // 7. when btnBack is clicked goes back to the last activity finish()
         btnBack.setOnClickListener {
@@ -67,8 +69,13 @@ class Leader_electionsetup_position : AppCompatActivity() {
             showAddPositionBottomSheet(null)
         }
 
-        // Initial check for submit button and NoPositionLayout visibility
-        updateUIState()
+        // Load existing positions if election ID exists
+        if (electionId != null) {
+            loadExistingPositions()
+        } else {
+            // Initial check for submit button and NoPositionLayout visibility
+            updateUIState()
+        }
     }
 
     /**
@@ -84,11 +91,7 @@ class Leader_electionsetup_position : AppCompatActivity() {
             btnSubmit.isEnabled = true
             // 6. when btnSubmit is clicked:
             btnSubmit.setOnClickListener {
-                // Guide for backend/database:
-                // All the data inside the positionsList (List<PositionDetails>)
-                // should be stored in the database. Each PositionDetails object
-                // contains the position 'title', the 'yearLevel' allowed to vote,
-                // and a list of 'candidates' for that position.
+                submitPositions()
             }
         }
     }
@@ -538,6 +541,98 @@ class Leader_electionsetup_position : AppCompatActivity() {
                 textInputLayout.setBoxStrokeColor(defaultColor)
                 textInputLayout.defaultHintTextColor = ColorStateList.valueOf(defaultColor)
             }
+        }
+    }
+
+    /**
+     * Load existing positions from Firestore
+     */
+    private fun loadExistingPositions() {
+        electionId?.let { id ->
+            FirestoreLeaderHelper.getPositionsForElection(
+                electionId = id,
+                onSuccess = { positions ->
+                    positionsList.clear()
+                    positions.forEach { positionData ->
+                        val positionName = positionData["positionName"] as? String ?: ""
+                        val yearLevel = positionData["yearLevel"] as? String ?: "All year level"
+                        // Note: Candidates are stored separately in candidates collection
+                        positionsList.add(PositionDetails(positionName, yearLevel, ArrayList()))
+                    }
+                    renderPositionCards()
+                    updateUIState()
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_electionsetup_position", "Error loading positions: $error")
+                    updateUIState()
+                }
+            )
+        } ?: updateUIState()
+    }
+
+    /**
+     * Submit all positions to Firestore
+     */
+    private fun submitPositions() {
+        if (electionId == null) {
+            android.widget.Toast.makeText(this, "No election selected", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (positionsList.isEmpty()) {
+            android.widget.Toast.makeText(this, "Please add at least one position", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        btnSubmit.isEnabled = false
+        android.widget.Toast.makeText(this, "Saving positions...", android.widget.Toast.LENGTH_SHORT).show()
+
+        var completed = 0
+        var failed = 0
+        val total = positionsList.size
+
+        positionsList.forEach { position ->
+            FirestoreLeaderHelper.addPosition(
+                electionId = electionId!!,
+                positionName = position.title,
+                onSuccess = { positionId ->
+                    // Save candidates for this position
+                    position.candidates.forEach { candidateName ->
+                        // Create candidate document
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("candidates")
+                            .add(hashMapOf(
+                                "electionId" to electionId!!,
+                                "positionId" to positionId,
+                                "positionName" to position.title,
+                                "name" to candidateName,
+                                "isActive" to true,
+                                "createdAt" to com.google.firebase.Timestamp.now()
+                            ))
+                    }
+                    completed++
+                    if (completed + failed == total) {
+                        handleSubmitComplete(completed, failed)
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_electionsetup_position", "Error saving position: $error")
+                    failed++
+                    if (completed + failed == total) {
+                        handleSubmitComplete(completed, failed)
+                    }
+                }
+            )
+        }
+    }
+
+    private fun handleSubmitComplete(successCount: Int, failedCount: Int) {
+        btnSubmit.isEnabled = true
+        if (failedCount == 0) {
+            android.widget.Toast.makeText(this, "Positions saved successfully", android.widget.Toast.LENGTH_SHORT).show()
+            finish()
+        } else {
+            android.widget.Toast.makeText(this, "Saved $successCount positions, $failedCount failed", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 }

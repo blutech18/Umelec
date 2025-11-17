@@ -21,15 +21,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
-// REMOVED: import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-// REMOVED: import com.google.android.material.timepicker.MaterialTimePicker
-// REMOVED: import com.google.android.material.timepicker.TimeFormat
-// REMOVED: import java.text.SimpleDateFormat
-
-// REMOVED: import java.util.Date
-// REMOVED: import java.util.Locale
 
 class Leader_electionsetup : AppCompatActivity() {
 
@@ -57,10 +50,9 @@ class Leader_electionsetup : AppCompatActivity() {
     private lateinit var layoutEndDate: TextInputLayout
     private lateinit var layoutEndTime: TextInputLayout
 
-    // 3. Fake Data Control
-    // To enable/disable the fake positions data, change this boolean.
-    private val USE_FAKE_POSITIONS_DATA = true
-    private val FAKE_POSITIONS = listOf("President", "Vice President", "Secretary")
+    // Store current election ID for positions
+    private var currentElectionId: String? = null
+    private var positionsCount = 0
 
     // 4. List of all required input fields and layouts for validation/focus
     private val inputFields: List<TextInputEditText> by lazy {
@@ -76,7 +68,7 @@ class Leader_electionsetup : AppCompatActivity() {
 
         initializeViews()
         setupListeners()
-        updatePositionsUI()
+        loadPositionsCount()
         checkFormValidity() // Set initial button state
     }
 
@@ -123,7 +115,9 @@ class Leader_electionsetup : AppCompatActivity() {
         // --- 5. Navigation Listeners
         btnViewPosition.setOnClickListener {
             // Navigate to Leader_election_setup_position.kt
-            startActivity(Intent(this, Leader_electionsetup_position::class.java))
+            val intent = Intent(this, Leader_electionsetup_position::class.java)
+            currentElectionId?.let { intent.putExtra("electionId", it) }
+            startActivity(intent)
         }
 
         btnPreview.setOnClickListener {
@@ -132,36 +126,7 @@ class Leader_electionsetup : AppCompatActivity() {
         }
 
         btnSubmit.setOnClickListener {
-
-            val inflater = LayoutInflater.from(this)
-            // Inflate the custom toast layout
-            val layout = inflater.inflate(R.layout.custom_toast_success, null)
-
-            // Find and customize the views
-            val titleText: TextView = layout.findViewById(R.id.toast_title)
-            val valueText: TextView = layout.findViewById(R.id.toast_value)
-            val actionButton: AppCompatButton = layout.findViewById(R.id.btn_action)
-
-            // Set content and hide button (Toast should be non-interactive)
-            titleText.text = "Setup submitted!"
-            valueText.text = "Awaiting final approval from Election Adviser."
-            actionButton.visibility = View.GONE // Hide the button
-
-            with (Toast(applicationContext)) {
-                duration = Toast.LENGTH_SHORT
-                // Set the custom gravity and offset
-                setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
-                view = layout
-                show()
-            }
-
-            // Crucial: Schedule the navigation on the main thread after a minimal delay (e.g., 40ms).
-            // This allows the Toast rendering command to be processed before the current activity is destroyed.
-            Handler(Looper.getMainLooper()).postDelayed({
-                // Execute the final action (Navigation/Exit)
-                finish()
-            }, 40) // 40 milliseconds is usually enough for the Toast to register
-
+            submitElection()
         }
     }
 
@@ -205,14 +170,8 @@ class Leader_electionsetup : AppCompatActivity() {
         // 2. Check if the Checkbox is checked
         val termsChecked = cbAgreeTerms.isChecked
 
-        // 3. Check for Position Data (Must have positions if not disabled)
-        val hasPositions = if (USE_FAKE_POSITIONS_DATA) {
-            FAKE_POSITIONS.isNotEmpty()
-        } else {
-            // TODO: Replace with actual database check (e.g., db.getPositions().isNotEmpty())
-            // For now, assume true if fake data is off
-            true
-        }
+        // 3. Check for Position Data (Must have positions)
+        val hasPositions = positionsCount > 0
 
         // Enable buttons only if all conditions are met
         val isFormValid = allFieldsFilled && termsChecked && hasPositions
@@ -244,21 +203,131 @@ class Leader_electionsetup : AppCompatActivity() {
     }
 
     // =========================================================================
-    // POSITIONS CARD LOGIC (Updated to list positions vertically)
+    // POSITIONS CARD LOGIC (Load from Firestore)
     // =========================================================================
 
-    private fun updatePositionsUI() {
-        if (USE_FAKE_POSITIONS_DATA && FAKE_POSITIONS.isNotEmpty()) {
-            // Build a single string with all positions listed vertically
-            val positionListText = FAKE_POSITIONS.joinToString("\n") { position ->
-                "$position"
-            }
+    private fun loadPositionsCount() {
+        // Get positions count for current election (if election ID exists)
+        currentElectionId?.let { electionId ->
+            FirestoreLeaderHelper.getPositionsForElection(
+                electionId = electionId,
+                onSuccess = { positions ->
+                    positionsCount = positions.size
+                    updatePositionsUI()
+                    checkFormValidity()
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_electionsetup", "Error loading positions: $error")
+                    positionsCount = 0
+                    updatePositionsUI()
+                    checkFormValidity()
+                }
+            )
+        } ?: run {
+            positionsCount = 0
+            updatePositionsUI()
+        }
+    }
 
-            tvPosition.text = positionListText
-            // Color change removed as requested
+    private fun updatePositionsUI() {
+        if (positionsCount > 0) {
+            tvPosition.text = "$positionsCount position(s) added"
         } else {
-            // Display the default message for zero/no positions
             tvPosition.text = "Add at least 1 position"
+        }
+    }
+
+    // =========================================================================
+    // SUBMIT ELECTION LOGIC
+    // =========================================================================
+
+    private fun submitElection() {
+        val title = inputTitle.text.toString().trim()
+        val startDateStr = inputStartDate.text.toString().trim()
+        val startTimeStr = inputStartTime.text.toString().trim()
+        val endDateStr = inputEndDate.text.toString().trim()
+        val endTimeStr = inputEndTime.text.toString().trim()
+
+        // Parse dates and times
+        val startDate = parseDateTime(startDateStr, startTimeStr)
+        val endDate = parseDateTime(endDateStr, endTimeStr)
+
+        if (startDate == null || endDate == null) {
+            Toast.makeText(this, "Invalid date or time format", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Show loading
+        btnSubmit.isEnabled = false
+        Toast.makeText(this, "Creating election...", Toast.LENGTH_SHORT).show()
+
+        // Create election in Firestore
+        FirestoreLeaderHelper.createElection(
+            title = title,
+            startDate = startDate,
+            endDate = endDate,
+            isAbstainEnabled = cbAgreeTerms.isChecked,
+            onSuccess = { electionId ->
+                currentElectionId = electionId
+                // Show success toast
+                val inflater = LayoutInflater.from(this)
+                val layout = inflater.inflate(R.layout.custom_toast_success, null)
+                val titleText: TextView = layout.findViewById(R.id.toast_title)
+                val valueText: TextView = layout.findViewById(R.id.toast_value)
+                val actionButton: AppCompatButton = layout.findViewById(R.id.btn_action)
+
+                titleText.text = "Setup submitted!"
+                valueText.text = "Awaiting final approval from Election Adviser."
+                actionButton.visibility = View.GONE
+
+                with (Toast(applicationContext)) {
+                    duration = Toast.LENGTH_SHORT
+                    setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+                    @Suppress("DEPRECATION")
+                    view = layout
+                    show()
+                }
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    finish()
+                }, 40)
+            },
+            onFailure = { error ->
+                btnSubmit.isEnabled = true
+                Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+            }
+        )
+    }
+
+    private fun parseDateTime(dateStr: String, timeStr: String): java.util.Date? {
+        return try {
+            // Parse date: "MMM dd, yyyy" (e.g., "Oct 15, 2025")
+            val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+            val date = dateFormat.parse(dateStr) ?: return null
+
+            // Parse time: "hh:mm AM/PM" (e.g., "05:00 PM")
+            val timeFormat = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+            val time = timeFormat.parse(timeStr) ?: return null
+
+            // Combine date and time
+            val calendar = java.util.Calendar.getInstance()
+            val dateCal = java.util.Calendar.getInstance()
+            dateCal.time = date
+            val timeCal = java.util.Calendar.getInstance()
+            timeCal.time = time
+
+            calendar.set(
+                dateCal.get(java.util.Calendar.YEAR),
+                dateCal.get(java.util.Calendar.MONTH),
+                dateCal.get(java.util.Calendar.DAY_OF_MONTH),
+                timeCal.get(java.util.Calendar.HOUR_OF_DAY),
+                timeCal.get(java.util.Calendar.MINUTE),
+                0
+            )
+            calendar.time
+        } catch (e: Exception) {
+            android.util.Log.e("Leader_electionsetup", "Error parsing date/time: ${e.message}")
+            null
         }
     }
 

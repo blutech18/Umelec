@@ -131,10 +131,44 @@
                     android:textSize="20sp"
                     android:visibility="gone"/>
 
-
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/emptyStateContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:gravity="center"
+                android:visibility="gone">
 
+                <ImageView
+                    android:id="@+id/emptyStateIcon"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:src="@drawable/ic_notification"
+                    android:tint="#8C8CA1"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:id="@+id/emptyStateTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="You're all caught up!"
+                    android:textSize="18sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/montserrat_semi_bold"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/emptyStateMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No notifications at the moment."
+                    android:textSize="14sp"
+                    android:textColor="#8C8CA1"
+                    android:fontFamily="@font/poppins_regular"/>
+            </LinearLayout>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

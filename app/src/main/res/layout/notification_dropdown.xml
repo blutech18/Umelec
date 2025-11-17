@@ -64,26 +64,48 @@
             />
 
         <LinearLayout
-        android:id="@+id/notificationListContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        >
-
-        <TextView
-            android:id="@+id/noNotificationTextView"
+            android:id="@+id/notificationListContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="You are all caught up! No new notifications."
-            android:gravity="center"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:textColor="#4A4A68"
-            android:textSize="14sp"
-            android:visibility="gone"
-            tools:visibility="visible"/>
+            android:orientation="vertical"/>
 
-    </LinearLayout>
+        <LinearLayout
+            android:id="@+id/dropdownEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:id="@+id/dropdownEmptyIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_notification"
+                android:tint="#8C8CA1"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/dropdownEmptyTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="You're all caught up!"
+                android:textColor="#313131"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="2dp"/>
+
+            <TextView
+                android:id="@+id/dropdownEmptyMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No notifications at the moment."
+                android:textColor="#8C8CA1"
+                android:textSize="12sp"/>
+        </LinearLayout>
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

@@ -2,6 +2,8 @@ package com.example.umelec
 
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.functions.FirebaseFunctionsException
 import java.util.*
 
 /**
@@ -9,6 +11,7 @@ import java.util.*
  */
 object FirestoreVoteHelper {
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val functions: FirebaseFunctions = FirebaseFunctions.getInstance("us-central1")
     private const val VOTES_COLLECTION = "votes"
     private const val TAG = "FirestoreVoteHelper"
 
@@ -131,57 +134,48 @@ object FirestoreVoteHelper {
         onSuccess: (List<VoteTally>) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        firestore.collection(VOTES_COLLECTION)
-            .whereEqualTo("electionId", electionId)
-            .get()
-            .addOnSuccessListener { voteDocuments ->
-                // Count votes by position and candidate
-                val talliesMap = mutableMapOf<String, MutableMap<String, Int>>() // positionId -> (candidateId -> count)
-                val positionNamesMap = mutableMapOf<String, String>()
-                val candidateNamesMap = mutableMapOf<String, String>()
+        val data = hashMapOf("electionId" to electionId)
 
-                voteDocuments.documents.forEach { voteDoc ->
-                    val voteData = voteDoc.data ?: return@forEach
-                    val selections = voteData["selections"] as? Map<String, Any> ?: return@forEach
-
-                    selections.forEach { (positionId, candidateData) ->
-                        val candidateMap = candidateData as? Map<String, Any> ?: return@forEach
-                        val candidateId = candidateMap["candidateId"] as? String ?: return@forEach
-                        val candidateName = candidateMap["candidateName"] as? String ?: return@forEach
-                        val positionName = candidateMap["positionName"] as? String ?: return@forEach
-
-                        positionNamesMap[positionId] = positionName
-                        candidateNamesMap[candidateId] = candidateName
-
-                        if (!talliesMap.containsKey(positionId)) {
-                            talliesMap[positionId] = mutableMapOf()
-                        }
-                        talliesMap[positionId]!![candidateId] = 
-                            (talliesMap[positionId]!![candidateId] ?: 0) + 1
-                    }
+        functions
+            .getHttpsCallable("getVoteTallies")
+            .call(data)
+            .addOnSuccessListener { result ->
+                val resultData = result.getData() as? Map<*, *> ?: run {
+                    onFailure("Invalid response format")
+                    return@addOnSuccessListener
                 }
 
-                // Convert to VoteTally list
-                val tallies = mutableListOf<VoteTally>()
-                talliesMap.forEach { (positionId, candidateCounts) ->
-                    candidateCounts.forEach { (candidateId, count) ->
-                        tallies.add(
+                val talliesList = (resultData["tallies"] as? List<*>)?.mapNotNull { entry ->
+                    val map = entry as? Map<*, *> ?: return@mapNotNull null
+                    val positionId = map["positionId"] as? String ?: return@mapNotNull null
+                    val positionName = map["positionName"] as? String ?: positionId
+                    val candidateId = map["candidateId"] as? String ?: return@mapNotNull null
+                    val candidateName = map["candidateName"] as? String ?: "Unknown"
+                    val voteCount = (map["voteCount"] as? Number)?.toInt() ?: 0
+
                             VoteTally(
                                 positionId = positionId,
-                                positionName = positionNamesMap[positionId] ?: positionId,
+                        positionName = positionName,
                                 candidateId = candidateId,
-                                candidateName = candidateNamesMap[candidateId] ?: "Unknown",
-                                voteCount = count
-                            )
+                        candidateName = candidateName,
+                        voteCount = voteCount
                         )
-                    }
-                }
+                } ?: emptyList()
 
-                onSuccess(tallies.sortedBy { it.positionName })
+                onSuccess(talliesList.sortedBy { it.positionName })
             }
             .addOnFailureListener { exception ->
-                Log.e(TAG, "Error getting vote tallies: ${exception.message}", exception)
-                onFailure(exception.message ?: "Failed to get vote tallies")
+                Log.e(TAG, "Error getting vote tallies via function: ${exception.message}", exception)
+                val message = when (exception) {
+                    is FirebaseFunctionsException -> {
+                        when (exception.code) {
+                            FirebaseFunctionsException.Code.PERMISSION_DENIED -> "You don't have permission to view tallies."
+                            else -> exception.message ?: "Failed to get vote tallies"
+                        }
+                    }
+                    else -> exception.message ?: "Failed to get vote tallies"
+                }
+                onFailure(message)
             }
     }
 

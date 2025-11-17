@@ -18,10 +18,8 @@ import java.util.Date
 
 class Notification : AppCompatActivity() {
 
-    // 💡 CHANGE: Reference the global mutable list from NotificationData.kt
-    private val allNotificationsData: MutableList<NotificationItem> = allNotifications
+    private val notifications: MutableList<NotificationItem> = mutableListOf()
 
-    // NEW: Load the custom typeface once for efficiency
     private val poppinsRegularTypeface: Typeface? by lazy {
         try {
             ResourcesCompat.getFont(this, R.font.poppins_regular)
@@ -30,7 +28,6 @@ class Notification : AppCompatActivity() {
         }
     }
 
-    // NEW: Load the bold typeface for headers
     private val montserratSemiBoldTypeface: Typeface? by lazy {
         try {
             ResourcesCompat.getFont(this, R.font.montserrat_semi_bold)
@@ -43,14 +40,9 @@ class Notification : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notification)
 
-        // 1. Setup header
         setupBackNavigation()
-
-        // 2. Populate UI with cards
-        populateNotifications()
-
-        // 3. Apply font to static header text
         applyFontsToStaticText()
+        loadNotifications()
     }
 
     // --- FONT APPLICATION ---
@@ -71,11 +63,30 @@ class Notification : AppCompatActivity() {
 
     // 💡 REMOVED: The local fetchAllNotifications function is no longer needed.
 
+    private fun loadNotifications() {
+        val userId = FirebaseAuthHelper.getCurrentUser()?.uid
+        FirestoreNotificationHelper.fetchNotifications(
+            userId = userId,
+            limit = 50,
+            onSuccess = { items ->
+                notifications.clear()
+                notifications.addAll(items)
+                populateNotifications()
+            },
+            onFailure = { error ->
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+                notifications.clear()
+                populateNotifications()
+            }
+        )
+    }
+
     // --- DYNAMIC POPULATION ---
 
     private fun populateNotifications() {
         val newContainer: LinearLayout = findViewById(R.id.newContainer)
         val olderContainer: LinearLayout = findViewById(R.id.olderContainer)
+        val emptyState: LinearLayout = findViewById(R.id.emptyStateContainer)
 
         // Clear existing dynamic views, but keep the header TextViews
         val newHeader = newContainer.getChildAt(0)
@@ -90,7 +101,7 @@ class Notification : AppCompatActivity() {
         val cutoffTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
 
         // Sort and filter using the centralized data list
-        val sortedNotifications = allNotificationsData.sortedByDescending { it.timestamp }
+        val sortedNotifications = notifications.sortedByDescending { it.timestamp }
         val newNotifications = sortedNotifications.filter { it.timestamp > cutoffTime }
         val olderNotifications = sortedNotifications.filter { it.timestamp <= cutoffTime }
 
@@ -115,12 +126,14 @@ class Notification : AppCompatActivity() {
                 val itemView = createNotificationItemView(notification)
                 olderContainer.addView(itemView)
 
-                // Always add separator after every item in the Older list
                 olderContainer.addView(createSeparatorView(this))
             }
         } else {
             olderContainer.visibility = View.GONE
         }
+
+        emptyState.visibility =
+            if (newNotifications.isEmpty() && olderNotifications.isEmpty()) View.VISIBLE else View.GONE
     }
 
     // --- PROGRAMMATIC VIEW CREATION ---
@@ -157,24 +170,22 @@ class Notification : AppCompatActivity() {
             }
 
             setOnClickListener { view ->
-                if (!item.isRead) {
-                    // Find the original item in the global list and update its state
-                    val globalItem = allNotificationsData.find { it.id == item.id }
-                    globalItem?.isRead = true
-
-                    // Update UI visually
+                val currentUserId = FirebaseAuthHelper.getCurrentUser()?.uid
+                if (!item.isRead && currentUserId != null) {
+                    item.isRead = true
                     view.setBackgroundColor(Color.TRANSPARENT)
                     val indicator = view.findViewById<ImageView>(unreadIndicatorId)
                     indicator?.visibility = View.GONE
-
-                    // Force the list to redraw on resume to update the correct state (best practice with a mutable list)
-                    // If you return from Notification2.kt, the state will be updated.
+                    FirestoreNotificationHelper.markNotificationAsRead(item.id, currentUserId)
                 }
 
-                // Navigate
-                val intent = Intent(context, Notification2::class.java)
-                intent.putExtra("NOTIFICATION_ID", item.id)
+                val intent = Intent(context, Notification2::class.java).apply {
+                    putExtra("NOTIFICATION_ID", item.id)
+                    putExtra("NOTIFICATION_TITLE", item.title)
+                    putExtra("NOTIFICATION_FULL_TEXT", item.fullText)
+                }
                 context.startActivity(intent)
+                @Suppress("DEPRECATION")
                 overridePendingTransition(0, 0)
             }
         }
@@ -271,9 +282,8 @@ class Notification : AppCompatActivity() {
 
     private fun Int.toPx(): Int = (this * resources.displayMetrics.density).toInt()
 
-    // Add onResume to re-populate the list when returning from Notification2.kt
     override fun onResume() {
         super.onResume()
-        populateNotifications()
+        loadNotifications()
     }
 }
