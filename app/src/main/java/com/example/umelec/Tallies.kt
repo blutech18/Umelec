@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast // 🔥 NEW: Import for Toast
@@ -21,13 +20,18 @@ import de.hdodenhof.circleimageview.CircleImageView
 data class TallyCandidate(
     val name: String,
     val votes: Int,
-    val photoResId: Int // Resource ID for the drawable/image (e.g., R.drawable.profile_placeholder)
+    val photoUrl: String
 )
 
 // Enum to define the election phase
 enum class ElectionPhase { ONGOING, ENDED }
 
 class Tallies : AppCompatActivity() {
+
+    companion object {
+        const val EXTRA_FORCE_FINAL_TALLIES = "extra_force_final_tallies"
+        private const val DEFAULT_AVATAR_URL = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png"
+    }
 
     // ----------------------------------------------------------------------
     // --- BACKEND/DATABASE INTEGRATION POINTS ---
@@ -37,10 +41,13 @@ class Tallies : AppCompatActivity() {
     private var lastUpdateTimeMillis = System.currentTimeMillis()
     private var talliesData = emptyMap<String, List<TallyCandidate>>()
     private var currentElectionId: String? = null
+    private var forceFinalTallies: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tallies)
+
+        forceFinalTallies = intent.getBooleanExtra(EXTRA_FORCE_FINAL_TALLIES, false)
 
         setupFooterNavigation()
         
@@ -59,6 +66,10 @@ class Tallies : AppCompatActivity() {
                     ElectionState.ONGOING -> ElectionPhase.ONGOING
                     ElectionState.ENDED -> ElectionPhase.ENDED
                     else -> ElectionPhase.ONGOING
+                }
+
+                if (forceFinalTallies) {
+                    currentPhase = ElectionPhase.ENDED
                 }
 
                 // Get election ID
@@ -82,7 +93,7 @@ class Tallies : AppCompatActivity() {
                                             TallyCandidate(
                                                 name = tally.candidateName,
                                                 votes = tally.voteCount,
-                                                photoResId = R.drawable.ic_profile
+                                                photoUrl = DEFAULT_AVATAR_URL
                                             )
                                         )
                                     }
@@ -284,14 +295,13 @@ class Tallies : AppCompatActivity() {
             }
 
             // Set the profile picture and border (assuming CircleImageView is used in list_item_candidate_tally)
-            val profileImageView = candidateRowView.findViewById<ImageView>(R.id.candidate_profile)
-            if (profileImageView is CircleImageView) {
-                profileImageView.setImageResource(candidate.photoResId)
-                // Highlight winner's border if final tallies
-                profileImageView.borderColor = if (isWinner) Color.parseColor("#FCBE6A") else Color.parseColor("#CCCCCC")
-            } else {
-                profileImageView.setImageResource(candidate.photoResId)
-            }
+            val profileImageView = candidateRowView.findViewById<CircleImageView>(R.id.candidate_profile)
+            ImageLoaderHelper.loadCandidateImage(
+                imageView = profileImageView,
+                photoUrl = candidate.photoUrl,
+                defaultResource = R.drawable.ic_profile
+            )
+            profileImageView.borderColor = if (isWinner) Color.parseColor("#FCBE6A") else Color.parseColor("#CCCCCC")
 
 
             candidateRowView.findViewById<TextView>(R.id.candidate_name).text = candidate.name

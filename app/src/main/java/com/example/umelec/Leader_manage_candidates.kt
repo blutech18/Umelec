@@ -198,36 +198,100 @@ class Leader_manage_candidates : AppCompatActivity() {
 
     /**
      * Load candidates from Firestore
+     * For leaders, we need to show candidates even for upcoming/pending elections
      */
     private fun loadCandidates() {
-        // Get current election ID
-        FirestoreElectionHelper.getCurrentElectionId(
-            onSuccess = { electionId ->
-                currentElectionId = electionId
-                if (electionId != null) {
-                    loadCandidatesForElection(electionId)
-                } else {
-                    // No active election
-                    contentContainer.removeAllViews()
-                    val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
-                    noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No active election"
-                    noElectionView.findViewById<TextView>(R.id.AnswerTextGeneral).text = "Please create an election first"
-                    contentContainer.addView(noElectionView)
+        // Get current user's college information first
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            android.util.Log.e("Leader_manage_candidates", "User not authenticated")
+            return
+        }
+
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    android.util.Log.e("Leader_manage_candidates", "User profile not found")
+                    return@addOnSuccessListener
                 }
-            },
-            onFailure = { error ->
-                android.util.Log.e("Leader_manage_candidates", "Error getting election ID: $error")
+
+                val userCollege = userDoc.getString("college") ?: ""
+                if (userCollege.isEmpty()) {
+                    android.util.Log.e("Leader_manage_candidates", "User college information not found")
+                    return@addOnSuccessListener
+                }
+
+                // Get elections for user's college (including pending/upcoming)
+                // Leaders need to manage candidates even before election starts
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("elections")
+                    .whereEqualTo("isActive", true)
+                    .whereEqualTo("college", userCollege)
+                    .get()
+                    .addOnSuccessListener { documents ->
+                        if (documents.isEmpty) {
+                            // No election found
+                            contentContainer.removeAllViews()
+                            val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                            noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No election found"
+                            noElectionView.findViewById<TextView>(R.id.AnswerTextGeneral).text = "Please create an election first"
+                            contentContainer.addView(noElectionView)
+                            return@addOnSuccessListener
+                        }
+
+                        // Get the most recent election by comparing startDate
+                        val mostRecentDoc = documents.documents.maxByOrNull { doc ->
+                            val timestamp = doc.getTimestamp("startDate")
+                            timestamp?.toDate()?.time ?: 0L
+                        }
+
+                        if (mostRecentDoc != null) {
+                            currentElectionId = mostRecentDoc.id
+                            android.util.Log.d("Leader_manage_candidates", "Found election: ${mostRecentDoc.id}")
+                            loadCandidatesForElection(mostRecentDoc.id)
+                        } else {
+                            contentContainer.removeAllViews()
+                            val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                            noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No election found"
+                            noElectionView.findViewById<TextView>(R.id.AnswerTextGeneral).text = "Please create an election first"
+                            contentContainer.addView(noElectionView)
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        android.util.Log.e("Leader_manage_candidates", "Error getting election: ${exception.message}")
+                        contentContainer.removeAllViews()
+                    }
             }
-        )
+            .addOnFailureListener { exception ->
+                android.util.Log.e("Leader_manage_candidates", "Error getting user profile: ${exception.message}")
+            }
     }
 
     /**
      * Load candidates grouped by position for an election
+     * Leaders should see ALL candidates for their election, not just ones they created
      */
     private fun loadCandidatesForElection(electionId: String) {
+        // Use getPositionsForElection to get ALL candidates for this election
+        // (not filtered by createdBy, so leaders can see all candidates)
+        android.util.Log.d("Leader_manage_candidates", "Loading candidates for election: $electionId")
         FirestoreCandidateHelper.getPositionsForElection(
             electionId = electionId,
             onSuccess = { positions ->
+                android.util.Log.d("Leader_manage_candidates", "Loaded ${positions.size} positions with candidates")
+                if (positions.isEmpty()) {
+                    // No candidates found
+                    contentContainer.removeAllViews()
+                    val noCandidatesView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                    noCandidatesView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No candidates found"
+                    noCandidatesView.findViewById<TextView>(R.id.AnswerTextGeneral).text = "Add candidates through the Election Setup page"
+                    contentContainer.addView(noCandidatesView)
+                    return@getPositionsForElection
+                }
+                
                 val positionsData = positions.map { position ->
                     val candidates = position.candidates.map { candidate ->
                         // Check if candidate has profile data
@@ -246,6 +310,10 @@ class Leader_manage_candidates : AppCompatActivity() {
             onFailure = { error ->
                 android.util.Log.e("Leader_manage_candidates", "Error loading candidates: $error")
                 contentContainer.removeAllViews()
+                val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading candidates"
+                errorView.findViewById<TextView>(R.id.AnswerTextGeneral).text = error
+                contentContainer.addView(errorView)
             }
         )
     }
@@ -254,29 +322,48 @@ class Leader_manage_candidates : AppCompatActivity() {
      * Check which candidates have profile data
      */
     private fun checkCandidateProfiles(positions: List<ManagePosition>) {
+        val updatedPositions = positions.toMutableList()
+        var completedChecks = 0
+        val totalCandidates = positions.sumOf { it.candidates.size }
+        
         positions.forEach { position ->
             position.candidates.forEach { candidate ->
                 FirestoreCandidateHelper.getCandidatePlatformDetails(
                     candidateId = candidate.candidateId,
                     onSuccess = { details ->
-                        if (details != null && (details.credentials.isNotEmpty() || details.advocacy.isNotEmpty())) {
-                            // Refresh UI to show edit button
-                            inflatePositionsAndCandidates(positions.map { 
-                                if (it.name == position.name) {
-                                    ManagePosition(it.name, it.candidates.map { c ->
-                                        if (c.candidateId == candidate.candidateId) {
-                                            candidate.copy(hasProfileData = true)
-                                        } else {
-                                            c
-                                        }
-                                    })
-                                } else {
-                                    it
-                                }
-                            })
+                        completedChecks++
+                        
+                        // Check if candidate has profile data
+                        val hasProfileData = details != null && 
+                            details.courseInfo.isNotEmpty() && 
+                            details.credentials.isNotEmpty() && 
+                            details.advocacy.isNotEmpty()
+                        
+                        // Update the candidate in the list
+                        val positionIndex = updatedPositions.indexOfFirst { it.name == position.name }
+                        if (positionIndex >= 0) {
+                            val candidateIndex = updatedPositions[positionIndex].candidates.indexOfFirst { it.candidateId == candidate.candidateId }
+                            if (candidateIndex >= 0) {
+                                val updatedCandidates = updatedPositions[positionIndex].candidates.toMutableList()
+                                updatedCandidates[candidateIndex] = candidate.copy(hasProfileData = hasProfileData)
+                                updatedPositions[positionIndex] = ManagePosition(position.name, updatedCandidates)
+                            }
+                        }
+                        
+                        // Only refresh UI after all checks are complete
+                        if (completedChecks == totalCandidates) {
+                            inflatePositionsAndCandidates(updatedPositions)
                         }
                     },
-                    onFailure = { }
+                    onFailure = { error ->
+                        completedChecks++
+                        android.util.Log.e("Leader_manage_candidates", "Error checking candidate profile: $error")
+                        
+                        // Still refresh UI if all checks are complete (even with some failures)
+                        if (completedChecks == totalCandidates) {
+                            inflatePositionsAndCandidates(updatedPositions)
+                        }
+                    }
                 )
             }
         }

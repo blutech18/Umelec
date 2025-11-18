@@ -44,10 +44,12 @@ class Leader_Verification : AppCompatActivity() {
     private lateinit var textOTPtimer: TextView
     private lateinit var countDownTimer: CountDownTimer
 
-    // 🚨 SIMULATED CORRECT OTP (Replace with logic that checks against a sent code)
-    private val CORRECT_OTP = "123456"
     private val TIMER_DURATION_SECONDS = 60L
     private val RESEND_DIALOG_DURATION_MS = 2000L
+    
+    // User data from login screen
+    private var userEmail: String = ""
+    private var userName: String = ""
 
     // =========================================================================
     // 💡 VALIDATION STATE HELPERS
@@ -114,6 +116,10 @@ class Leader_Verification : AppCompatActivity() {
         btnSendVerification = findViewById(R.id.btnSendVerification)
         textOTPtimer = findViewById(R.id.textOTPtimer)
 
+        // Get user data from intent
+        userEmail = intent.getStringExtra("USER_EMAIL") ?: ""
+        userName = intent.getStringExtra("USER_NAME") ?: ""
+
         // Set initial button state to disabled
         btnSendVerification.isEnabled = false
 
@@ -135,7 +141,7 @@ class Leader_Verification : AppCompatActivity() {
         textOTPtimer.setOnClickListener {
             // Only clickable when the timer is finished and showing "Resend code"
             if (textOTPtimer.text.toString() == "Resend code") { // Ensure comparison is safe
-                showResendSuccessToast()
+                resendVerificationCode()
             }
         }
 
@@ -159,13 +165,30 @@ class Leader_Verification : AppCompatActivity() {
     private fun handleOtpConfirmation() {
         val enteredCode = otpInputs.joinToString("") { it.text.toString() }
 
-        if (enteredCode == CORRECT_OTP) {
-            showVerificationSuccessDialog()
-        } else {
-            // 🚨 Set all fields to error state on failure (Red border)
-            otpLayouts.forEach { showValidationError(it) }
+        if (userEmail.isEmpty()) {
             showVerificationFailureDialog()
+            return
         }
+
+        // Disable button during verification
+        btnSendVerification.isEnabled = false
+
+        // Use LeaderVerificationHelper to verify the code
+        LeaderVerificationHelper.verifyCode(
+            email = userEmail,
+            enteredCode = enteredCode,
+            onSuccess = {
+                showVerificationSuccessDialog()
+            },
+            onFailure = { error ->
+                // Re-enable button
+                btnSendVerification.isEnabled = checkAllFieldsFilled()
+                
+                // 🚨 Set all fields to error state on failure (Red border)
+                otpLayouts.forEach { showValidationError(it) }
+                showVerificationFailureDialog()
+            }
+        )
     }
 
     private fun updateButtonState() {
@@ -178,6 +201,26 @@ class Leader_Verification : AppCompatActivity() {
             clearValidationState(otpLayouts[index]) // Clear validation state when clearing fields
         }
         otpInputs.first().requestFocus()
+    }
+
+    /**
+     * Resend verification code using LeaderVerificationHelper
+     */
+    private fun resendVerificationCode() {
+        if (userEmail.isEmpty()) {
+            return
+        }
+
+        LeaderVerificationHelper.sendVerificationCode(
+            email = userEmail,
+            onSuccess = { verificationCode ->
+                showResendSuccessToast()
+            },
+            onFailure = { error ->
+                // Show error toast or dialog
+                Toast.makeText(this, "Failed to resend code: $error", Toast.LENGTH_LONG).show()
+            }
+        )
     }
 
     // =========================================================================

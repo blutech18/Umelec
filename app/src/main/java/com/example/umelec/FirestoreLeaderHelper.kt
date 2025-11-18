@@ -1,6 +1,7 @@
 package com.example.umelec
 
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.Timestamp
@@ -18,7 +19,7 @@ object FirestoreLeaderHelper {
     private const val TAG = "FirestoreLeaderHelper"
 
     /**
-     * Create a new election
+     * Create a new election for the current leader's college
      */
     fun createElection(
         title: String,
@@ -28,16 +29,40 @@ object FirestoreLeaderHelper {
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        // Check if there's already an active election
-        firestore.collection(ELECTIONS_COLLECTION)
-            .whereEqualTo("isActive", true)
-            .limit(1)
+        // Get current user's college information first
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            onFailure("User not authenticated")
+            return
+        }
+
+        firestore.collection("users").document(currentUser.uid)
             .get()
-            .addOnSuccessListener { existingElections ->
-                if (!existingElections.isEmpty) {
-                    onFailure("An active election already exists. Please end the current election first.")
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    onFailure("User profile not found")
                     return@addOnSuccessListener
                 }
+
+                val userCollege = userDoc.getString("college") ?: ""
+                val userAcronym = userDoc.getString("acronym") ?: ""
+
+                if (userCollege.isEmpty()) {
+                    onFailure("User college information not found")
+                    return@addOnSuccessListener
+                }
+
+                // Check if there's already an active election for this college
+                firestore.collection(ELECTIONS_COLLECTION)
+                    .whereEqualTo("isActive", true)
+                    .whereEqualTo("college", userCollege)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener { existingElections ->
+                        if (!existingElections.isEmpty) {
+                            onFailure("An active election already exists for $userCollege. Please end the current election first.")
+                            return@addOnSuccessListener
+                        }
 
                 // Validate dates
                 if (startDate.after(endDate)) {
@@ -50,31 +75,39 @@ object FirestoreLeaderHelper {
                     return@addOnSuccessListener
                 }
 
-                // Create election document
-                val electionData = hashMapOf<String, Any>(
-                    "title" to title,
-                    "startDate" to Timestamp(startDate),
-                    "endDate" to Timestamp(endDate),
-                    "isActive" to true,
-                    "isAbstainEnabled" to isAbstainEnabled,
-                    "createdAt" to Timestamp.now(),
-                    "status" to "pending" // pending, approved, active, ended
-                )
+                        // Create election document with college information
+                        val electionData = hashMapOf<String, Any>(
+                            "title" to title,
+                            "startDate" to Timestamp(startDate),
+                            "endDate" to Timestamp(endDate),
+                            "isActive" to true,
+                            "isAbstainEnabled" to isAbstainEnabled,
+                            "createdAt" to Timestamp.now(),
+                            "status" to "pending", // pending, approved, active, ended
+                            "college" to userCollege,
+                            "acronym" to userAcronym,
+                            "createdBy" to currentUser.uid
+                        )
 
-                firestore.collection(ELECTIONS_COLLECTION)
-                    .add(electionData)
-                    .addOnSuccessListener { documentReference ->
-                        Log.d(TAG, "Election created: ${documentReference.id}")
-                        onSuccess(documentReference.id)
+                        firestore.collection(ELECTIONS_COLLECTION)
+                            .add(electionData)
+                            .addOnSuccessListener { documentReference ->
+                                Log.d(TAG, "Election created: ${documentReference.id}")
+                                onSuccess(documentReference.id)
+                            }
+                            .addOnFailureListener { exception ->
+                                Log.e(TAG, "Error creating election: ${exception.message}", exception)
+                                onFailure(exception.message ?: "Failed to create election")
+                            }
                     }
                     .addOnFailureListener { exception ->
-                        Log.e(TAG, "Error creating election: ${exception.message}", exception)
-                        onFailure(exception.message ?: "Failed to create election")
+                        Log.e(TAG, "Error checking existing elections: ${exception.message}", exception)
+                        onFailure(exception.message ?: "Failed to check existing elections")
                     }
             }
             .addOnFailureListener { exception ->
-                Log.e(TAG, "Error checking existing elections: ${exception.message}", exception)
-                onFailure(exception.message ?: "Failed to check existing elections")
+                Log.e(TAG, "Error getting user profile: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to get user profile")
             }
     }
 

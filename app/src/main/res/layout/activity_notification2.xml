@@ -94,6 +94,18 @@
                 android:layout_marginBottom="12dp"
                 android:fontFamily="@font/poppins_regular"/>
 
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnViewCandidates"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Click here to view candidates"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/blue_rounded_button"
+                android:padding="16dp"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/poppins_bold"
+                android:visibility="gone"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

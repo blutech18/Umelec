@@ -1,5 +1,6 @@
 package com.example.umelec
 
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -56,7 +57,7 @@ class Leader_electionsetup_position : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         btnAddPosition = findViewById(R.id.btnAddPosition)
         noPositionLayout = findViewById(R.id.NoPositionLayout)
-        positionCardContainer = findViewById(R.id.ReportContainer) // Assuming ReportContainer is the LinearLayout parent
+        positionCardContainer = findViewById(R.id.PositionCardContainer)
         btnSubmit = findViewById(R.id.btnSubmit)
 
         // 7. when btnBack is clicked goes back to the last activity finish()
@@ -69,13 +70,8 @@ class Leader_electionsetup_position : AppCompatActivity() {
             showAddPositionBottomSheet(null)
         }
 
-        // Load existing positions if election ID exists
-        if (electionId != null) {
-            loadExistingPositions()
-        } else {
-            // Initial check for submit button and NoPositionLayout visibility
-            updateUIState()
-        }
+        // Load existing positions or fetch election context first
+        fetchElectionIdIfNeeded()
     }
 
     /**
@@ -83,12 +79,12 @@ class Leader_electionsetup_position : AppCompatActivity() {
      * based on the contents of positionsList.
      */
     private fun updateUIState() {
-        if (positionsList.isEmpty()) {
-            noPositionLayout.visibility = View.VISIBLE
-            btnSubmit.isEnabled = false
-        } else {
-            noPositionLayout.visibility = View.GONE
-            btnSubmit.isEnabled = true
+        val hasPositions = positionsList.isNotEmpty()
+        noPositionLayout.visibility = if (hasPositions) View.GONE else View.VISIBLE
+        positionCardContainer.visibility = if (hasPositions) View.VISIBLE else View.GONE
+        btnSubmit.isEnabled = hasPositions
+
+        if (hasPositions) {
             // 6. when btnSubmit is clicked:
             btnSubmit.setOnClickListener {
                 submitPositions()
@@ -97,15 +93,48 @@ class Leader_electionsetup_position : AppCompatActivity() {
     }
 
     /**
+     * Ensures we have an election ID before loading/saving data. If none was passed
+     * via the intent, try to grab the currently active election for this leader.
+     */
+    private fun fetchElectionIdIfNeeded() {
+        val existingId = electionId
+        if (existingId != null) {
+            loadExistingPositions()
+            return
+        }
+
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { fetchedId ->
+                if (fetchedId.isNullOrEmpty()) {
+                    android.widget.Toast.makeText(
+                        this,
+                        "No active election found. Please create an election first.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    updateUIState()
+                } else {
+                    electionId = fetchedId
+                    loadExistingPositions()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_electionsetup_position", "Error getting election ID: $error")
+                android.widget.Toast.makeText(
+                    this,
+                    "Unable to load election info. Please try again.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                updateUIState()
+            }
+        )
+    }
+
+    /**
      * Inflates and adds a PositionCard to the UI for each PositionDetails object.
      */
     private fun renderPositionCards() {
         // Clear all dynamically inflated cards
         positionCardContainer.removeAllViews()
-
-        // Re-add NoPositionLayout (temporarily, as updateUIState will control its visibility)
-        positionCardContainer.addView(noPositionLayout)
-
 
         positionsList.forEachIndexed { index, position ->
             val positionCard = createPositionCardView(position, index)
@@ -574,13 +603,20 @@ class Leader_electionsetup_position : AppCompatActivity() {
      * Submit all positions to Firestore
      */
     private fun submitPositions() {
-        if (electionId == null) {
-            android.widget.Toast.makeText(this, "No election selected", android.widget.Toast.LENGTH_SHORT).show()
+        if (positionsList.isEmpty()) {
+            android.widget.Toast.makeText(this, "Please add at least one position", android.widget.Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (positionsList.isEmpty()) {
-            android.widget.Toast.makeText(this, "Please add at least one position", android.widget.Toast.LENGTH_SHORT).show()
+        // If no electionId, store positions temporarily and return (they'll be saved when election is created)
+        if (electionId == null) {
+            // Store positions in companion object for Leader_electionsetup to access
+            Leader_electionsetup.temporaryPositions = positionsList.map { 
+                Triple(it.title, it.yearLevel, it.candidates.toList())
+            }
+            setResult(RESULT_OK)
+            android.widget.Toast.makeText(this, "Positions prepared. They will be saved when you submit the election.", android.widget.Toast.LENGTH_SHORT).show()
+            finish()
             return
         }
 
@@ -591,6 +627,14 @@ class Leader_electionsetup_position : AppCompatActivity() {
         var failed = 0
         val total = positionsList.size
 
+        // Get current leader's UID
+        val currentLeaderId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (currentLeaderId == null) {
+            android.widget.Toast.makeText(this, "User not authenticated", android.widget.Toast.LENGTH_SHORT).show()
+            btnSubmit.isEnabled = true
+            return
+        }
+
         positionsList.forEach { position ->
             FirestoreLeaderHelper.addPosition(
                 electionId = electionId!!,
@@ -599,6 +643,7 @@ class Leader_electionsetup_position : AppCompatActivity() {
                     // Save candidates for this position
                     position.candidates.forEach { candidateName ->
                         // Create candidate document
+                        val defaultAvatarUrl = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png"
                         com.google.firebase.firestore.FirebaseFirestore.getInstance()
                             .collection("candidates")
                             .add(hashMapOf(
@@ -607,6 +652,8 @@ class Leader_electionsetup_position : AppCompatActivity() {
                                 "positionName" to position.title,
                                 "name" to candidateName,
                                 "isActive" to true,
+                                "photoUrl" to defaultAvatarUrl, // Default avatar image
+                                "createdBy" to currentLeaderId, // Add leader ID so they show up in Manage Candidates
                                 "createdAt" to com.google.firebase.Timestamp.now()
                             ))
                     }
@@ -630,6 +677,7 @@ class Leader_electionsetup_position : AppCompatActivity() {
         btnSubmit.isEnabled = true
         if (failedCount == 0) {
             android.widget.Toast.makeText(this, "Positions saved successfully", android.widget.Toast.LENGTH_SHORT).show()
+            setResult(RESULT_OK)
             finish()
         } else {
             android.widget.Toast.makeText(this, "Saved $successCount positions, $failedCount failed", android.widget.Toast.LENGTH_LONG).show()

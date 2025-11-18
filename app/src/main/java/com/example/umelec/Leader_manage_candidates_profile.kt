@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.widget.addTextChangedListener
+import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 
@@ -145,21 +146,13 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
                     inputCredentials.setText(details.credentials, TextView.BufferType.EDITABLE)
                     inputPlatform.setText(details.advocacy, TextView.BufferType.EDITABLE)
                     
+                    // Load existing photo if available
+                    if (!details.photoUrl.isNullOrEmpty() && FirebaseStorageHelper.isFirebaseStorageUrl(details.photoUrl)) {
+                        loadExistingPhoto(details.photoUrl)
+                    }
+                    
                     // Update button state after loading data
                     updateButtonState()
-                    
-                    // Note: Photo URL would need to be loaded separately if stored in Firebase Storage
-                    // For now, we'll just show that photo is optional in edit mode
-                    if (details.advocacy.isNotEmpty() && details.credentials.isNotEmpty() && details.courseInfo.isNotEmpty()) {
-                        // If all text fields are filled, make photo optional for edit mode
-                        if (isEditMode) {
-                            // In edit mode, photo is optional if other fields are filled
-                            val isYearSelected = inputYear.text.toString().isNotEmpty()
-                            val isCredentialsFilled = inputCredentials.text.toString().trim().isNotEmpty()
-                            val isPlatformFilled = inputPlatform.text.toString().trim().isNotEmpty()
-                            btnAdd.isEnabled = isYearSelected && isCredentialsFilled && isPlatformFilled
-                        }
-                    }
                 } else {
                     android.util.Log.w("Leader_manage_candidates_profile", "Candidate details are null")
                 }
@@ -211,6 +204,23 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
         ivUpload.setImageResource(R.drawable.ic_upload)
         tvUploadText.text = "Upload"
         ivRemove.visibility = View.GONE
+    }
+
+    /**
+     * Load existing photo from Firebase Storage URL using Glide
+     */
+    private fun loadExistingPhoto(photoUrl: String) {
+        android.util.Log.d("Leader_manage_candidates_profile", "Loading existing photo: $photoUrl")
+        
+        Glide.with(this)
+            .load(photoUrl)
+            .placeholder(R.drawable.ic_upload)
+            .error(R.drawable.ic_upload)
+            .into(ivUpload)
+        
+        // Update UI to show that photo is loaded
+        tvUploadText.text = "Current Photo"
+        ivRemove.visibility = View.VISIBLE
     }
 
     // --- VALIDATION LOGIC (No change) ---
@@ -276,16 +286,44 @@ class Leader_manage_candidates_profile : AppCompatActivity() {
         android.util.Log.d("Leader_manage_candidates_profile", "Saving candidate profile: $candidateId")
         android.util.Log.d("Leader_manage_candidates_profile", "Year: $year, Credentials: $credentials, Platform: $platform")
 
-        // Note: Photo upload to Firebase Storage would be handled separately
-        // For now, we'll just save the text data
-        // If photo URI is available, it would be uploaded to Firebase Storage first, then the URL would be passed here
+        // If photo is uploaded, upload it first, then save profile
+        if (uploadedPhotoUri != null) {
+            uploadPhotoAndSaveProfile(year, credentials, platform)
+        } else {
+            // No photo to upload, save profile directly
+            saveProfileToFirestore(year, credentials, platform, null)
+        }
+    }
+
+    private fun uploadPhotoAndSaveProfile(year: String, credentials: String, platform: String) {
+        android.util.Log.d("Leader_manage_candidates_profile", "Uploading photo for candidate: $candidateId")
         
+        FirebaseStorageHelper.uploadCandidatePhoto(
+            imageUri = uploadedPhotoUri!!,
+            candidateId = candidateId,
+            onSuccess = { downloadUrl ->
+                android.util.Log.d("Leader_manage_candidates_profile", "Photo uploaded successfully: $downloadUrl")
+                saveProfileToFirestore(year, credentials, platform, downloadUrl)
+            },
+            onFailure = { error ->
+                btnAdd.isEnabled = true
+                android.util.Log.e("Leader_manage_candidates_profile", "Photo upload failed: $error")
+                Toast.makeText(this, "Photo upload failed: $error", Toast.LENGTH_LONG).show()
+            },
+            onProgress = { progress ->
+                // Update UI with upload progress if needed
+                android.util.Log.d("Leader_manage_candidates_profile", "Upload progress: $progress%")
+            }
+        )
+    }
+
+    private fun saveProfileToFirestore(year: String, credentials: String, platform: String, photoUrl: String?) {
         FirestoreCandidateHelper.updateCandidateProfile(
             candidateId = candidateId,
             courseInfo = year,
             credentials = credentials,
             advocacy = platform,
-            photoUrl = null, // TODO: Upload photo to Firebase Storage and get URL
+            photoUrl = photoUrl,
             onSuccess = {
                 android.util.Log.d("Leader_manage_candidates_profile", "Candidate profile saved successfully: $candidateId")
                 showSuccessToastAndNavigate(isEditMode)

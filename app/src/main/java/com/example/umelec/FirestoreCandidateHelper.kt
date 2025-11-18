@@ -64,7 +64,8 @@ object FirestoreCandidateHelper {
                         "candidateId" to document.id,
                         "name" to (data["name"] as? String ?: ""),
                         "courseInfo" to (data["courseInfo"] as? String ?: ""),
-                        "positionName" to (data["positionName"] as? String ?: "")
+                        "positionName" to (data["positionName"] as? String ?: ""),
+                        "photoUrl" to (data["photoUrl"] as? String ?: "")
                     )
                     onSuccess(details)
                 } else {
@@ -129,6 +130,59 @@ object FirestoreCandidateHelper {
     }
 
     /**
+     * Get all positions for a specific election filtered by createdBy (for leader management)
+     */
+    fun getPositionsForElectionByLeader(
+        electionId: String,
+        leaderId: String,
+        onSuccess: (List<VotingPosition>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        // Get candidates created by this leader
+        firestore.collection(CANDIDATES_COLLECTION)
+            .whereEqualTo("electionId", electionId)
+            .whereEqualTo("createdBy", leaderId)
+            .get()
+            .addOnSuccessListener { documents ->
+                // Group candidates by position
+                val positionsMap = mutableMapOf<String, MutableList<CandidateChoices>>()
+                val positionNamesMap = mutableMapOf<String, String>()
+
+                documents.documents.forEach { doc ->
+                    val data = doc.data ?: return@forEach
+                    val isActive = data["isActive"] as? Boolean ?: true
+                    if (!isActive) return@forEach
+                    val positionId = data["positionId"] as? String ?: return@forEach
+                    val positionName = data["positionName"] as? String ?: return@forEach
+                    val candidateId = doc.id
+                    val candidateName = data["name"] as? String ?: return@forEach
+
+                    positionNamesMap[positionId] = positionName
+
+                    if (!positionsMap.containsKey(positionId)) {
+                        positionsMap[positionId] = mutableListOf()
+                    }
+                    positionsMap[positionId]?.add(CandidateChoices(id = candidateId, name = candidateName))
+                }
+
+                // Convert to VotingPosition list
+                val positions = positionsMap.map { (positionId, candidates) ->
+                    VotingPosition(
+                        id = positionId,
+                        title = positionNamesMap[positionId] ?: positionId,
+                        candidates = candidates.sortedBy { it.name }
+                    )
+                }.sortedBy { it.title }
+
+                onSuccess(positions)
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Error getting positions by leader: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to get positions")
+            }
+    }
+
+    /**
      * Get candidate details for preview (Homepage)
      */
     fun getCandidatesForPreview(
@@ -148,11 +202,12 @@ object FirestoreCandidateHelper {
                     if (!isActive) return@mapNotNull null
                     val name = data["name"] as? String ?: return@mapNotNull null
                     val position = data["positionName"] as? String ?: "Unknown"
-                    // Use default drawable - can be enhanced with image URL later
+                    val photoUrl = data["photoUrl"] as? String
                     Candidate(
                         name = name,
                         position = position,
-                        photoResource = R.drawable.ic_profile
+                        photoResource = R.drawable.ic_profile,
+                        photoUrl = photoUrl
                     )
                 }
                 onSuccess(candidates)
@@ -259,12 +314,14 @@ object FirestoreCandidateHelper {
                     return@addOnSuccessListener
                 }
 
+                val photoUrl = data["photoUrl"] as? String
                 val details = CandidatePlatformDetails(
                     candidateId = document.id,
                     name = data["name"] as? String ?: "Unknown",
                     position = data["positionName"] as? String ?: "Unknown",
                     courseInfo = data["courseInfo"] as? String ?: "",
                     profilePictureResource = R.drawable.ic_profile,
+                    photoUrl = photoUrl,
                     credentials = data["credentials"] as? String ?: "",
                     advocacy = data["advocacy"] as? String ?: ""
                 )

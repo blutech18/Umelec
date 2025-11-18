@@ -126,11 +126,13 @@ class Results : AppCompatActivity() {
                 candidatesPreviewCard.visibility = View.VISIBLE
                 talliesCard.visibility = View.VISIBLE
                 finalTalliesCard.visibility = View.GONE
+                receiptCard.visibility = View.VISIBLE
 
                 findViewById<TextView>(R.id.TimeTitle).text = "Remaining time for the election"
                 setupCountdownForElection(isStartDate = false)
                 loadLeadingCandidates()
                 setupTalliesCard(isFinal = false)
+                setupReceiptCard()
             }
             ResultCardState.ENDED -> {
                 timeCard.visibility = View.VISIBLE
@@ -334,7 +336,12 @@ class Results : AppCompatActivity() {
         val positionText = cardView.findViewById<TextView>(R.id.candidatePosition)
         val voteCountText = cardView.findViewById<TextView>(R.id.candidateVotecount)
 
-        profilePic.setImageResource(candidate.profileResId)
+        // Load image from URL (always use URL, default avatar if needed)
+        ImageLoaderHelper.loadCandidateImage(
+            profilePic,
+            candidate.photoUrl,
+            candidate.profileResId
+        )
         nameText.text = candidate.name
         positionText.text = candidate.position
 
@@ -399,7 +406,9 @@ class Results : AppCompatActivity() {
 
         finalMessage.text = "Live tallies have been finalized."
         btnFinalTallies.setOnClickListener {
-            val intent = Intent(this, Tallies::class.java)
+            val intent = Intent(this, Tallies::class.java).apply {
+                putExtra(Tallies.EXTRA_FORCE_FINAL_TALLIES, true)
+            }
             startActivity(intent)
         }
     }
@@ -492,7 +501,7 @@ class Results : AppCompatActivity() {
      * Sets up the receipt card logic, now using custom AlertDialogs.
      */
     private fun setupReceiptCard() {
-        val inputEmail: EditText = findViewById(R.id.inputEmail)
+        val inputReferenceCode: EditText = findViewById(R.id.inputEmail) // Reusing the same ID from layout
         val inputSignatureSnippet: EditText = findViewById(R.id.inputSignatureSnippet)
         val btnSearch: AppCompatButton = findViewById(R.id.btnSearch)
         val codeContainer: LinearLayout = findViewById(R.id.Code)
@@ -502,7 +511,7 @@ class Results : AppCompatActivity() {
         signatureSnippetContainer.visibility = View.GONE
 
         fun areInputsEmpty(): Boolean {
-            return inputEmail.text.isNullOrBlank() && inputSignatureSnippet.text.isNullOrBlank()
+            return inputReferenceCode.text.isNullOrBlank() && inputSignatureSnippet.text.isNullOrBlank()
         }
 
         val textWatcher = object : TextWatcher {
@@ -516,95 +525,59 @@ class Results : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         }
 
-        inputEmail.addTextChangedListener(textWatcher)
+        inputReferenceCode.addTextChangedListener(textWatcher)
         inputSignatureSnippet.addTextChangedListener(textWatcher)
 
-        // Search Button Logic (Updated to use Dialogs)
+        // Search Button Logic
         btnSearch.setOnClickListener {
-            val email = inputEmail.text.toString().trim()
+            val referenceCode = inputReferenceCode.text.toString().trim()
             val signatureSnippet = inputSignatureSnippet.text.toString().trim()
 
-            if (email.isEmpty() && signatureSnippet.isEmpty()) {
-                // Keep as Toast for quick input prompt
+            if (referenceCode.isEmpty() && signatureSnippet.isEmpty()) {
+                // Show error messages
                 codeContainer.visibility = View.VISIBLE
                 signatureSnippetContainer.visibility = View.VISIBLE
                 Toast.makeText(this, "Please enter verification details.", Toast.LENGTH_SHORT).show()
-
-            } else if (email.isNotEmpty() && signatureSnippet.isNotEmpty()) {
-                // Verify receipt from Firestore
-                verifyReceipt(email, signatureSnippet)
+            } else if (referenceCode.isEmpty()) {
+                // Show error for reference code
+                codeContainer.visibility = View.VISIBLE
+                signatureSnippetContainer.visibility = View.GONE
+                Toast.makeText(this, "Please enter Reference Code.", Toast.LENGTH_SHORT).show()
+            } else if (signatureSnippet.isEmpty()) {
+                // Show error for signature snippet
+                codeContainer.visibility = View.GONE
+                signatureSnippetContainer.visibility = View.VISIBLE
+                Toast.makeText(this, "Please enter Digital Signature Snippet.", Toast.LENGTH_SHORT).show()
             } else {
-                // Keep as Toast for quick input prompt
-                Toast.makeText(this, "Please fill both Email and Signature fields for verification.", Toast.LENGTH_SHORT).show()
+                // Both fields are filled - verify receipt
+                verifyReceiptByReferenceCode(referenceCode, signatureSnippet)
             }
         }
     }
 
     /**
-     * Verify vote receipt from Firestore
+     * Verify vote receipt by Reference Code (voteId) and Digital Signature Snippet
      */
-    private fun verifyReceipt(email: String, signatureSnippet: String) {
-        // Find user by email
-        FirebaseAuthHelper.getCurrentUser()?.let { currentUser ->
-            if (currentUser.email?.equals(email, ignoreCase = true) == true) {
-                // Get user's vote receipt
-                currentElectionId?.let { electionId ->
-                    FirestoreVoteHelper.getVoteReceipt(
-                        userId = currentUser.uid,
-                        electionId = electionId,
-                        onSuccess = { receipt ->
-                            if (receipt != null) {
-                                // Check if signature snippet matches
-                                if (receipt.signaturePreview.contains(signatureSnippet, ignoreCase = true)) {
-                                    showReceiptSuccessDialog()
-                                } else {
-                                    showReceiptFailureDialog()
-                                }
-                            } else {
-                                showReceiptFailureDialog()
-                            }
-                        },
-                        onFailure = { error ->
-                            android.util.Log.e("Results", "Error verifying receipt: $error")
-                            showReceiptFailureDialog()
-                        }
-                    )
-                } ?: showReceiptFailureDialog()
-            } else {
-                // Email doesn't match current user - search by email in Firestore
-                com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    .collection("users")
-                    .whereEqualTo("email", email)
-                    .limit(1)
-                    .get()
-                    .addOnSuccessListener { documents ->
-                        if (documents.isEmpty) {
-                            showReceiptFailureDialog()
-                            return@addOnSuccessListener
-                        }
-                        val userId = documents.documents[0].id
-                        currentElectionId?.let { electionId ->
-                            FirestoreVoteHelper.getVoteReceipt(
-                                userId = userId,
-                                electionId = electionId,
-                                onSuccess = { receipt ->
-                                    if (receipt != null && receipt.signaturePreview.contains(signatureSnippet, ignoreCase = true)) {
-                                        showReceiptSuccessDialog()
-                                    } else {
-                                        showReceiptFailureDialog()
-                                    }
-                                },
-                                onFailure = { error ->
-                                    showReceiptFailureDialog()
-                                }
-                            )
-                        } ?: showReceiptFailureDialog()
-                    }
-                    .addOnFailureListener {
-                        showReceiptFailureDialog()
-                    }
+    private fun verifyReceiptByReferenceCode(referenceCode: String, signatureSnippet: String) {
+        // Show loading state (optional - you can add a progress dialog here)
+        
+        FirestoreVoteHelper.verifyVoteByReferenceCode(
+            voteId = referenceCode,
+            signatureSnippet = signatureSnippet,
+            electionId = currentElectionId,
+            onSuccess = { isVerified ->
+                if (isVerified) {
+                    showReceiptSuccessDialog()
+                } else {
+                    showReceiptFailureDialog()
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Results", "Error verifying receipt: $error")
+                Toast.makeText(this, "Verification failed: $error", Toast.LENGTH_SHORT).show()
+                showReceiptFailureDialog()
             }
-        } ?: showReceiptFailureDialog()
+        )
     }
 
     // ----------------------------------------------------------------------

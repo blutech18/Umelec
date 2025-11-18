@@ -117,8 +117,26 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       // Allow authenticated users to read notifications
       allow read: if request.auth != null;
-      // Only server/admin should create notifications
-      allow write: if false;
+      // Allow leaders to create REMINDER notifications
+      allow create: if isLeader() && request.resource.data.type == 'REMINDER';
+      // Allow users to create SUBMISSION notifications for themselves
+      allow create: if request.auth != null && 
+                     request.resource.data.type == 'SUBMISSION' &&
+                     request.resource.data.targetUserId == request.auth.uid;
+      // Allow users to update notifications (to mark as read)
+      allow update: if request.auth != null;
+      // Don't allow deletes
+      allow delete: if false;
+    }
+
+    // Leader verification codes collection
+    match /leaderVerificationCodes/{email} {
+      // Allow leaders to create and read their own verification codes
+      allow create, read, update: if request.auth != null && 
+                                    request.auth.token.email == email &&
+                                    isLeader();
+      // Don't allow deletes (codes expire automatically)
+      allow delete: if false;
     }
     
     // Default deny all other access

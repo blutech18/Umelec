@@ -3,15 +3,19 @@ package com.example.umelec
 import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 
 // --- REUSED DATA STRUCTURE FOR CANDIDATE'S PLATFORM DETAILS ---
 
 
 class Comparison : AppCompatActivity() {
+
+    companion object {
+        private const val DEFAULT_AVATAR_URL = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +67,7 @@ class Comparison : AppCompatActivity() {
                     position = "N/A",
                     courseInfo = "N/A",
                     profilePictureResource = R.drawable.ic_profile,
+                    photoUrl = DEFAULT_AVATAR_URL,
                     credentials = "Data not available.",
                     advocacy = "Data not available."
                 )
@@ -77,6 +82,7 @@ class Comparison : AppCompatActivity() {
                     position = "N/A",
                     courseInfo = "N/A",
                     profilePictureResource = R.drawable.ic_profile,
+                    photoUrl = DEFAULT_AVATAR_URL,
                     credentials = "Failed to load data.",
                     advocacy = "Please try again later."
                 )
@@ -95,6 +101,7 @@ class Comparison : AppCompatActivity() {
                     position = "N/A",
                     courseInfo = "N/A",
                     profilePictureResource = R.drawable.ic_profile,
+                    photoUrl = DEFAULT_AVATAR_URL,
                     credentials = "Data not available.",
                     advocacy = "Data not available."
                 )
@@ -109,6 +116,7 @@ class Comparison : AppCompatActivity() {
                     position = "N/A",
                     courseInfo = "N/A",
                     profilePictureResource = R.drawable.ic_profile,
+                    photoUrl = DEFAULT_AVATAR_URL,
                     credentials = "Failed to load data.",
                     advocacy = "Please try again later."
                 )
@@ -129,14 +137,30 @@ class Comparison : AppCompatActivity() {
     private fun populateComparison(c1: CandidatePlatformDetails, c2: CandidatePlatformDetails) {
 
         // --- Candidate 1 Views ---
-        findViewById<ImageView>(R.id.iv_profile_picture1)?.setImageResource(c1.profilePictureResource)
+        findViewById<ImageView>(R.id.iv_profile_picture1)?.let { imageView ->
+            ImageLoaderHelper.loadCandidateImage(
+                imageView = imageView,
+                photoUrl = c1.photoUrl ?: DEFAULT_AVATAR_URL,
+                defaultResource = c1.profilePictureResource
+            )
+        }
         findViewById<TextView>(R.id.tv_name1)?.text = c1.name
+        findViewById<TextView>(R.id.tv_position1)?.text = c1.position
+        findViewById<TextView>(R.id.tv_course1)?.text = c1.courseInfo
         findViewById<TextView>(R.id.credentialsValue1)?.text = c1.credentials
         findViewById<TextView>(R.id.advocacyValue1)?.text = c1.advocacy
 
         // --- Candidate 2 Views ---
-        findViewById<ImageView>(R.id.iv_profile_picture2)?.setImageResource(c2.profilePictureResource)
+        findViewById<ImageView>(R.id.iv_profile_picture2)?.let { imageView ->
+            ImageLoaderHelper.loadCandidateImage(
+                imageView = imageView,
+                photoUrl = c2.photoUrl ?: DEFAULT_AVATAR_URL,
+                defaultResource = c2.profilePictureResource
+            )
+        }
         findViewById<TextView>(R.id.tv_name2)?.text = c2.name
+        findViewById<TextView>(R.id.tv_position2)?.text = c2.position
+        findViewById<TextView>(R.id.tv_course2)?.text = c2.courseInfo
         findViewById<TextView>(R.id.credentialsValue2)?.text = c2.credentials
         findViewById<TextView>(R.id.advocacyValue2)?.text = c2.advocacy
     }

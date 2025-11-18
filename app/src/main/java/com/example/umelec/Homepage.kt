@@ -9,6 +9,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.bumptech.glide.Glide
 
 
 // Define the possible states for the election card UI
@@ -21,7 +22,8 @@ import androidx.constraintlayout.widget.ConstraintLayout
 data class Candidate(
     val name: String,
     val position: String,
-    val photoResource: Int // Resource ID for the drawable/image (e.g., R.drawable.profile_pic)
+    val photoResource: Int = R.drawable.ic_profile, // Resource ID for the drawable/image (fallback)
+    val photoUrl: String? = null // URL for candidate photo (optional)
 )
 
 data class WinningCandidate(
@@ -131,32 +133,67 @@ class Homepage : AppCompatActivity() {
 
         // --- Dynamic Greeting Implementation ---
 
-        // Get user's full name from Firestore
+        // Get user's firstname from Firestore
         val currentUser = FirebaseAuthHelper.getCurrentUser()
         if (currentUser != null) {
-            // Fetch user data from Firestore to get firstname and lastname
+            // Fetch user data from Firestore to get firstname only
             FirebaseAuthHelper.getUserDataFromFirestore(
                 userId = currentUser.uid,
                 onSuccess = { userData ->
                     if (userData != null) {
-                        val firstname = userData["firstname"] as? String ?: ""
-                        val lastname = userData["lastname"] as? String ?: ""
-                        val fullName = if (firstname.isNotEmpty() || lastname.isNotEmpty()) {
-                            "$firstname $lastname".trim()
+                        // Try to get firstname - check both lowercase and camelCase
+                        val firstname = (userData["firstname"] as? String)?.trim() 
+                            ?: (userData["firstName"] as? String)?.trim()
+                            ?: ""
+                        
+                        // Display only firstname if available
+                        nameTextView.text = if (firstname.isNotEmpty() && firstname.lowercase() != "email") {
+                            firstname
                         } else {
-                            // Fallback to email username if name not available
-                            currentUser.email?.substringBefore("@") ?: "User"
+                            // Fallback: extract username from email (part before @)
+                            val email = currentUser.email ?: ""
+                            val emailUsername = if (email.contains("@")) {
+                                email.substringBefore("@").trim()
+                            } else {
+                                email.trim()
+                            }
+                            
+                            // Only use email username if it's not empty and not "email"
+                            if (emailUsername.isNotEmpty() && emailUsername.lowercase() != "email") {
+                                emailUsername
+                            } else {
+                                "User"
+                            }
                         }
-                        nameTextView.text = fullName
                     } else {
-                        // No user data in Firestore, use email as fallback
-                        nameTextView.text = currentUser.email?.substringBefore("@") ?: "User"
+                        // No user data in Firestore, use email username as fallback
+                        val email = currentUser.email ?: ""
+                        val emailUsername = if (email.contains("@")) {
+                            email.substringBefore("@").trim()
+                        } else {
+                            email.trim()
+                        }
+                        nameTextView.text = if (emailUsername.isNotEmpty() && emailUsername.lowercase() != "email") {
+                            emailUsername
+                        } else {
+                            "User"
+                        }
                     }
                 },
                 onFailure = { errorMessage ->
-                    // If Firestore fetch fails, use email as fallback
+                    // If Firestore fetch fails, use email username as fallback
                     Log.e("Homepage", "Failed to fetch user data: $errorMessage")
-                    nameTextView.text = currentUser.email?.substringBefore("@") ?: "User"
+                    val email = currentUser.email ?: ""
+                    val emailUsername = if (email.contains("@")) {
+                        email.substringBefore("@").trim()
+                    } else {
+                        email.trim()
+                    }
+                    nameTextView.text = if (emailUsername.isNotEmpty() && emailUsername.lowercase() != "email") {
+                        emailUsername
+                    } else {
+                        "User"
+                    }
                 }
             )
         } else {
@@ -585,34 +622,42 @@ class Homepage : AppCompatActivity() {
             setPadding(8.toPx(), 8.toPx(), 8.toPx(), 8.toPx()) // Convert DP to pixels
         }
 
-        // ImageView for the photo
-        val photoView = ImageView(context).apply {
+        // CircleImageView for the photo (circular profile picture)
+        val photoView = de.hdodenhof.circleimageview.CircleImageView(context).apply {
             layoutParams = LinearLayout.LayoutParams(80.toPx(), 80.toPx())
-
-
-            setImageResource(candidate.photoResource)
             contentDescription = "Candidate Photo"
             scaleType = ImageView.ScaleType.CENTER_CROP
-            // Note: You need to handle image loading (e.g., rounded corners/image loading library) here
         }
+        
+        // Load image from URL if available, otherwise use default drawable
+        if (!candidate.photoUrl.isNullOrEmpty()) {
+            Glide.with(context)
+                .load(candidate.photoUrl)
+                .placeholder(candidate.photoResource)
+                .error(candidate.photoResource)
+                .centerCrop()
+                .into(photoView)
+        } else {
+            photoView.setImageResource(candidate.photoResource)
+        }
+        
         itemLayout.addView(photoView)
 
         // TextView for the Name
         val nameView = TextView(context).apply {
-
-
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 topMargin = 4.toPx()
             }
             text = candidate.name
-
-
             textSize = 16f
             setTypeface(null, android.graphics.Typeface.BOLD)
             setTextColor(Color.parseColor("#333333"))
+            gravity = android.view.Gravity.CENTER
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            setLineSpacing(0f, 1.1f)
             // Note: setting custom font programmatically is complex;
             // relies on XML definition
         }
@@ -621,7 +666,7 @@ class Homepage : AppCompatActivity() {
         // TextView for the Position
         val positionView = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
 
 
@@ -629,6 +674,8 @@ class Homepage : AppCompatActivity() {
             text = candidate.position
             textSize = 14f
             setTextColor(Color.parseColor("#333333"))
+            gravity = android.view.Gravity.CENTER
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
             // Note: setting custom font programmatically is complex;
             // relies on XML definition
         }

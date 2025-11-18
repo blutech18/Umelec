@@ -100,8 +100,13 @@ class Notification : AppCompatActivity() {
 
         val cutoffTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24)
 
+        // Filter to only show Election Reminder (REMINDER) and Vote Submitted (SUBMISSION) notifications
+        val filteredNotifications = notifications.filter { notification ->
+            notification.type == NotificationType.REMINDER || notification.type == NotificationType.SUBMISSION
+        }
+
         // Sort and filter using the centralized data list
-        val sortedNotifications = notifications.sortedByDescending { it.timestamp }
+        val sortedNotifications = filteredNotifications.sortedByDescending { it.timestamp }
         val newNotifications = sortedNotifications.filter { it.timestamp > cutoffTime }
         val olderNotifications = sortedNotifications.filter { it.timestamp <= cutoffTime }
 
@@ -169,24 +174,36 @@ class Notification : AppCompatActivity() {
                 setBackgroundColor(Color.TRANSPARENT)
             }
 
-            setOnClickListener { view ->
+            // Only Election Reminder notifications are clickable
+            if (item.type == NotificationType.REMINDER) {
+                setOnClickListener { view ->
+                    val currentUserId = FirebaseAuthHelper.getCurrentUser()?.uid
+                    if (!item.isRead && currentUserId != null) {
+                        item.isRead = true
+                        view.setBackgroundColor(Color.TRANSPARENT)
+                        val indicator = view.findViewById<ImageView>(unreadIndicatorId)
+                        indicator?.visibility = View.GONE
+                        FirestoreNotificationHelper.markNotificationAsRead(item.id, currentUserId)
+                    }
+
+                    val intent = Intent(context, Notification2::class.java).apply {
+                        putExtra("NOTIFICATION_ID", item.id)
+                        putExtra("NOTIFICATION_TITLE", item.title)
+                        putExtra("NOTIFICATION_FULL_TEXT", item.fullText)
+                        putExtra("NOTIFICATION_TYPE", item.type.name)
+                    }
+                    context.startActivity(intent)
+                    @Suppress("DEPRECATION")
+                    overridePendingTransition(0, 0)
+                }
+            } else {
+                // Vote Submitted notifications are not clickable
+                // Mark as read when viewed but don't navigate
                 val currentUserId = FirebaseAuthHelper.getCurrentUser()?.uid
                 if (!item.isRead && currentUserId != null) {
-                    item.isRead = true
-                    view.setBackgroundColor(Color.TRANSPARENT)
-                    val indicator = view.findViewById<ImageView>(unreadIndicatorId)
-                    indicator?.visibility = View.GONE
+                    // Mark as read in background when displayed
                     FirestoreNotificationHelper.markNotificationAsRead(item.id, currentUserId)
                 }
-
-                val intent = Intent(context, Notification2::class.java).apply {
-                    putExtra("NOTIFICATION_ID", item.id)
-                    putExtra("NOTIFICATION_TITLE", item.title)
-                    putExtra("NOTIFICATION_FULL_TEXT", item.fullText)
-                }
-                context.startActivity(intent)
-                @Suppress("DEPRECATION")
-                overridePendingTransition(0, 0)
             }
         }
 

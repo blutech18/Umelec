@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.bumptech.glide.Glide
 
 // --- DATA STRUCTURE FOR CANDIDATES ---
 data class CandidateItem(
@@ -22,7 +23,8 @@ data class CandidateItem(
     val position: String,
     val courseInfo: String,
     // val previewText: String, // COMMENTED OUT: Removed the preview text field
-    val profilePictureResource: Int // Use R.drawable.your_image
+    val profilePictureResource: Int = R.drawable.ic_profile, // Use R.drawable.your_image (fallback)
+    val photoUrl: String? = null // URL for candidate photo (optional)
 )
 
 class Position : AppCompatActivity() {
@@ -210,7 +212,8 @@ class Position : AppCompatActivity() {
                                     name = details["name"] ?: candidate.name,
                                     position = details["positionName"] ?: positionName,
                                     courseInfo = details["courseInfo"] ?: "",
-                                    profilePictureResource = R.drawable.ic_profile
+                                    profilePictureResource = R.drawable.ic_profile,
+                                    photoUrl = details["photoUrl"] as? String
                                 )
                             )
                             loadedCount++
@@ -270,7 +273,8 @@ class Position : AppCompatActivity() {
                             name = details["name"] ?: candidateId,
                             position = details["positionName"] ?: positionName,
                             courseInfo = details["courseInfo"] ?: "",
-                            profilePictureResource = R.drawable.ic_profile
+                            profilePictureResource = R.drawable.ic_profile,
+                            photoUrl = details["photoUrl"] as? String
                         )
                     )
                     processedCount++
@@ -366,7 +370,14 @@ class Position : AppCompatActivity() {
 
         nameTextView?.text = candidate.name
         // positionTextView?.text = candidate.position // COMMENTED OUT: Removed position text assignment for comparison item
-        profileImageView?.setImageResource(candidate.profilePictureResource)
+        // Load image from URL if available
+        profileImageView?.let { imageView ->
+            ImageLoaderHelper.loadCandidateImage(
+                imageView,
+                candidate.photoUrl,
+                candidate.profilePictureResource
+            )
+        }
 
         view.background = ContextCompat.getDrawable(this, R.drawable.compare_candidate_unselected_bg)
 
@@ -424,7 +435,14 @@ class Position : AppCompatActivity() {
         positionText?.text = candidate.position
         courseText?.text = candidate.courseInfo
         // previewText?.text = candidate.previewText // COMMENTED OUT: Removed text assignment
-        profilePic?.setImageResource(candidate.profilePictureResource)
+        // Load image from URL if available
+        profilePic?.let { imageView ->
+            ImageLoaderHelper.loadCandidateImage(
+                imageView,
+                candidate.photoUrl,
+                candidate.profilePictureResource
+            )
+        }
 
         // 🔥 NEW: Apply the StateListAnimator to the card view for press feedback
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

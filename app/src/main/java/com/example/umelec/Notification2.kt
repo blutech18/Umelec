@@ -1,11 +1,15 @@
 package com.example.umelec
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatButton
 
 class Notification2 : AppCompatActivity() {
+
+    private var notificationType: NotificationType? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +39,18 @@ class Notification2 : AppCompatActivity() {
 
         val titleExtra = intent.getStringExtra("NOTIFICATION_TITLE")
         val fullTextExtra = intent.getStringExtra("NOTIFICATION_FULL_TEXT")
+        val typeExtra = intent.getStringExtra("NOTIFICATION_TYPE")
 
         val userId = FirebaseAuthHelper.getCurrentUser()?.uid
+
+        // Parse notification type if provided
+        if (!typeExtra.isNullOrBlank()) {
+            notificationType = try {
+                NotificationType.valueOf(typeExtra)
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
 
         if (!titleExtra.isNullOrBlank() && !fullTextExtra.isNullOrBlank()) {
             findViewById<TextView>(R.id.notification_title).text = titleExtra
@@ -44,6 +58,7 @@ class Notification2 : AppCompatActivity() {
             if (!userId.isNullOrEmpty()) {
                 FirestoreNotificationHelper.markNotificationAsRead(notificationId, userId)
             }
+            setupViewCandidatesButton()
         } else {
             FirestoreNotificationHelper.getNotificationById(
                 notificationId = notificationId,
@@ -52,9 +67,11 @@ class Notification2 : AppCompatActivity() {
                     if (notification != null) {
                         findViewById<TextView>(R.id.notification_title).text = notification.title
                         findViewById<TextView>(R.id.notification_preview_text).text = notification.fullText
+                        notificationType = notification.type
                         if (!userId.isNullOrEmpty()) {
                             FirestoreNotificationHelper.markNotificationAsRead(notificationId, userId)
                         }
+                        setupViewCandidatesButton()
                     } else {
                         findViewById<TextView>(R.id.notification_title).text = "Error: Content Not Found"
                         findViewById<TextView>(R.id.notification_preview_text).text =
@@ -66,6 +83,23 @@ class Notification2 : AppCompatActivity() {
                     findViewById<TextView>(R.id.notification_preview_text).text = it
                 }
             )
+        }
+    }
+
+    private fun setupViewCandidatesButton() {
+        val btnViewCandidates: AppCompatButton = findViewById(R.id.btnViewCandidates)
+        
+        // Show button only for Election Reminder notifications
+        if (notificationType == NotificationType.REMINDER) {
+            btnViewCandidates.visibility = android.view.View.VISIBLE
+            btnViewCandidates.setOnClickListener {
+                val intent = Intent(this, Candidates::class.java)
+                startActivity(intent)
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            }
+        } else {
+            btnViewCandidates.visibility = android.view.View.GONE
         }
     }
 }

@@ -81,94 +81,140 @@
                 android:id="@+id/Candidate1Container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:background="@drawable/rounded_gray_bg"
                 android:padding="20dp"
                 android:layout_marginBottom="20dp"
                 android:outlineProvider="bounds"
                 android:clipToPadding="false"
-                android:gravity="top"
-                android:baselineAligned="false"
-                android:elevation="10dp">
+                android:gravity="center_horizontal"
+                android:elevation="10dp"
+                android:translationZ="2dp">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="-20dp"
+                    android:layout_marginStart="-20dp"
+                    android:layout_marginEnd="-20dp"
+                    android:layout_marginBottom="-90dp"
+                    android:background="@drawable/rounded_blue_gradient_bg" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center_horizontal"
-                    android:paddingTop="4dp">
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="16dp">
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <de.hdodenhof.circleimageview.CircleImageView
-                            android:id="@+id/iv_profile_picture1"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            android:src="@android:drawable/sym_def_app_icon"
-                            android:scaleType="centerCrop" />
-
-                        <TextView
-                            android:id="@+id/tv_name1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Jane Doe"
-                            android:textSize="20sp"
-                            android:maxLines="2"
-                            android:textColor="#4A4A68"
-                            android:fontFamily="@font/montserrat_semi_bold"
-                            android:layout_marginLeft="20dp"/>
-
-                    </LinearLayout>
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/iv_profile_picture1"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@android:drawable/sym_def_app_icon"
+                        android:scaleType="centerCrop"
+                        app:civ_border_width="3dp"
+                        app:civ_border_color="#FFFFFF" />
 
                     <TextView
-                        android:id="@+id/credentialsTitle1"
+                        android:id="@+id/tv_name1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Credentials:"
+                        android:text="Jane Doe"
+                        android:textSize="22sp"
+                        android:textColor="#313131"
+                        android:fontFamily="@font/montserrat_semi_bold"
+                        android:layout_marginTop="12dp"/>
+
+                    <TextView
+                        android:id="@+id/tv_position1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Secretary"
                         android:textSize="16sp"
-                        android:fontFamily="@font/poppins_regular"
                         android:textColor="#4A4A68"
-                        android:layout_marginBottom="5dp"
-                        android:layout_gravity="left"/>
+                        android:fontFamily="@font/poppins_regular"/>
 
                     <TextView
-                        android:id="@+id/credentialsValue1"
+                        android:id="@+id/tv_course1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Lorem ipsum"
+                        android:text="3rd Year - Electrical Engineering"
                         android:textSize="15sp"
-                        android:fontFamily="@font/poppins_regular"
-                        android:textColor="#4A4A68"
-                        android:layout_marginBottom="20dp"
-                        android:layout_gravity="left"
-                        android:layout_marginLeft="20dp"/>
+                        android:textColor="#8C8CA1"
+                        android:fontFamily="@font/poppins_regular"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E0E0E0"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:id="@+id/credentialsTitle1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Credentials"
+                    android:textSize="16sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/montserrat_semi_bold"/>
+
+                <TextView
+                    android:id="@+id/credentialsValue1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                    android:textSize="14sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"/>
+
+                <TextView
+                    android:id="@+id/advocacyTitle1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Platform"
+                    android:textSize="16sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/montserrat_semi_bold"/>
+
+                <TextView
+                    android:id="@+id/advocacyValue1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                    android:textSize="14sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginBottom="20dp"
+                    android:lineSpacingExtra="2dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <TextView
-                        android:id="@+id/advocacyTitle1"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Platform:"
+                        android:layout_weight="1"
+                        android:text="Candidates Platform"
                         android:textSize="16sp"
-                        android:fontFamily="@font/poppins_regular"
                         android:textColor="#4A4A68"
-                        android:layout_marginBottom="5dp"
-                        android:layout_gravity="left"/>
+                        android:fontFamily="@font/montserrat_semi_bold"/>
 
                     <TextView
-                        android:id="@+id/advocacyValue1"
+                        android:id="@+id/btnPlatform1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Lorem ipsum"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/poppins_regular"
-                        android:textColor="#4A4A68"
-                        android:layout_gravity="left"
-                        android:layout_marginLeft="20dp"/>
-
+                        android:text="View details"
+                        android:textColor="#0098E0"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/montserrat_bold"/>
                 </LinearLayout>
 
             </LinearLayout>
@@ -179,91 +225,138 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:background="@drawable/rounded_gray_bg"
-                android:baselineAligned="false"
                 android:clipToPadding="false"
-                android:gravity="top"
-                android:orientation="horizontal"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
                 android:outlineProvider="bounds"
-                android:padding="20dp">
+                android:padding="20dp"
+                android:elevation="10dp"
+                android:translationZ="2dp">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="-20dp"
+                    android:layout_marginStart="-20dp"
+                    android:layout_marginEnd="-20dp"
+                    android:layout_marginBottom="-90dp"
+                    android:background="@drawable/rounded_blue_gradient_bg" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
                     android:orientation="vertical"
-                    android:paddingTop="4dp">
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="16dp">
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <de.hdodenhof.circleimageview.CircleImageView
-                            android:id="@+id/iv_profile_picture2"
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            android:src="@android:drawable/sym_def_app_icon"
-                            android:scaleType="centerCrop" />
-
-                        <TextView
-                            android:id="@+id/tv_name2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Jane Doe"
-                            android:textSize="20sp"
-                            android:maxLines="2"
-                            android:textColor="#4A4A68"
-                            android:fontFamily="@font/montserrat_semi_bold"
-                            android:layout_marginLeft="20dp"/>
-
-                    </LinearLayout>
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/iv_profile_picture2"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@android:drawable/sym_def_app_icon"
+                        android:scaleType="centerCrop"
+                        app:civ_border_width="3dp"
+                        app:civ_border_color="#FFFFFF" />
 
                     <TextView
-                        android:id="@+id/credentialsTitle2"
+                        android:id="@+id/tv_name2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="left"
-                        android:layout_marginBottom="5dp"
-                        android:fontFamily="@font/poppins_regular"
-                        android:text="Credentials:"
-                        android:textColor="#4A4A68"
-                        android:textSize="16sp" />
+                        android:text="Jane Doe"
+                        android:textSize="22sp"
+                        android:textColor="#313131"
+                        android:fontFamily="@font/montserrat_semi_bold"
+                        android:layout_marginTop="12dp"/>
 
                     <TextView
-                        android:id="@+id/credentialsValue2"
+                        android:id="@+id/tv_position2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="left"
-                        android:layout_marginBottom="20dp"
-                        android:fontFamily="@font/poppins_regular"
-                        android:text="Lorem ipsum"
-                        android:textColor="#4A4A68"
+                        android:text="Secretary"
                         android:textSize="16sp"
-                        android:layout_marginLeft="20dp"/>
+                        android:textColor="#4A4A68"
+                        android:fontFamily="@font/poppins_regular"/>
 
                     <TextView
-                        android:id="@+id/advocacyTitle2"
+                        android:id="@+id/tv_course2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="left"
-                        android:layout_marginBottom="5dp"
-                        android:fontFamily="@font/poppins_regular"
-                        android:text="Platform:"
-                        android:textColor="#4A4A68"
-                        android:textSize="16sp" />
+                        android:text="3rd Year - Electrical Engineering"
+                        android:textSize="15sp"
+                        android:textColor="#8C8CA1"
+                        android:fontFamily="@font/poppins_regular"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E0E0E0"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:id="@+id/credentialsTitle2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Credentials"
+                    android:textSize="16sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/montserrat_semi_bold"/>
+
+                <TextView
+                    android:id="@+id/credentialsValue2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                    android:textSize="14sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"/>
+
+                <TextView
+                    android:id="@+id/advocacyTitle2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Platform"
+                    android:textSize="16sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/montserrat_semi_bold"/>
+
+                <TextView
+                    android:id="@+id/advocacyValue2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                    android:textSize="14sp"
+                    android:textColor="#4A4A68"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginBottom="20dp"
+                    android:lineSpacingExtra="2dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <TextView
-                        android:id="@+id/advocacyValue2"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="left"
-                        android:fontFamily="@font/poppins_regular"
-                        android:text="Lorem ipsum"
-                        android:textColor="#4A4A68"
+                        android:layout_weight="1"
+                        android:text="Candidates Platform"
                         android:textSize="16sp"
-                        android:layout_marginLeft="20dp"/>
+                        android:textColor="#4A4A68"
+                        android:fontFamily="@font/montserrat_semi_bold"/>
 
+                    <TextView
+                        android:id="@+id/btnPlatform2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="View details"
+                        android:textColor="#0098E0"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/montserrat_bold"/>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

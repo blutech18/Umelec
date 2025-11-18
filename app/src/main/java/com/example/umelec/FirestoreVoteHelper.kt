@@ -47,6 +47,33 @@ object FirestoreVoteHelper {
                 // Generate vote ID
                 val voteId = firestore.collection(VOTES_COLLECTION).document().id
 
+                // Generate DSA key pair for vote submission
+                val dsaKeyPair = VoteCryptographyHelper.generateDSAKeyPair()
+                if (dsaKeyPair == null) {
+                    Log.e(TAG, "Failed to generate DSA key pair")
+                    onFailure("Failed to generate cryptographic keys for vote submission")
+                    return@addOnSuccessListener
+                }
+
+                // Create vote data string for signing
+                val voteDataString = VoteCryptographyHelper.buildVoteDataString(
+                    voteId = voteId,
+                    electionId = electionId,
+                    selections = selections
+                )
+
+                // Sign vote data with DSA private key
+                val digitalSignature = VoteCryptographyHelper.signVoteData(
+                    voteDataString,
+                    dsaKeyPair.privateKey
+                )
+
+                if (digitalSignature == null) {
+                    Log.e(TAG, "Failed to sign vote data")
+                    onFailure("Failed to sign vote data")
+                    return@addOnSuccessListener
+                }
+
                 // Prepare vote data
                 val voteData = hashMapOf<String, Any>(
                     "voteId" to voteId,
@@ -54,7 +81,13 @@ object FirestoreVoteHelper {
                     "electionId" to electionId,
                     "selections" to selections,
                     "submittedAt" to com.google.firebase.Timestamp.now(),
-                    "isVerified" to false
+                    "isVerified" to false,
+                    // Store DSA public key for later verification
+                    "dsaPublicKey" to dsaKeyPair.publicKey,
+                    // Store digital signature
+                    "digitalSignature" to digitalSignature,
+                    // Store signature preview (first 8 characters) for receipt verification
+                    "signaturePreview" to VoteCryptographyHelper.getSignaturePreview(digitalSignature)
                 )
 
                 signatureBase64?.let {
@@ -110,12 +143,16 @@ object FirestoreVoteHelper {
                 // Use DocumentSnapshot getTimestamp method instead of casting
                 val submittedAtTimestamp = doc.getTimestamp("submittedAt")
                 val submittedAt = submittedAtTimestamp?.toDate() ?: Date()
-                val signature = data["signature"] as? String
+                // Use digital signature preview if available, otherwise fall back to signature image preview
+                val signaturePreview = data["signaturePreview"] as? String
+                    ?: (data["digitalSignature"] as? String)?.take(8)
+                    ?: (data["signature"] as? String)?.take(8)
+                    ?: ""
 
                 val receipt = VoteReceipt(
                     voteId = voteId,
                     submittedAt = submittedAt,
-                    signaturePreview = signature?.take(8) ?: ""
+                    signaturePreview = signaturePreview
                 )
 
                 onSuccess(receipt)
@@ -189,25 +226,153 @@ object FirestoreVoteHelper {
         onFailure: (String) -> Unit
     ) {
         getVoteTallies(electionId, { tallies ->
+            if (tallies.isEmpty()) {
+                onSuccess(emptyList())
+                return@getVoteTallies
+            }
+            
             // Group by position and get top candidate per position
-            val leadingByPosition = tallies
-                .groupBy { it.positionName }
-                .mapNotNull { (position, positionTallies) ->
-                    val topCandidate = positionTallies.maxByOrNull { it.voteCount }
-                    topCandidate?.let {
-                        LeadingCandidate(
-                            position = position,
-                            name = it.candidateName,
-                            votes = it.voteCount,
-                            profileResId = R.drawable.ic_profile
-                        )
+            val positionGroups = tallies.groupBy { it.positionName }
+            val leadingCandidatesList = mutableListOf<LeadingCandidate>()
+            var completedCount = 0
+            val totalPositions = positionGroups.size
+            
+            positionGroups.forEach { (position, positionTallies) ->
+                val topCandidate = positionTallies.maxByOrNull { it.voteCount }
+                topCandidate?.let { tally ->
+                    // Fetch candidate photoUrl from Firestore
+                    firestore.collection("candidates")
+                        .document(tally.candidateId)
+                        .get()
+                        .addOnSuccessListener { candidateDoc ->
+                            // Get photoUrl from document, handle null or missing field
+                            val photoUrl = if (candidateDoc.exists() && candidateDoc.contains("photoUrl")) {
+                                candidateDoc.getString("photoUrl")
+                            } else {
+                                null
+                            }
+                            // Use default avatar URL if photoUrl is not available or is empty
+                            val defaultAvatarUrl = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png"
+                            val finalPhotoUrl = if (photoUrl.isNullOrBlank()) {
+                                defaultAvatarUrl
+                            } else {
+                                photoUrl.trim()
+                            }
+                            Log.d(TAG, "Candidate ${tally.candidateName}: photoUrl=$photoUrl, finalPhotoUrl=$finalPhotoUrl")
+                            val leadingCandidate = LeadingCandidate(
+                                position = position,
+                                name = tally.candidateName,
+                                votes = tally.voteCount,
+                                profileResId = R.drawable.ic_profile,
+                                photoUrl = finalPhotoUrl
+                            )
+                            leadingCandidatesList.add(leadingCandidate)
+                            completedCount++
+                            
+                            // When all candidates are processed, return the sorted list
+                            if (completedCount == totalPositions) {
+                                val sorted = leadingCandidatesList
+                                    .sortedByDescending { it.votes }
+                                    .take(limit)
+                                onSuccess(sorted)
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            // If fetching photoUrl fails, use default avatar URL
+                            Log.e(TAG, "Error fetching candidate photoUrl: ${exception.message}")
+                            val defaultAvatarUrl = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png"
+                            val leadingCandidate = LeadingCandidate(
+                                position = position,
+                                name = tally.candidateName,
+                                votes = tally.voteCount,
+                                profileResId = R.drawable.ic_profile,
+                                photoUrl = defaultAvatarUrl
+                            )
+                            leadingCandidatesList.add(leadingCandidate)
+                            completedCount++
+                            
+                            if (completedCount == totalPositions) {
+                                val sorted = leadingCandidatesList
+                                    .sortedByDescending { it.votes }
+                                    .take(limit)
+                                onSuccess(sorted)
+                            }
+                        }
+                } ?: run {
+                    // No top candidate found for this position
+                    completedCount++
+                    if (completedCount == totalPositions) {
+                        val sorted = leadingCandidatesList
+                            .sortedByDescending { it.votes }
+                            .take(limit)
+                        onSuccess(sorted)
                     }
                 }
-                .sortedByDescending { it.votes }
-                .take(limit)
-
-            onSuccess(leadingByPosition)
+            }
         }, onFailure)
+    }
+
+    /**
+     * Verify vote by reference code (voteId) and digital signature snippet
+     * @param voteId Reference code (vote ID)
+     * @param signatureSnippet First 8 characters of the digital signature
+     * @param electionId Optional election ID for additional validation
+     * @param onSuccess Callback with verification result (true if verified)
+     * @param onFailure Callback with error message
+     */
+    fun verifyVoteByReferenceCode(
+        voteId: String,
+        signatureSnippet: String,
+        electionId: String? = null,
+        onSuccess: (Boolean) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        // Find vote by voteId
+        firestore.collection(VOTES_COLLECTION)
+            .whereEqualTo("voteId", voteId)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    Log.d(TAG, "No vote found with voteId: $voteId")
+                    onSuccess(false)
+                    return@addOnSuccessListener
+                }
+
+                val doc = documents.documents[0]
+                val data = doc.data ?: run {
+                    onSuccess(false)
+                    return@addOnSuccessListener
+                }
+
+                // Optional: Verify election ID matches
+                if (electionId != null) {
+                    val docElectionId = data["electionId"] as? String
+                    if (docElectionId != electionId) {
+                        Log.d(TAG, "Election ID mismatch: expected $electionId, got $docElectionId")
+                        onSuccess(false)
+                        return@addOnSuccessListener
+                    }
+                }
+
+                // Get stored signature preview
+                val storedSignaturePreview = data["signaturePreview"] as? String ?: ""
+                
+                // Compare signature snippets (case-insensitive)
+                val isMatch = storedSignaturePreview.take(8).equals(signatureSnippet.take(8), ignoreCase = true)
+
+                if (isMatch) {
+                    Log.d(TAG, "Vote verification successful for voteId: $voteId")
+                } else {
+                    Log.d(TAG, "Signature snippet mismatch for voteId: $voteId")
+                }
+
+                onSuccess(isMatch)
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Error verifying vote: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to verify vote")
+            }
     }
 }
 

@@ -85,17 +85,20 @@
             android:orientation="horizontal"
             android:layout_marginTop="5dp"
             android:layout_marginBottom="5dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
             android:gravity="center_horizontal">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputLayout1"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.App.TextInputLayout.OTP"
                 app:errorIconDrawable="@null"
                 app:boxBackgroundMode="outline"
-                android:layout_marginRight="5dp">
+                android:layout_marginEnd="4dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/input1"
@@ -110,13 +113,14 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputLayout2"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.App.TextInputLayout.OTP"
                 app:errorIconDrawable="@null"
                 app:boxBackgroundMode="outline"
-                android:layout_marginRight="5dp">
+                android:layout_marginEnd="4dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/input2"
@@ -131,13 +135,14 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputLayout3"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.App.TextInputLayout.OTP"
                 app:errorIconDrawable="@null"
                 app:boxBackgroundMode="outline"
-                android:layout_marginRight="5dp">
+                android:layout_marginEnd="4dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/input3"
@@ -152,13 +157,14 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputLayout4"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.App.TextInputLayout.OTP"
                 app:errorIconDrawable="@null"
                 app:boxBackgroundMode="outline"
-                android:layout_marginRight="5dp">
+                android:layout_marginEnd="4dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/input4"
@@ -173,13 +179,14 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputLayout5"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.App.TextInputLayout.OTP"
                 app:errorIconDrawable="@null"
                 app:boxBackgroundMode="outline"
-                android:layout_marginRight="5dp">
+                android:layout_marginEnd="4dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/input5"
@@ -194,8 +201,9 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/textInputLayout6"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginBottom="16dp"
                 style="@style/Widget.App.TextInputLayout.OTP"
                 app:errorIconDrawable="@null"

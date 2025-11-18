@@ -32,6 +32,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
+import android.app.DownloadManager
+import android.content.ContentValues
+import android.content.ContentResolver
+import android.provider.MediaStore
+import android.os.Environment
+import java.io.FileInputStream
 
 // REMINDER: You MUST add the following dependency to your app/build.gradle file:
 // implementation 'com.github.gcacace:signature-pad:1.2.1'
@@ -263,20 +269,69 @@ class Castvote3 : AppCompatActivity() {
             signatureBase64 = signatureBase64String,
             onSuccess = { voteId ->
                 android.util.Log.d("Castvote3", "Vote submitted successfully: $voteId")
-                
-                // Prepare receipt data
-                voteReceiptData = ReceiptPdfHelper.ReceiptData(
-                    voteId = voteId,
-                    electionTitle = electionTitle ?: "Election",
-                    userName = currentUserName ?: "User",
-                    userEmail = currentUserEmail ?: "",
-                    submittedAt = Date(),
-                    signatureBase64 = signatureBase64String,
-                    selections = selections
-                )
-                
-                // Show the recorded dialog with receipt
-                showRecordedDialog(voteId)
+
+                // Fetch cryptographic metadata for the vote
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("votes")
+                    .document(voteId)
+                    .get()
+                    .addOnSuccessListener { document ->
+                        val digitalSignaturePreview = document.getString("signaturePreview")
+                        val storedDigitalSignature = document.getString("digitalSignature")
+                        val storedPublicKey = document.getString("dsaPublicKey")
+
+                        val voteDataString = VoteCryptographyHelper.buildVoteDataString(
+                            voteId = voteId,
+                            electionId = electionIdValue,
+                            selections = selections
+                        )
+
+                        val isSignatureVerified =
+                            if (!storedPublicKey.isNullOrBlank() && !storedDigitalSignature.isNullOrBlank()) {
+                                VoteCryptographyHelper.verifyVoteSignature(
+                                    voteData = voteDataString,
+                                    signatureBase64 = storedDigitalSignature,
+                                    publicKeyBase64 = storedPublicKey
+                                )
+                            } else {
+                                false
+                            }
+
+                        voteReceiptData = ReceiptPdfHelper.ReceiptData(
+                            voteId = voteId,
+                            electionId = electionIdValue,
+                            electionTitle = electionTitle ?: "Election",
+                            userName = currentUserName ?: "User",
+                            userEmail = currentUserEmail ?: "",
+                            submittedAt = Date(),
+                            signatureBase64 = signatureBase64String,
+                            selections = selections,
+                            digitalSignaturePreview = digitalSignaturePreview ?: storedDigitalSignature?.take(8),
+                            digitalSignature = storedDigitalSignature,
+                            dsaPublicKey = storedPublicKey,
+                            isSignatureVerified = isSignatureVerified
+                        )
+
+                        createVoteSubmittedNotification(voteId, electionTitle ?: "Election")
+                        showRecordedDialog(voteId)
+                    }
+                    .addOnFailureListener { error ->
+                        android.util.Log.e("Castvote3", "Error fetching vote metadata: ${error.message}", error)
+
+                        voteReceiptData = ReceiptPdfHelper.ReceiptData(
+                            voteId = voteId,
+                            electionId = electionIdValue,
+                            electionTitle = electionTitle ?: "Election",
+                            userName = currentUserName ?: "User",
+                            userEmail = currentUserEmail ?: "",
+                            submittedAt = Date(),
+                            signatureBase64 = signatureBase64String,
+                            selections = selections
+                        )
+
+                        createVoteSubmittedNotification(voteId, electionTitle ?: "Election")
+                        showRecordedDialog(voteId)
+                    }
             },
             onFailure = { error ->
                 android.util.Log.e("Castvote3", "Error submitting vote: $error")
@@ -287,8 +342,34 @@ class Castvote3 : AppCompatActivity() {
     }
 
     /**
-     * Displays the VOTE RECORDED receipt dialog using custom_toast_recorded.xml.
+     * Create "Vote Submitted" notification automatically after vote submission
      */
+    private fun createVoteSubmittedNotification(voteId: String, electionTitle: String) {
+        val userId = FirebaseAuthHelper.getCurrentUser()?.uid
+        if (userId == null) {
+            android.util.Log.w("Castvote3", "Cannot create notification: User ID is null")
+            return
+        }
+
+        val title = "Vote Submitted"
+        val previewText = "Your vote has been successfully submitted."
+        val fullText = "Your vote for \"$electionTitle\" has been successfully submitted. Your Vote ID is: $voteId. Thank you for participating in the election!"
+
+        FirestoreNotificationHelper.createNotification(
+            title = title,
+            previewText = previewText,
+            fullText = fullText,
+            type = NotificationType.SUBMISSION,
+            targetUserId = userId,
+            onSuccess = { notificationId ->
+                android.util.Log.d("Castvote3", "Vote Submitted notification created: $notificationId")
+            },
+            onFailure = { error ->
+                android.util.Log.e("Castvote3", "Failed to create Vote Submitted notification: $error")
+            }
+        )
+    }
+
     private fun showRecordedDialog(voteId: String) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.custom_toast_recorded, null)
         // This dialog CANNOT be dismissed by touching outside.
@@ -298,7 +379,13 @@ class Castvote3 : AppCompatActivity() {
         val refCode = voteId
         val dateFormat = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
         val refDate = dateFormat.format(Date())
-        val refSignature = signatureBase64String?.take(8) + "..." ?: "N/A"
+        val signatureSnippet = voteReceiptData?.digitalSignaturePreview
+            ?: (signatureBase64String?.take(8) ?: "N/A")
+        val refSignature = if (voteReceiptData?.isSignatureVerified == true) {
+            "$signatureSnippet (Verified)"
+        } else {
+            "$signatureSnippet (Verification Pending)"
+        }
 
         // Set receipt data
         dialogView.findViewById<TextView>(R.id.ReferenceCode).text = refCode
@@ -322,48 +409,91 @@ class Castvote3 : AppCompatActivity() {
         alertDialog.show()
     }
 
+    /**
+     * Re-verify receipt signature using stored public key before generating receipts
+     */
+    private fun refreshReceiptSignatureVerification(): ReceiptPdfHelper.ReceiptData? {
+        val receipt = voteReceiptData ?: return null
+        val isVerified = verifyReceiptSignature(receipt)
+        val updatedReceipt = receipt.copy(
+            isSignatureVerified = isVerified,
+            digitalSignaturePreview = receipt.digitalSignaturePreview
+                ?: receipt.digitalSignature?.take(8)
+        )
+        voteReceiptData = updatedReceipt
+        return updatedReceipt
+    }
+
+    /**
+     * Verify DSA signature using stored public key
+     */
+    private fun verifyReceiptSignature(receiptData: ReceiptPdfHelper.ReceiptData): Boolean {
+        val signature = receiptData.digitalSignature
+        val publicKey = receiptData.dsaPublicKey
+        if (signature.isNullOrBlank() || publicKey.isNullOrBlank()) {
+            return false
+        }
+
+        return try {
+            val voteDataString = VoteCryptographyHelper.buildVoteDataString(
+                voteId = receiptData.voteId,
+                electionId = receiptData.electionId,
+                selections = receiptData.selections
+            )
+            VoteCryptographyHelper.verifyVoteSignature(
+                voteData = voteDataString,
+                signatureBase64 = signature,
+                publicKeyBase64 = publicKey
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("Castvote3", "Error verifying receipt signature: ${e.message}", e)
+            false
+        }
+    }
+
+
+    /**
+     * Shows a custom success toast message
+     */
+    private fun showSuccessToast(title: String, message: String) {
+        val inflater = LayoutInflater.from(this)
+        val layout = inflater.inflate(R.layout.custom_toast_success, null)
+
+        val titleText: TextView = layout.findViewById(R.id.toast_title)
+        val valueText: TextView = layout.findViewById(R.id.toast_value)
+        val actionButton: AppCompatButton = layout.findViewById(R.id.btn_action)
+
+        titleText.text = title
+        valueText.text = message
+        actionButton.visibility = View.GONE
+
+        with (Toast(applicationContext)) {
+            duration = Toast.LENGTH_LONG
+            setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+            @Suppress("DEPRECATION")
+            view = layout
+            show()
+        }
+    }
 
     /**
      * DISPLAYS A CUSTOM TOAST and then navigates to the Homepage.
      * Replaces the previous AlertDialog implementation.
      */
     private fun showSuccessToastAndNavigate() {
-        val inflater = LayoutInflater.from(this)
-        // Inflate the custom toast layout
-        val layout = inflater.inflate(R.layout.custom_toast_success, null)
-
-        // Find and customize the views
-        val titleText: TextView = layout.findViewById(R.id.toast_title)
-        val valueText: TextView = layout.findViewById(R.id.toast_value)
-        val actionButton: AppCompatButton = layout.findViewById(R.id.btn_action)
-
-        // Set content and hide button (Toast should be non-interactive)
-        titleText.text = "Sent Successfully"
-        valueText.text = "Check your email."
-        actionButton.visibility = View.GONE // Hide the button
-
-        with (Toast(applicationContext)) {
-            duration = Toast.LENGTH_SHORT
-            // Set the custom gravity and offset
-            setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
-            @Suppress("DEPRECATION")
-            view = layout
-            show()
-        }
-
-        // Crucial: Schedule the navigation on the main thread after a minimal delay (e.g., 40ms).
-        // This allows the Toast rendering command to be processed before the current activity is destroyed.
+        showSuccessToast("Sent Successfully", "Check your email.")
+        
+        // Navigate after showing toast
         Handler(Looper.getMainLooper()).postDelayed({
-            // Execute the final action (Navigation/Exit)
             navigateTo(Homepage::class.java, isFinalExit = true)
-        }, 40) // 40 milliseconds is usually enough for the Toast to register
+        }, 2000)
     }
 
     /**
      * Generate and download PDF receipt
      */
     private fun downloadPdfReceipt() {
-        val receiptData = voteReceiptData
+        val receiptData = refreshReceiptSignatureVerification()
         if (receiptData == null) {
             Toast.makeText(this, "Error: Receipt data not available", Toast.LENGTH_SHORT).show()
             navigateTo(Homepage::class.java, isFinalExit = true)
@@ -389,7 +519,7 @@ class Castvote3 : AppCompatActivity() {
     }
 
     /**
-     * Share/download PDF file using Android's share intent
+     * Save PDF file to Downloads folder using MediaStore API (Android 10+) or DownloadManager
      */
     private fun sharePdfFile(filePath: String) {
         try {
@@ -400,46 +530,105 @@ class Castvote3 : AppCompatActivity() {
                 return
             }
 
+            val fileName = "vote_receipt_${voteReceiptData?.voteId ?: System.currentTimeMillis()}.pdf"
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Use MediaStore API for Android 10+ (API 29+)
+                savePdfToDownloadsMediaStore(file, fileName)
+            } else {
+                // Use DownloadManager for older Android versions
+                savePdfToDownloadsLegacy(file, fileName)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Castvote3", "Error saving PDF: ${e.message}", e)
+            Toast.makeText(this, "Error saving PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            navigateTo(Homepage::class.java, isFinalExit = true)
+        }
+    }
+
+    /**
+     * Save PDF to Downloads using MediaStore API (Android 10+)
+     */
+    private fun savePdfToDownloadsMediaStore(sourceFile: File, fileName: String) {
+        try {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+
+            val contentResolver = contentResolver
+            // Use MediaStore.Downloads (available on Android 10+)
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+
+            if (uri != null) {
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    FileInputStream(sourceFile).use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                
+                // Clean up temporary file
+                ReceiptPdfHelper.deletePdfFile(sourceFile.absolutePath)
+                
+                // Show success toast
+                showSuccessToast("PDF Downloaded Successfully", "Your vote receipt has been saved to Downloads folder")
+                
+                // Navigate after a short delay
+                Handler(Looper.getMainLooper()).postDelayed({
+                    navigateTo(Homepage::class.java, isFinalExit = true)
+                }, 2000)
+            } else {
+                throw Exception("Failed to create file in Downloads")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Castvote3", "Error saving PDF via MediaStore: ${e.message}", e)
+            Toast.makeText(this, "Failed to save PDF: ${e.message}", Toast.LENGTH_LONG).show()
+            navigateTo(Homepage::class.java, isFinalExit = true)
+        }
+    }
+
+    /**
+     * Save PDF to Downloads using DownloadManager (Android 9 and below)
+     */
+    private fun savePdfToDownloadsLegacy(sourceFile: File, fileName: String) {
+        try {
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 FileProvider.getUriForFile(
                     this,
                     "${applicationContext.packageName}.fileprovider",
-                    file
+                    sourceFile
                 )
             } else {
-                Uri.fromFile(file)
+                Uri.fromFile(sourceFile)
             }
 
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "Vote Receipt - ${voteReceiptData?.voteId}")
-                putExtra(Intent.EXTRA_TEXT, "Please find attached your vote receipt.")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            val request = DownloadManager.Request(uri).apply {
+                setTitle("Vote Receipt - ${voteReceiptData?.voteId}")
+                setDescription("Your vote receipt PDF")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                setMimeType("application/pdf")
             }
 
-            // Also create a download intent for direct download
-            val downloadIntent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
-            // Use chooser to let user choose between share/download
-            val chooserIntent = Intent.createChooser(shareIntent, "Save or Share Receipt").apply {
-                putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(downloadIntent))
-            }
-
-            startActivity(chooserIntent)
+            val downloadId = downloadManager.enqueue(request)
             
-            // Show success message after a delay
+            // Clean up temporary file after a delay (DownloadManager copies it)
             Handler(Looper.getMainLooper()).postDelayed({
-                Toast.makeText(this, "Your PDF receipt has been saved.", Toast.LENGTH_SHORT).show()
-                navigateTo(Homepage::class.java, isFinalExit = true)
+                ReceiptPdfHelper.deletePdfFile(sourceFile.absolutePath)
+                
+                // Show success toast
+                showSuccessToast("PDF Downloaded Successfully", "Your vote receipt has been saved to Downloads folder")
+                
+                // Navigate after showing toast
+                Handler(Looper.getMainLooper()).postDelayed({
+                    navigateTo(Homepage::class.java, isFinalExit = true)
+                }, 2000)
             }, 1000)
         } catch (e: Exception) {
-            android.util.Log.e("Castvote3", "Error sharing PDF: ${e.message}", e)
-            Toast.makeText(this, "Error sharing PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            android.util.Log.e("Castvote3", "Error saving PDF via DownloadManager: ${e.message}", e)
+            Toast.makeText(this, "Failed to save PDF: ${e.message}", Toast.LENGTH_LONG).show()
             navigateTo(Homepage::class.java, isFinalExit = true)
         }
     }
@@ -448,7 +637,7 @@ class Castvote3 : AppCompatActivity() {
      * Send receipt via email
      */
     private fun sendReceiptViaEmail() {
-        val receiptData = voteReceiptData
+        val receiptData = refreshReceiptSignatureVerification()
         val userEmail = currentUserEmail
 
         if (receiptData == null) {
@@ -501,6 +690,15 @@ class Castvote3 : AppCompatActivity() {
                 voteDetails["selections"] = selectionsText
                 voteDetails["pdfBase64"] = pdfBase64
                 voteDetails["pdfFileName"] = "vote_receipt_${receiptData.voteId}.pdf"
+                voteDetails["signatureSnippet"] = receiptData.digitalSignaturePreview ?: "N/A"
+                voteDetails["signatureVerification"] = if (receiptData.isSignatureVerified) {
+                    "Verified via DSA public key"
+                } else {
+                    "Verification failed or unavailable"
+                }
+                voteDetails["publicKeyPreview"] = receiptData.dsaPublicKey?.let {
+                    if (it.length > 64) "${it.take(64)}..." else it
+                } ?: "Not available"
 
                 // Send email using EmailService
                 EmailService.sendVoteConfirmationEmail(

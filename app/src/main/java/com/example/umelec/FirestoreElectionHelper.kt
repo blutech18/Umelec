@@ -1,6 +1,7 @@
 package com.example.umelec
 
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.util.Date
@@ -14,16 +15,39 @@ object FirestoreElectionHelper {
     private const val TAG = "FirestoreElectionHelper"
 
     /**
-     * Determine the current election state based on dates
+     * Determine the current election state based on dates for user's college
      */
     fun determineElectionState(
         onSuccess: (ElectionState) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        firestore.collection(ELECTIONS_COLLECTION)
-            .whereEqualTo("isActive", true)
+        // Get current user's college information first
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            onFailure("User not authenticated")
+            return
+        }
+
+        firestore.collection("users").document(currentUser.uid)
             .get()
-            .addOnSuccessListener { documents ->
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    onFailure("User profile not found")
+                    return@addOnSuccessListener
+                }
+
+                val userCollege = userDoc.getString("college") ?: ""
+                if (userCollege.isEmpty()) {
+                    onFailure("User college information not found")
+                    return@addOnSuccessListener
+                }
+
+                // Get elections for user's college only
+                firestore.collection(ELECTIONS_COLLECTION)
+                    .whereEqualTo("isActive", true)
+                    .whereEqualTo("college", userCollege)
+                    .get()
+                    .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
                     Log.d(TAG, "No active elections found")
                     onSuccess(ElectionState.NO_ELECTION)
@@ -55,26 +79,54 @@ object FirestoreElectionHelper {
                     else -> ElectionState.ONGOING
                 }
 
-                Log.d(TAG, "Election state determined: $state (start: $startDate, end: $endDate)")
-                onSuccess(state)
+                        Log.d(TAG, "Election state determined: $state (start: $startDate, end: $endDate)")
+                        onSuccess(state)
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.e(TAG, "Error determining election state: ${exception.message}", exception)
+                        onFailure(exception.message ?: "Failed to determine election state")
+                    }
             }
             .addOnFailureListener { exception ->
-                Log.e(TAG, "Error determining election state: ${exception.message}", exception)
-                onFailure(exception.message ?: "Failed to determine election state")
+                Log.e(TAG, "Error getting user profile: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to get user profile")
             }
     }
 
     /**
-     * Get current active election details
+     * Get current active election details for user's college
      */
     fun getCurrentElection(
         onSuccess: (ElectionDetails?) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        firestore.collection(ELECTIONS_COLLECTION)
-            .whereEqualTo("isActive", true)
+        // Get current user's college information first
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            onFailure("User not authenticated")
+            return
+        }
+
+        firestore.collection("users").document(currentUser.uid)
             .get()
-            .addOnSuccessListener { documents ->
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    onFailure("User profile not found")
+                    return@addOnSuccessListener
+                }
+
+                val userCollege = userDoc.getString("college") ?: ""
+                if (userCollege.isEmpty()) {
+                    onFailure("User college information not found")
+                    return@addOnSuccessListener
+                }
+
+                // Get elections for user's college only
+                firestore.collection(ELECTIONS_COLLECTION)
+                    .whereEqualTo("isActive", true)
+                    .whereEqualTo("college", userCollege)
+                    .get()
+                    .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
                     Log.d(TAG, "No active elections found for getCurrentElection")
                     onSuccess(null)
@@ -119,26 +171,54 @@ object FirestoreElectionHelper {
                     status = status
                 )
 
-                Log.d(TAG, "Current election loaded: $title ($status)")
-                onSuccess(electionDetails)
+                        Log.d(TAG, "Current election loaded: $title ($status)")
+                        onSuccess(electionDetails)
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.e(TAG, "Error getting current election: ${exception.message}", exception)
+                        onFailure(exception.message ?: "Failed to get election details")
+                    }
             }
             .addOnFailureListener { exception ->
-                Log.e(TAG, "Error getting current election: ${exception.message}", exception)
-                onFailure(exception.message ?: "Failed to get election details")
+                Log.e(TAG, "Error getting user profile: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to get user profile")
             }
     }
 
     /**
-     * Get election ID for current active election
+     * Get election ID for current active election in user's college
      */
     fun getCurrentElectionId(
         onSuccess: (String?) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        firestore.collection(ELECTIONS_COLLECTION)
-            .whereEqualTo("isActive", true)
+        // Get current user's college information first
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            onFailure("User not authenticated")
+            return
+        }
+
+        firestore.collection("users").document(currentUser.uid)
             .get()
-            .addOnSuccessListener { documents ->
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    onFailure("User profile not found")
+                    return@addOnSuccessListener
+                }
+
+                val userCollege = userDoc.getString("college") ?: ""
+                if (userCollege.isEmpty()) {
+                    onFailure("User college information not found")
+                    return@addOnSuccessListener
+                }
+
+                // Get elections for user's college only
+                firestore.collection(ELECTIONS_COLLECTION)
+                    .whereEqualTo("isActive", true)
+                    .whereEqualTo("college", userCollege)
+                    .get()
+                    .addOnSuccessListener { documents ->
                 if (documents.isEmpty) {
                     Log.d(TAG, "No active elections found for getCurrentElectionId")
                     onSuccess(null)
@@ -151,17 +231,22 @@ object FirestoreElectionHelper {
                     timestamp?.toDate()?.time ?: 0L
                 }
                 
-                if (mostRecentDoc != null) {
-                    Log.d(TAG, "Current election ID: ${mostRecentDoc.id}")
-                    onSuccess(mostRecentDoc.id)
-                } else {
-                    Log.d(TAG, "No valid election document found")
-                    onSuccess(null)
-                }
+                        if (mostRecentDoc != null) {
+                            Log.d(TAG, "Current election ID: ${mostRecentDoc.id}")
+                            onSuccess(mostRecentDoc.id)
+                        } else {
+                            Log.d(TAG, "No valid election document found")
+                            onSuccess(null)
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.e(TAG, "Error getting election ID: ${exception.message}", exception)
+                        onFailure(exception.message ?: "Failed to get election ID")
+                    }
             }
             .addOnFailureListener { exception ->
-                Log.e(TAG, "Error getting election ID: ${exception.message}", exception)
-                onFailure(exception.message ?: "Failed to get election ID")
+                Log.e(TAG, "Error getting user profile: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to get user profile")
             }
     }
 

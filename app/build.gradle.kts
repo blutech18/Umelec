@@ -134,9 +134,13 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.2.0")
     implementation("com.github.gcacace:signature-pad:1.3.1")
     
+    // Image loading library for loading images from URLs
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-functions-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 }

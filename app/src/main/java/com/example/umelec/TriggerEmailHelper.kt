@@ -473,5 +473,98 @@ The UMelec Team
             This is an automated notification from UMelec.
         """.trimIndent()
     }
+
+    /**
+     * Send leader verification code email using Trigger Email extension
+     * 
+     * @param email Recipient email address
+     * @param verificationCode 6-digit verification code
+     * @param userName Optional: User's name for personalization
+     * @param onSuccess Callback when email document is created successfully
+     * @param onFailure Callback when email document creation fails
+     */
+    fun sendLeaderVerificationCode(
+        email: String,
+        verificationCode: String,
+        userName: String? = null,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val emailData = hashMapOf<String, Any>(
+            "to" to email,
+            "message" to hashMapOf<String, Any>(
+                "subject" to "Leader Verification Code - UMelec",
+                "html" to buildLeaderVerificationHtml(verificationCode, userName),
+                "text" to buildLeaderVerificationText(verificationCode, userName)
+            )
+        )
+
+        // Add document to 'mail' collection - Trigger Email extension will send it
+        firestore.collection(MAIL_COLLECTION)
+            .add(emailData)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                onFailure(exception.message ?: "Failed to send verification email")
+            }
+    }
+
+    private fun buildLeaderVerificationHtml(verificationCode: String, userName: String?): String {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Leader Verification - UMelec</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #00537A; padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">UMelec</h1>
+                    <p style="color: #E8F4FD; margin: 5px 0 0 0;">University of Makati Electronic Election</p>
+                </div>
+                <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px;">
+                    <h2 style="color: #00537A;">Leader Account Verification</h2>
+                    ${if (userName != null) "<p>Hello $userName,</p>" else "<p>Hello,</p>"}
+                    <p>You have successfully logged in to your leader account. To complete the verification process, please enter the following code in the app:</p>
+                    
+                    <div style="background-color: white; padding: 25px; border: 2px solid #00537A; border-radius: 8px; text-align: center; margin: 25px 0;">
+                        <h1 style="color: #00537A; font-size: 36px; margin: 0; letter-spacing: 8px; font-family: 'Courier New', monospace;">$verificationCode</h1>
+                    </div>
+                    
+                    <p><strong>Important:</strong></p>
+                    <ul>
+                        <li>This code will expire in <strong>10 minutes</strong></li>
+                        <li>Do not share this code with anyone</li>
+                        <li>If you didn't request this verification, please contact support</li>
+                    </ul>
+                    
+                    <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                        This is an automated verification email from UMelec. Please do not reply to this email.
+                    </p>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun buildLeaderVerificationText(verificationCode: String, userName: String?): String {
+        return """
+            Leader Account Verification - UMelec
+            
+            ${if (userName != null) "Hello $userName," else "Hello,"}
+            
+            You have successfully logged in to your leader account. To complete the verification process, please enter the following code in the app:
+            
+            Verification Code: $verificationCode
+            
+            Important:
+            - This code will expire in 10 minutes
+            - Do not share this code with anyone
+            - If you didn't request this verification, please contact support
+            
+            This is an automated verification email from UMelec. Please do not reply to this email.
+        """.trimIndent()
+    }
 }
 

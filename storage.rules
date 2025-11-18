@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for UMelec
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is a leader
+    function isLeader() {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'LEADER';
+    }
+    
+    // Candidate photos - only leaders can upload/manage
+    match /candidate_photos/{candidatePhotoId} {
+      // Allow leaders to read, write, and delete candidate photos
+      allow read, write, delete: if isLeader();
+      
+      // Allow authenticated users to read candidate photos (for viewing)
+      allow read: if request.auth != null;
+      
+      // Validate file type and size for uploads
+      allow create, update: if isLeader() && 
+                             request.resource.size < 5 * 1024 * 1024 && // Max 5MB
+                             request.resource.contentType.matches('image/.*'); // Images only
+    }
+    
+    // Default: deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

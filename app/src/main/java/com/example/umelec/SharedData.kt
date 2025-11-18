@@ -13,6 +13,7 @@ data class CandidatePlatformDetails(
     val position: String,
     val courseInfo: String,
     val profilePictureResource: Int,
+    val photoUrl: String? = null, // URL for candidate photo (optional)
     val credentials: String,
     val advocacy: String
 )
@@ -34,7 +35,8 @@ data class LeadingCandidate(
     val position: String,
     val name: String,
     val votes: Int,
-    val profileResId: Int // Resource ID for the drawable/image (e.g., R.drawable.ic_profile)
+    val profileResId: Int = R.drawable.ic_profile, // Resource ID for the drawable/image (fallback)
+    val photoUrl: String? = null // URL for candidate photo (optional)
 )
 
 // ⭐️ Enum to manage the state of the results card (Copied from Results.kt)

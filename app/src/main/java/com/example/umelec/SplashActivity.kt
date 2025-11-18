@@ -27,13 +27,11 @@ class SplashActivity : AppCompatActivity() {
                             // Route based on role and verification status
                             when (role) {
                                 "LEADER" -> {
-                                    if (isVerified) {
-                                        // Leader is verified, go to Leader Homepage
-                                        startActivity(Intent(this, Leader_homepage::class.java))
-                                    } else {
-                                        // Leader is not verified, go to verification screen
-                                        startActivity(Intent(this, Leader_Verification::class.java))
-                                    }
+                                    // For leaders, always require fresh verification on app restart
+                                    // This ensures security and prevents bypassing verification
+                                    android.util.Log.d("SplashActivity", "Leader detected, signing out for fresh verification")
+                                    FirebaseAuthHelper.signOut()
+                                    startActivity(Intent(this, MainActivity::class.java))
                                 }
                                 else -> {
                                     // Voter, go to Homepage

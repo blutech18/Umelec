@@ -29,7 +29,13 @@ class Leader_electionsetup_preview : AppCompatActivity() {
         btnPreview = findViewById(R.id.btnPreview)
         val electionTitleView: TextView = findViewById(R.id.ElectionTitle)
 
-        // 2. Load election data from Firestore
+        // 2. Check if election title was passed from Election Setup page
+        val passedTitle = intent.getStringExtra("electionTitle")
+        if (passedTitle != null && passedTitle.isNotEmpty()) {
+            electionTitleView.text = passedTitle
+        }
+
+        // 3. Load election data from Firestore or temporary positions
         loadElectionData(electionTitleView)
 
         // 3. Setup navigation
@@ -37,9 +43,30 @@ class Leader_electionsetup_preview : AppCompatActivity() {
     }
 
     /**
-     * Load election data from Firestore
+     * Load election data from Firestore or temporary positions
      */
     private fun loadElectionData(electionTitleView: TextView) {
+        // First check for temporary positions (before election is created)
+        if (Leader_electionsetup.temporaryPositions.isNotEmpty()) {
+            // Convert temporary positions to VotingPosition format
+            val votingPositions = Leader_electionsetup.temporaryPositions.mapIndexed { index, (positionName, _, candidates) ->
+                VotingPosition(
+                    id = "temp_$index",
+                    title = positionName,
+                    candidates = candidates.mapIndexed { candidateIndex, candidateName -> 
+                        CandidateChoices(id = "temp_candidate_${index}_$candidateIndex", name = candidateName) 
+                    }
+                )
+            }
+            // Only set title if it wasn't already set from intent
+            if (electionTitleView.text.isEmpty() || electionTitleView.text == "UMak Student Council \nElections 2025") {
+                electionTitleView.text = "Election Preview"
+            }
+            inflatePreviewCards(votingPositions)
+            return
+        }
+
+        // Otherwise, load from Firestore
         FirestoreElectionHelper.getCurrentElectionId(
             onSuccess = { electionId ->
                 if (electionId != null) {

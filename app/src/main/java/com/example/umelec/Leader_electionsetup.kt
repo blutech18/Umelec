@@ -17,8 +17,11 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import com.google.android.material.textfield.TextInputEditText
@@ -26,9 +29,32 @@ import com.google.android.material.textfield.TextInputLayout
 
 class Leader_electionsetup : AppCompatActivity() {
 
+    companion object {
+        // Temporary storage for positions before election is created
+        // Format: List of (positionName, yearLevel, candidates)
+        var temporaryPositions: List<Triple<String, String, List<String>>> = emptyList()
+    }
+
     // Define color constant (AS IS from Leader_manage_voters_list.kt)
     private val COLOR_PRIMARY_BLUE = Color.parseColor("#00537A")
     private val COLOR_DEFAULT_GRAY = Color.parseColor("#8C8CA1") // Based on your XML
+
+    // Modern Activity Result API launcher
+    private val positionSetupLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Refresh position cards when returning from position setup
+        if (result.resultCode == RESULT_OK) {
+            // If there are temporary positions, display them
+            if (temporaryPositions.isNotEmpty()) {
+                displayTemporaryPositions()
+            } else {
+                loadPositionsAndDisplay()
+            }
+        } else {
+            loadPositionsCount()
+        }
+    }
 
     // 1. View References
     private lateinit var btnBack: ImageButton
@@ -53,6 +79,7 @@ class Leader_electionsetup : AppCompatActivity() {
     // Store current election ID for positions
     private var currentElectionId: String? = null
     private var positionsCount = 0
+    private lateinit var positionListContainer: LinearLayout
 
     // 4. List of all required input fields and layouts for validation/focus
     private val inputFields: List<TextInputEditText> by lazy {
@@ -68,7 +95,12 @@ class Leader_electionsetup : AppCompatActivity() {
 
         initializeViews()
         setupListeners()
-        loadPositionsCount()
+        // Load positions - check temporary first, then from Firestore
+        if (temporaryPositions.isNotEmpty()) {
+            displayTemporaryPositions()
+        } else {
+            loadPositionsAndDisplay()
+        }
         checkFormValidity() // Set initial button state
     }
 
@@ -82,6 +114,7 @@ class Leader_electionsetup : AppCompatActivity() {
         inputEndTime = findViewById(R.id.inputEndTime)
         tvPosition = findViewById(R.id.tvPosition)
         btnViewPosition = findViewById(R.id.btnViewPosition)
+        positionListContainer = findViewById(R.id.PositionListContainer)
         cbAgreeTerms = findViewById(R.id.cbAgreeTerms)
         btnPreview = findViewById(R.id.btnPreview)
         btnSubmit = findViewById(R.id.btnSubmit) // Ensure you renamed btnAdd to btnSubmit in XML
@@ -114,15 +147,21 @@ class Leader_electionsetup : AppCompatActivity() {
 
         // --- 5. Navigation Listeners
         btnViewPosition.setOnClickListener {
-            // Navigate to Leader_election_setup_position.kt
+            // Navigate to Leader_election_setup_position.kt using modern Activity Result API
             val intent = Intent(this, Leader_electionsetup_position::class.java)
             currentElectionId?.let { intent.putExtra("electionId", it) }
-            startActivity(intent)
+            positionSetupLauncher.launch(intent)
         }
 
         btnPreview.setOnClickListener {
             // Navigate to Leader_electionsetup_preview.kt
-            startActivity(Intent(this, Leader_electionsetup_preview::class.java))
+            val intent = Intent(this, Leader_electionsetup_preview::class.java)
+            // Pass election title if available (from input field or temporary)
+            val electionTitle = inputTitle.text.toString().trim()
+            if (electionTitle.isNotEmpty()) {
+                intent.putExtra("electionTitle", electionTitle)
+            }
+            startActivity(intent)
         }
 
         btnSubmit.setOnClickListener {
@@ -170,11 +209,9 @@ class Leader_electionsetup : AppCompatActivity() {
         // 2. Check if the Checkbox is checked
         val termsChecked = cbAgreeTerms.isChecked
 
-        // 3. Check for Position Data (Must have positions)
-        val hasPositions = positionsCount > 0
-
-        // Enable buttons only if all conditions are met
-        val isFormValid = allFieldsFilled && termsChecked && hasPositions
+        // 3. For new elections, positions can be added later
+        // Enable form submission with basic election details
+        val isFormValid = allFieldsFilled && termsChecked
 
         btnSubmit.isEnabled = isFormValid
         btnPreview.isEnabled = isFormValid
@@ -207,6 +244,11 @@ class Leader_electionsetup : AppCompatActivity() {
     // =========================================================================
 
     private fun loadPositionsCount() {
+        // For new election setup, start with 0 positions
+        // Positions will be managed through the position setup page
+        positionsCount = 0
+        updatePositionsUI()
+        
         // Get positions count for current election (if election ID exists)
         currentElectionId?.let { electionId ->
             FirestoreLeaderHelper.getPositionsForElection(
@@ -223,17 +265,183 @@ class Leader_electionsetup : AppCompatActivity() {
                     checkFormValidity()
                 }
             )
-        } ?: run {
-            positionsCount = 0
-            updatePositionsUI()
         }
+    }
+
+    private fun loadPositionsAndDisplay() {
+        // First try to get election ID from currentElectionId, if not, fetch it
+        val electionIdToUse = currentElectionId ?: run {
+            // Try to get current election ID
+            FirestoreElectionHelper.getCurrentElectionId(
+                onSuccess = { fetchedId ->
+                    if (!fetchedId.isNullOrEmpty()) {
+                        currentElectionId = fetchedId
+                        loadPositionsForDisplay(fetchedId)
+                    } else {
+                        clearPositionList()
+                        updatePositionsUI()
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_electionsetup", "Error getting election ID: $error")
+                    clearPositionList()
+                    updatePositionsUI()
+                }
+            )
+            return
+        }
+        
+        loadPositionsForDisplay(electionIdToUse)
+    }
+
+    private fun loadPositionsForDisplay(electionId: String) {
+        FirestoreLeaderHelper.getPositionsForElection(
+            electionId = electionId,
+            onSuccess = { positions ->
+                positionsCount = positions.size
+                displayPositionList(positions)
+                updatePositionsUI()
+                checkFormValidity()
+            },
+            onFailure = { error ->
+                android.util.Log.e("Leader_electionsetup", "Error loading positions: $error")
+                positionsCount = 0
+                clearPositionList()
+                updatePositionsUI()
+                checkFormValidity()
+            }
+        )
+    }
+
+
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
+    }
+
+    private fun displayTemporaryPositions() {
+        positionListContainer.removeAllViews()
+        
+        if (temporaryPositions.isEmpty()) {
+            clearPositionList()
+            updatePositionsUI()
+            return
+        }
+
+        positionsCount = temporaryPositions.size
+        
+        temporaryPositions.forEach { (positionName, _, _) ->
+            // Create simple text view for position name
+            val positionTextView = TextView(this).apply {
+                text = positionName
+                textSize = 16f
+                setTextColor(Color.parseColor("#313131"))
+                setPadding(0, 8.dpToPx(), 0, 8.dpToPx())
+                typeface = resources.getFont(R.font.poppins_regular)
+            }
+            
+            positionListContainer.addView(positionTextView)
+        }
+        
+        updatePositionsUI()
+    }
+    
+    private fun displayPositionList(positions: List<Map<String, Any>>) {
+        positionListContainer.removeAllViews()
+        
+        if (positions.isEmpty()) {
+            clearPositionList()
+            updatePositionsUI()
+            return
+        }
+
+        positionsCount = positions.size
+        
+        positions.forEach { positionData ->
+            val positionName = positionData["positionName"] as? String ?: ""
+            
+            // Create simple text view for position name
+            val positionTextView = TextView(this).apply {
+                text = positionName
+                textSize = 16f
+                setTextColor(Color.parseColor("#313131"))
+                setPadding(0, 8.dpToPx(), 0, 8.dpToPx())
+                typeface = resources.getFont(R.font.poppins_regular)
+            }
+            
+            positionListContainer.addView(positionTextView)
+        }
+        
+        updatePositionsUI()
+    }
+    
+    private fun clearPositionList() {
+        positionListContainer.removeAllViews()
     }
 
     private fun updatePositionsUI() {
         if (positionsCount > 0) {
             tvPosition.text = "$positionsCount position(s) added"
+            tvPosition.visibility = View.GONE
         } else {
             tvPosition.text = "Add at least 1 position"
+            tvPosition.visibility = View.VISIBLE
+        }
+    }
+
+    // =========================================================================
+    // SAVE TEMPORARY POSITIONS
+    // =========================================================================
+
+    private fun saveTemporaryPositions(electionId: String) {
+        if (temporaryPositions.isEmpty()) return
+
+        var completed = 0
+        var failed = 0
+        val total = temporaryPositions.size
+        
+        // Get current leader's UID
+        val currentLeaderId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (currentLeaderId == null) {
+            android.util.Log.e("Leader_electionsetup", "Current user not found, cannot save candidates")
+            return
+        }
+
+        temporaryPositions.forEach { (positionName, yearLevel, candidates) ->
+            FirestoreLeaderHelper.addPosition(
+                electionId = electionId,
+                positionName = positionName,
+                onSuccess = { positionId ->
+                    // Save candidates for this position
+                    candidates.forEach { candidateName ->
+                        val defaultAvatarUrl = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png"
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("candidates")
+                            .add(hashMapOf(
+                                "electionId" to electionId,
+                                "positionId" to positionId,
+                                "positionName" to positionName,
+                                "name" to candidateName,
+                                "isActive" to true,
+                                "photoUrl" to defaultAvatarUrl,
+                                "createdBy" to currentLeaderId, // Add leader ID so they show up in Manage Candidates
+                                "createdAt" to com.google.firebase.Timestamp.now()
+                            ))
+                    }
+                    completed++
+                    if (completed + failed == total) {
+                        // Clear temporary positions after saving
+                        temporaryPositions = emptyList()
+                        android.util.Log.d("Leader_electionsetup", "Saved $completed temporary positions")
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Leader_electionsetup", "Error saving temporary position: $error")
+                    failed++
+                    if (completed + failed == total) {
+                        android.util.Log.e("Leader_electionsetup", "Failed to save $failed positions")
+                    }
+                }
+            )
         }
     }
 
@@ -269,6 +477,12 @@ class Leader_electionsetup : AppCompatActivity() {
             isAbstainEnabled = cbAgreeTerms.isChecked,
             onSuccess = { electionId ->
                 currentElectionId = electionId
+                
+                // Save temporary positions if any
+                if (temporaryPositions.isNotEmpty()) {
+                    saveTemporaryPositions(electionId)
+                }
+                
                 // Show success toast
                 val inflater = LayoutInflater.from(this)
                 val layout = inflater.inflate(R.layout.custom_toast_success, null)

@@ -7,7 +7,9 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "seed": "node ../scripts/seed-data.js",
+    "create-user": "node ../scripts/create-verified-user.js"
   },
   "engines": {
     "node": "22"

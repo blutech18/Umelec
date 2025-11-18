@@ -18,10 +18,10 @@
 
     <!-- 2. Name and Trophy Container -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center">
 
         <!-- Trophy Icon -->
         <ImageView
@@ -35,30 +35,36 @@
         <!-- Candidate Name -->
         <TextView
             android:id="@+id/candidateName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Candidate Name"
             android:textSize="20sp"
             android:textColor="#333333"
             android:fontFamily="@font/montserrat_semi_bold"
-            />
+            android:gravity="center"
+            android:textAlignment="center"/>
     </LinearLayout>
 
     <TextView
         android:id="@+id/candidatePosition"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Position"
         android:textSize="16sp"
         android:textColor="#333333"
-        android:fontFamily="@font/poppins_regular"/>
+        android:fontFamily="@font/poppins_regular"
+        android:gravity="center"
+        android:textAlignment="center"/>
 
     <TextView
         android:id="@+id/candidateVotecount"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="[Vote Count]"
         android:textSize="16sp"
         android:textColor="#333333"
-        android:fontFamily="@font/poppins_regular"/>
+        android:fontFamily="@font/poppins_regular"
+        android:gravity="center"
+        android:textAlignment="center"/>
 </LinearLayout>

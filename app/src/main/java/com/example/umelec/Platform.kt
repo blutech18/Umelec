@@ -6,6 +6,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
 import android.widget.ImageButton // ⭐️ Import ImageButton
+import com.bumptech.glide.Glide
 import androidx.appcompat.app.AppCompatActivity
 
 // --- DATA STRUCTURE FOR CANDIDATE'S PLATFORM DETAILS ---
@@ -113,8 +114,12 @@ class Platform : AppCompatActivity() {
         val credentialsValue: TextView = findViewById(R.id.credentialsValue)
         val advocacyValue: TextView = findViewById(R.id.advocacyValue)
 
-        // Set the content
-        profilePic.setImageResource(details.profilePictureResource)
+        // Set the content - load from URL if available
+        ImageLoaderHelper.loadCandidateImage(
+            profilePic,
+            details.photoUrl,
+            details.profilePictureResource
+        )
         nameText.text = details.name
         positionText.text = details.position
         courseText.text = details.courseInfo

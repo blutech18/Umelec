@@ -19,6 +19,7 @@ import android.graphics.drawable.ColorDrawable
 import androidx.core.content.ContextCompat
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import android.widget.Toast
 
 // 1. 🚀 NEW: Data class to handle user roles and verification
 data class User(
@@ -40,9 +41,10 @@ class Login : AppCompatActivity() {
     private val COLOR_SUCCESS_GREEN = Color.parseColor("#27A688")
     private val COLOR_HINT_GRAY = Color.parseColor("#5C5C77")
 
-    // Define field layouts outside onCreate
+    // Define field layouts and button outside onCreate
     private lateinit var layoutEmail: TextInputLayout
     private lateinit var layoutPassword: TextInputLayout
+    private lateinit var btnLogin: Button
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,7 +69,7 @@ class Login : AppCompatActivity() {
         val reqPassword = findViewById<TextView>(R.id.reqPassword)
 
         // --- BUTTONS ---
-        val btnLogin = findViewById<Button>(R.id.btnLogin)
+        btnLogin = findViewById<Button>(R.id.btnLogin)
         val btnBack = findViewById<ImageButton>(R.id.btnBack)
         val forgotPassword = findViewById<TextView>(R.id.ForgotPassword)
         val registerButton = findViewById<TextView>(R.id.RegisterButton)
@@ -122,7 +124,13 @@ class Login : AppCompatActivity() {
             dialog.setCanceledOnTouchOutside(false)
 
             dialogView.findViewById<TextView>(R.id.toast_title).text = "Login Success"
-            dialogView.findViewById<TextView>(R.id.toast_value).text = "Welcome back!"
+            // Display welcome message with firstname
+            val welcomeMessage = if (userName.isNotEmpty()) {
+                "Welcome back! $userName"
+            } else {
+                "Welcome back!"
+            }
+            dialogView.findViewById<TextView>(R.id.toast_value).text = welcomeMessage
 
             val btnAction = dialogView.findViewById<Button>(R.id.btn_action)
             btnAction.text = "Continue to Homepage" // General button text
@@ -398,18 +406,8 @@ class Login : AppCompatActivity() {
                             // Route based on role and verification status
                             when (role) {
                                 "LEADER" -> {
-                                    if (isVerified) {
-                                        // 🚀 LEADER (Verified): Show standard success and go to Leader Homepage
-                                        showLoginSuccessDialog(userName, Leader_homepage::class.java)
-                                    } else {
-                                        // 🚀 LEADER (Unverified): Go directly to verification screen
-                                        val intent = Intent(this, Leader_Verification::class.java)
-                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                        startActivity(intent)
-                                        finish()
-                                        @Suppress("DEPRECATION")
-            overridePendingTransition(0, 0)
-                                    }
+                                    // 🚀 LEADER: ALWAYS send verification code for every login
+                                    sendLeaderVerificationCode(email, userName)
                                 }
                                 else -> {
                                     // 🚀 VOTER: Show standard success and go to Homepage
@@ -419,7 +417,8 @@ class Login : AppCompatActivity() {
                         },
                         onFailure = { errorMessage ->
                             // If we can't get user data, default to Voter homepage
-                            val userName = user.displayName ?: email
+                            // Extract firstname from displayName if available, otherwise use email username
+                            val userName = user.displayName?.split(" ")?.firstOrNull() ?: email.substringBefore("@")
                             showLoginSuccessDialog(userName, Homepage::class.java)
                         }
                     )
@@ -432,5 +431,87 @@ class Login : AppCompatActivity() {
                 }
             )
         }
+    }
+
+    /**
+     * Send verification code to leader's email and navigate to verification screen
+     */
+    private fun sendLeaderVerificationCode(email: String, userName: String) {
+        LeaderVerificationHelper.sendVerificationCode(
+            email = email,
+            onSuccess = { verificationCode ->
+                // Show success toast notification
+                showCodeSentToast()
+                
+                // Navigate to verification screen
+                val intent = Intent(this, Leader_Verification::class.java)
+                intent.putExtra("USER_EMAIL", email)
+                intent.putExtra("USER_NAME", userName)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            },
+            onFailure = { error ->
+                // Re-enable login button
+                btnLogin.isEnabled = true
+                
+                // Show error dialog
+                showVerificationErrorDialog(error)
+            }
+        )
+    }
+
+    /**
+     * Show "Code sent! Check your umak email inbox" toast notification
+     */
+    private fun showCodeSentToast() {
+        val inflater = LayoutInflater.from(this)
+        val layout = inflater.inflate(R.layout.custom_toast_success, null)
+
+        val titleText: TextView = layout.findViewById(R.id.toast_title)
+        val valueText: TextView = layout.findViewById(R.id.toast_value)
+        val actionButton: Button = layout.findViewById(R.id.btn_action)
+
+        titleText.text = "Code sent!"
+        valueText.text = "Check your umak email inbox"
+        actionButton.visibility = View.GONE
+
+        with (Toast(applicationContext)) {
+            duration = Toast.LENGTH_LONG
+            setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, 0, 100)
+            @Suppress("DEPRECATION")
+            view = layout
+            show()
+        }
+    }
+
+    /**
+     * Show error dialog when verification code sending fails
+     */
+    private fun showVerificationErrorDialog(error: String) {
+        val builder = AlertDialog.Builder(this)
+        val inflater = LayoutInflater.from(this)
+        val dialogView = inflater.inflate(R.layout.custom_toast_error, null)
+
+        builder.setView(dialogView)
+        val dialog = builder.create()
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setGravity(Gravity.CENTER)
+        dialog.setCanceledOnTouchOutside(false)
+
+        val titleText = dialogView.findViewById<TextView>(R.id.toast_title)
+        val messageText = dialogView.findViewById<TextView>(R.id.toast_value)
+        val closeButton = dialogView.findViewById<ImageButton>(R.id.btn_close)
+
+        titleText.text = "Verification Error"
+        messageText.text = "Failed to send verification code: $error\n\nPlease try again."
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 }

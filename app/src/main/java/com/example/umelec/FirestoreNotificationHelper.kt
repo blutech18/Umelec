@@ -117,5 +117,50 @@ object FirestoreNotificationHelper {
                 onFailure(exception.message ?: "Failed to load notification")
             }
     }
+
+    /**
+     * Create a new notification in Firestore
+     * 
+     * @param title Notification title
+     * @param previewText Short preview text for notification list
+     * @param fullText Full notification text
+     * @param type Notification type (REMINDER, SUBMISSION, GENERIC)
+     * @param targetUserId Optional: specific user ID to target, null for all users
+     * @param onSuccess Callback with notification ID when created successfully
+     * @param onFailure Callback when notification creation fails
+     */
+    fun createNotification(
+        title: String,
+        previewText: String,
+        fullText: String,
+        type: NotificationType,
+        targetUserId: String? = null,
+        onSuccess: (String) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val notificationData = hashMapOf<String, Any>(
+            "title" to title,
+            "previewText" to previewText,
+            "fullText" to fullText,
+            "type" to type.name,
+            "timestamp" to com.google.firebase.Timestamp.now(),
+            "readBy" to emptyList<String>()
+        )
+
+        if (targetUserId != null) {
+            notificationData["targetUserId"] = targetUserId
+        }
+
+        firestore.collection(COLLECTION)
+            .add(notificationData)
+            .addOnSuccessListener { documentReference ->
+                Log.d(TAG, "Notification created successfully: ${documentReference.id}")
+                onSuccess(documentReference.id)
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Error creating notification: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to create notification")
+            }
+    }
 }
 

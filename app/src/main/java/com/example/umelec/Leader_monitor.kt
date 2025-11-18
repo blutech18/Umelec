@@ -354,8 +354,13 @@ class Leader_monitor : AppCompatActivity() {
         val positionText: TextView = cardView.findViewById(R.id.candidatePosition)
         val voteCountText: TextView = cardView.findViewById(R.id.candidateVotecount)
 
-        // Set the actual data
-        profilePic.setImageResource(candidate.profileResId)
+        // Set the actual data - load image from URL (always use URL, default avatar if needed)
+        android.util.Log.d("Leader_monitor", "Loading image for ${candidate.name}: photoUrl=${candidate.photoUrl}")
+        ImageLoaderHelper.loadCandidateImage(
+            profilePic,
+            candidate.photoUrl,
+            candidate.profileResId
+        )
         nameText.text = candidate.name
         positionText.text = candidate.position
 
