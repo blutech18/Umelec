@@ -340,9 +340,16 @@ object FirestoreVoteHelper {
                 }
 
                 val data = document.data ?: run {
-                    Log.d(TAG, "Vote document has no data for voteId: $voteId")
+                    Log.e(TAG, "Vote document has no data for voteId: $voteId")
                     onSuccess(false)
                     return@addOnSuccessListener
+                }
+
+                // Verify that the voteId field in the document matches the document ID
+                val docVoteId = data["voteId"] as? String
+                if (docVoteId != null && docVoteId != voteId) {
+                    Log.w(TAG, "VoteId mismatch: document ID is '$voteId' but voteId field is '$docVoteId'")
+                    // Continue anyway - the document ID is the authoritative source
                 }
 
                 // Optional: Verify election ID matches
@@ -355,17 +362,52 @@ object FirestoreVoteHelper {
                     }
                 }
 
-                // Get stored signature preview
-                val storedSignaturePreview = data["signaturePreview"] as? String ?: ""
+                // Get stored signature preview - use same fallback logic as PDF generation
+                // 1. Try signaturePreview field first
+                var storedSignaturePreview = (data["signaturePreview"] as? String)?.trim() ?: ""
+                
+                // 2. Fallback: if signaturePreview is empty, try getting first 8 chars from digitalSignature
+                if (storedSignaturePreview.isEmpty()) {
+                    val digitalSignature = (data["digitalSignature"] as? String)?.trim() ?: ""
+                    if (digitalSignature.isNotEmpty()) {
+                        storedSignaturePreview = digitalSignature.take(8)
+                        Log.d(TAG, "Using digitalSignature field for preview (first 8 chars)")
+                    }
+                }
+                
+                // 3. Final fallback: generate hash from signature image (same as PDF)
+                if (storedSignaturePreview.isEmpty()) {
+                    val signatureBase64 = (data["signature"] as? String)?.trim() ?: ""
+                    if (signatureBase64.isNotEmpty()) {
+                        try {
+                            val signatureBytes = android.util.Base64.decode(signatureBase64, android.util.Base64.DEFAULT)
+                            val digest = java.security.MessageDigest.getInstance("SHA-256")
+                            val hashBytes = digest.digest(signatureBytes)
+                            val hashHex = "0x" + hashBytes.joinToString("") { "%02x".format(it) }
+                            storedSignaturePreview = hashHex.take(8)
+                            Log.d(TAG, "Using signature hash for preview (first 8 chars of SHA-256)")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error generating hash from signature: ${e.message}")
+                        }
+                    }
+                }
                 
                 if (storedSignaturePreview.isEmpty()) {
-                    Log.d(TAG, "No signature preview found for voteId: $voteId")
+                    Log.e(TAG, "No signature preview found for voteId: $voteId. Available fields: ${data.keys}")
                     onSuccess(false)
                     return@addOnSuccessListener
                 }
                 
-                // Compare signature snippets (case-insensitive)
-                val isMatch = storedSignaturePreview.take(8).equals(signatureSnippet.take(8), ignoreCase = true)
+                // Trim and normalize both strings before comparison
+                // Take first 8 characters and convert to uppercase for case-insensitive comparison
+                val normalizedStored = storedSignaturePreview.take(8).trim().uppercase()
+                val normalizedProvided = signatureSnippet.take(8).trim().uppercase()
+                
+                Log.d(TAG, "Comparing signatures - Stored: '$normalizedStored' (length: ${normalizedStored.length}), Provided: '$normalizedProvided' (length: ${normalizedProvided.length})")
+                Log.d(TAG, "Full stored signature preview: '$storedSignaturePreview'")
+                
+                // Compare signature snippets (case-insensitive, trimmed)
+                val isMatch = normalizedStored == normalizedProvided
 
                 if (isMatch) {
                     Log.d(TAG, "Vote verification successful for voteId: $voteId")
