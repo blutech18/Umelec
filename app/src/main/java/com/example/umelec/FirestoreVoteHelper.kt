@@ -327,20 +327,20 @@ object FirestoreVoteHelper {
         onSuccess: (Boolean) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        // Find vote by voteId
+        // Access vote directly by document ID (voteId is the document ID)
+        // This is more efficient and works better with security rules
         firestore.collection(VOTES_COLLECTION)
-            .whereEqualTo("voteId", voteId)
-            .limit(1)
+            .document(voteId)
             .get()
-            .addOnSuccessListener { documents ->
-                if (documents.isEmpty) {
+            .addOnSuccessListener { document ->
+                if (!document.exists()) {
                     Log.d(TAG, "No vote found with voteId: $voteId")
                     onSuccess(false)
                     return@addOnSuccessListener
                 }
 
-                val doc = documents.documents[0]
-                val data = doc.data ?: run {
+                val data = document.data ?: run {
+                    Log.d(TAG, "Vote document has no data for voteId: $voteId")
                     onSuccess(false)
                     return@addOnSuccessListener
                 }
@@ -358,13 +358,19 @@ object FirestoreVoteHelper {
                 // Get stored signature preview
                 val storedSignaturePreview = data["signaturePreview"] as? String ?: ""
                 
+                if (storedSignaturePreview.isEmpty()) {
+                    Log.d(TAG, "No signature preview found for voteId: $voteId")
+                    onSuccess(false)
+                    return@addOnSuccessListener
+                }
+                
                 // Compare signature snippets (case-insensitive)
                 val isMatch = storedSignaturePreview.take(8).equals(signatureSnippet.take(8), ignoreCase = true)
 
                 if (isMatch) {
                     Log.d(TAG, "Vote verification successful for voteId: $voteId")
                 } else {
-                    Log.d(TAG, "Signature snippet mismatch for voteId: $voteId")
+                    Log.d(TAG, "Signature snippet mismatch for voteId: $voteId (stored: ${storedSignaturePreview.take(8)}, provided: ${signatureSnippet.take(8)})")
                 }
 
                 onSuccess(isMatch)

@@ -284,9 +284,7 @@ const emailTemplates = {
     if (data.electionTitle) {
       voteDetailsHtml += `<p><strong>Election:</strong> ${data.electionTitle}</p>`;
     }
-    if (data.selections) {
-      voteDetailsHtml += `<p><strong>Your Voting Choices:</strong></p><ul>${data.selections.split("\n").map(choice => `<li>${choice}</li>`).join("")}</ul>`;
-    }
+    // Removed selections to protect voter privacy - selections are not shown in email
     if (data.voteId) {
       voteDetailsHtml += `<p><strong>Reference Code:</strong> ${data.voteId}</p>`;
     }
@@ -317,7 +315,7 @@ const emailTemplates = {
               ${voteDetailsHtml}
           </div>
           <p style="color: #666; font-size: 12px;">
-              This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
+              <strong>Privacy Notice:</strong> To protect the secrecy of your vote, your candidate selections are not included in this email. A PDF receipt has been attached to this email for your records, which also does not contain your voting choices.
           </p>
         </div>
       </body>
@@ -332,11 +330,10 @@ const emailTemplates = {
       
       Vote Details:
         ${data.electionTitle ? `Election: ${data.electionTitle}` : ""}
-        ${data.selections || ""}
         ${data.voteId ? `Reference Code: ${data.voteId}` : ""}
         ${data.submittedAt ? `Submission Date: ${data.submittedAt}` : ""}
       
-        This is your official vote confirmation. A PDF receipt has been attached to this email for your records.
+      Privacy Notice: To protect the secrecy of your vote, your candidate selections are not included in this email. A PDF receipt has been attached to this email for your records, which also does not contain your voting choices.
     `,
     };
   },

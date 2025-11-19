@@ -674,20 +674,16 @@ class Castvote3 : AppCompatActivity() {
                 val pdfBase64 = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
                 
                 // Prepare vote details for email
+                // Note: Selections are NOT included to protect voter privacy
                 val voteDetails = mutableMapOf<String, Any>(
                     "voteId" to receiptData.voteId,
                     "electionTitle" to receiptData.electionTitle,
                     "submittedAt" to SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", Locale.getDefault()).format(receiptData.submittedAt)
                 )
 
-                // Build selections text
-                val selectionsText = receiptData.selections.map { (positionId, candidateData) ->
-                    val positionName = candidateData["positionName"] ?: "Unknown Position"
-                    val candidateName = candidateData["candidateName"] ?: "Unknown Candidate"
-                    "$positionName: $candidateName"
-                }.joinToString("\n")
+                // Selections removed - not included in email to protect voter privacy
+                // The PDF receipt also does not contain candidate selections
 
-                voteDetails["selections"] = selectionsText
                 voteDetails["pdfBase64"] = pdfBase64
                 voteDetails["pdfFileName"] = "vote_receipt_${receiptData.voteId}.pdf"
                 voteDetails["signatureSnippet"] = receiptData.digitalSignaturePreview ?: "N/A"

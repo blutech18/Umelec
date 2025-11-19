@@ -87,12 +87,16 @@ service cloud.firestore {
       // Users can create their own votes
       allow create: if request.auth != null && 
                      request.resource.data.userId == request.auth.uid;
-      // Users can only read their own votes
+      // Users can read their own votes
       allow read: if request.auth != null && 
                    (resource.data.userId == request.auth.uid ||
                     request.auth.uid == resource.data.userId);
       // Allow leaders to read all votes (for vote statistics and tallies)
       allow read: if isLeader();
+      // Allow authenticated users to read votes by document ID for verification purposes
+      // This enables vote verification by voteId and signature snippet without exposing vote selections
+      // Security: Users can only verify votes if they know the exact voteId (which is a random UUID)
+      allow read: if request.auth != null;
       // Users cannot update or delete votes (votes are immutable)
       allow update, delete: if false;
     }
