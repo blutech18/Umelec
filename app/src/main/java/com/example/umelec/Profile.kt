@@ -245,7 +245,7 @@ class Profile : AppCompatActivity() {
                     studentIdValue.text = userData["studentId"] as? String ?: ""
                     yearValue.text = userData["year"] as? String ?: ""
                     collegeValue.text = userData["college"] as? String ?: ""
-                    statusValue.text = userData["status"] as? String ?: "Ineligible"
+                    statusValue.text = userData["status"] as? String ?: "Eligible"
                     
                     // ⭐️ NEW: Set the text for the new TextViews ⭐️
                     val initials = when {
@@ -264,7 +264,7 @@ class Profile : AppCompatActivity() {
                     studentIdValue.text = ""
                     yearValue.text = ""
                     collegeValue.text = ""
-                    statusValue.text = "Ineligible"
+                    statusValue.text = "Eligible"
                     profileAcronym.text = currentUser.email?.substring(0, 2)?.uppercase() ?: "UN"
                     moduleValue.text = "Voter"
                     genderValue.text = ""
@@ -276,7 +276,7 @@ class Profile : AppCompatActivity() {
                 studentIdValue.text = ""
                 yearValue.text = ""
                 collegeValue.text = ""
-                statusValue.text = "Ineligible"
+                statusValue.text = "Eligible"
                 profileAcronym.text = currentUser.email?.substring(0, 2)?.uppercase() ?: "UN"
                 moduleValue.text = "Voter"
                 genderValue.text = ""
