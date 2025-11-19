@@ -16,6 +16,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 class Profile : AppCompatActivity() {
 
     // Declare all UI elements
+    private lateinit var nameTitle: TextView
     private lateinit var emailValue: TextView
     private lateinit var studentIdValue: TextView
     private lateinit var yearValue: TextView
@@ -56,6 +57,7 @@ class Profile : AppCompatActivity() {
 
     private fun initializeViews() {
         // Find the TextViews for profile data
+        nameTitle = findViewById(R.id.nameTitle)
         emailValue = findViewById(R.id.EmailValue)
         studentIdValue = findViewById(R.id.StudentIDValue)
         yearValue = findViewById(R.id.YearValue)
@@ -229,6 +231,16 @@ class Profile : AppCompatActivity() {
             userId = currentUser.uid,
             onSuccess = { userData ->
                 if (userData != null) {
+                    val firstname = userData["firstname"] as? String ?: ""
+                    val lastname = userData["lastname"] as? String ?: ""
+                    val fullName = listOf(firstname, lastname)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" ")
+                        .ifBlank {
+                            currentUser.displayName ?: currentUser.email?.substringBefore("@") ?: "User"
+                        }
+                    nameTitle.text = fullName
+
                     // Set the text of each TextView using the retrieved data
                     studentIdValue.text = userData["studentId"] as? String ?: ""
                     yearValue.text = userData["year"] as? String ?: ""
@@ -236,13 +248,19 @@ class Profile : AppCompatActivity() {
                     statusValue.text = userData["status"] as? String ?: "Ineligible"
                     
                     // ⭐️ NEW: Set the text for the new TextViews ⭐️
-                    val firstname = userData["firstname"] as? String ?: ""
-                    val lastname = userData["lastname"] as? String ?: ""
-                    profileAcronym.text = "${firstname.take(1)}${lastname.take(1)}".uppercase()
-                    moduleValue.text = userData["moduleValue"] as? String ?: "Voter"
+                    val initials = when {
+                        firstname.isNotBlank() && lastname.isNotBlank() -> "${firstname.first()}${lastname.first()}"
+                        firstname.isNotBlank() -> firstname.take(2)
+                        lastname.isNotBlank() -> lastname.take(2)
+                        else -> currentUser.email?.substring(0, 2) ?: "UN"
+                    }
+                    profileAcronym.text = initials.uppercase()
+                    val role = userData["role"] as? String
+                    moduleValue.text = userData["moduleValue"] as? String ?: role ?: "Voter"
                     genderValue.text = userData["gender"] as? String ?: ""
                 } else {
                     // No user data in Firestore, use defaults
+                    nameTitle.text = currentUser.displayName ?: currentUser.email?.substringBefore("@") ?: "User"
                     studentIdValue.text = ""
                     yearValue.text = ""
                     collegeValue.text = ""
@@ -254,6 +272,7 @@ class Profile : AppCompatActivity() {
             },
             onFailure = { errorMessage ->
                 // Error loading data, use defaults
+                nameTitle.text = currentUser.displayName ?: currentUser.email?.substringBefore("@") ?: "User"
                 studentIdValue.text = ""
                 yearValue.text = ""
                 collegeValue.text = ""

@@ -15,6 +15,7 @@ import androidx.appcompat.widget.AppCompatButton
 class Leader_profile : AppCompatActivity() {
 
     // 1. Declare UI elements that exist in activity_leader_profile.xml
+    private lateinit var nameTitle: TextView
     private lateinit var emailValue: TextView
     private lateinit var collegeValue: TextView
     private lateinit var profileAcronym: TextView
@@ -38,6 +39,7 @@ class Leader_profile : AppCompatActivity() {
 
     private fun initializeViews() {
         // Find the TextViews for profile data that match the XML
+        nameTitle = findViewById(R.id.nameTitle)
         emailValue = findViewById(R.id.EmailValue)
         collegeValue = findViewById(R.id.CollegeValue)
 
@@ -191,28 +193,32 @@ class Leader_profile : AppCompatActivity() {
                 userId = user.uid,
                 onSuccess = { userData ->
                     userData?.let { data ->
+                        val firstname = data["firstname"] as? String ?: ""
+                        val lastname = data["lastname"] as? String ?: ""
+                        val fullName = listOf(firstname, lastname)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" ")
+                            .ifBlank { userEmail.substringBefore("@") }
+                        nameTitle.text = fullName
+
                         // Set college
                         val college = data["college"] as? String ?: "Not specified"
                         collegeValue.text = college
 
                         // Set profile acronym (first letters of college or name)
-                        val acronym = if (college.isNotEmpty()) {
-                            college.split(" ").take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("")
-                        } else {
-                            val firstName = data["firstname"] as? String ?: ""
-                            val lastName = data["lastname"] as? String ?: ""
-                            if (firstName.isNotEmpty() && lastName.isNotEmpty()) {
-                                "${firstName.first()}${lastName.first()}"
-                            } else {
-                                userEmail.take(2).uppercase()
-                            }
+                        val initials = when {
+                            firstname.isNotBlank() && lastname.isNotBlank() -> "${firstname.first()}${lastname.first()}"
+                            firstname.isNotBlank() -> firstname.take(2)
+                            lastname.isNotBlank() -> lastname.take(2)
+                            else -> userEmail.take(2)
                         }
-                        profileAcronym.text = acronym
+                        profileAcronym.text = initials.uppercase()
 
                         // Set module/role
                         val role = data["role"] as? String ?: "Leader"
                         moduleValue.text = role
                     } ?: run {
+                        nameTitle.text = userEmail.substringBefore("@")
                         // Fallback if no user data
                         emailValue.text = userEmail
                         collegeValue.text = "Not specified"
@@ -223,6 +229,7 @@ class Leader_profile : AppCompatActivity() {
                 onFailure = { error ->
                     android.util.Log.e("Leader_profile", "Error loading profile: $error")
                     // Fallback on error
+                    nameTitle.text = userEmail.substringBefore("@")
                     emailValue.text = userEmail
                     collegeValue.text = "Not specified"
                     profileAcronym.text = userEmail.take(2).uppercase()
@@ -231,6 +238,7 @@ class Leader_profile : AppCompatActivity() {
             )
         } ?: run {
             // No user logged in
+            nameTitle.text = "Leader"
             emailValue.text = "Not logged in"
             collegeValue.text = "Not specified"
             profileAcronym.text = "NA"
