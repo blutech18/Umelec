@@ -327,30 +327,59 @@ object FirestoreVoteHelper {
         onSuccess: (Boolean) -> Unit,
         onFailure: (String) -> Unit
     ) {
+        // Validate inputs - BOTH voteId and signatureSnippet must be provided
+        val trimmedVoteId = voteId.trim()
+        val trimmedSignatureSnippet = signatureSnippet.trim()
+        
+        if (trimmedVoteId.isEmpty()) {
+            Log.e(TAG, "VoteId is empty")
+            onFailure("Reference Code is required")
+            return
+        }
+        
+        if (trimmedSignatureSnippet.isEmpty()) {
+            Log.e(TAG, "Signature snippet is empty")
+            onFailure("Digital Signature Snippet is required")
+            return
+        }
+        
+        Log.d(TAG, "Verifying vote - VoteId: '$trimmedVoteId', SignatureSnippet: '$trimmedSignatureSnippet'")
+        
         // Access vote directly by document ID (voteId is the document ID)
         // This is more efficient and works better with security rules
         firestore.collection(VOTES_COLLECTION)
-            .document(voteId)
+            .document(trimmedVoteId)
             .get()
             .addOnSuccessListener { document ->
+                // Step 1: Verify document exists
                 if (!document.exists()) {
-                    Log.d(TAG, "No vote found with voteId: $voteId")
+                    Log.d(TAG, "No vote found with voteId: $trimmedVoteId")
                     onSuccess(false)
                     return@addOnSuccessListener
                 }
 
                 val data = document.data ?: run {
-                    Log.e(TAG, "Vote document has no data for voteId: $voteId")
+                    Log.e(TAG, "Vote document has no data for voteId: $trimmedVoteId")
                     onSuccess(false)
                     return@addOnSuccessListener
                 }
 
-                // Verify that the voteId field in the document matches the document ID
-                val docVoteId = data["voteId"] as? String
-                if (docVoteId != null && docVoteId != voteId) {
-                    Log.w(TAG, "VoteId mismatch: document ID is '$voteId' but voteId field is '$docVoteId'")
-                    // Continue anyway - the document ID is the authoritative source
+                // Step 2: Verify that the voteId field in the document matches the provided voteId
+                // BOTH the document ID and the voteId field must match
+                val docVoteId = (data["voteId"] as? String)?.trim() ?: ""
+                if (docVoteId.isEmpty()) {
+                    Log.e(TAG, "VoteId field is missing in document")
+                    onSuccess(false)
+                    return@addOnSuccessListener
                 }
+                
+                if (docVoteId != trimmedVoteId) {
+                    Log.w(TAG, "VoteId mismatch: provided '$trimmedVoteId' but document has '$docVoteId'")
+                    onSuccess(false)
+                    return@addOnSuccessListener
+                }
+                
+                Log.d(TAG, "VoteId verification passed: '$trimmedVoteId'")
 
                 // Optional: Verify election ID matches
                 if (electionId != null) {
@@ -393,29 +422,36 @@ object FirestoreVoteHelper {
                 }
                 
                 if (storedSignaturePreview.isEmpty()) {
-                    Log.e(TAG, "No signature preview found for voteId: $voteId. Available fields: ${data.keys}")
+                    Log.e(TAG, "No signature preview found for voteId: $trimmedVoteId. Available fields: ${data.keys}")
                     onSuccess(false)
                     return@addOnSuccessListener
                 }
                 
+                // Step 3: Verify signature snippet matches
                 // Trim and normalize both strings before comparison
                 // Take first 8 characters and convert to uppercase for case-insensitive comparison
                 val normalizedStored = storedSignaturePreview.take(8).trim().uppercase()
-                val normalizedProvided = signatureSnippet.take(8).trim().uppercase()
+                val normalizedProvided = trimmedSignatureSnippet.take(8).trim().uppercase()
                 
                 Log.d(TAG, "Comparing signatures - Stored: '$normalizedStored' (length: ${normalizedStored.length}), Provided: '$normalizedProvided' (length: ${normalizedProvided.length})")
                 Log.d(TAG, "Full stored signature preview: '$storedSignaturePreview'")
                 
                 // Compare signature snippets (case-insensitive, trimmed)
-                val isMatch = normalizedStored == normalizedProvided
+                // BOTH voteId AND signature must match for verification to succeed
+                val signatureMatch = normalizedStored == normalizedProvided
 
-                if (isMatch) {
-                    Log.d(TAG, "Vote verification successful for voteId: $voteId")
+                if (signatureMatch) {
+                    Log.d(TAG, "Vote verification successful - BOTH voteId ('$trimmedVoteId') and signature snippet match")
+                    onSuccess(true)
                 } else {
-                    Log.d(TAG, "Signature snippet mismatch for voteId: $voteId (stored: ${storedSignaturePreview.take(8)}, provided: ${signatureSnippet.take(8)})")
+                    Log.d(TAG, "Signature snippet mismatch for voteId: $trimmedVoteId")
+                    Log.d(TAG, "  Stored signature: '${storedSignaturePreview.take(8)}'")
+                    Log.d(TAG, "  Provided signature: '${trimmedSignatureSnippet.take(8)}'")
+                    Log.d(TAG, "  Normalized stored: '$normalizedStored'")
+                    Log.d(TAG, "  Normalized provided: '$normalizedProvided'")
+                    // Verification fails if signature doesn't match
+                    onSuccess(false)
                 }
-
-                onSuccess(isMatch)
             }
             .addOnFailureListener { exception ->
                 Log.e(TAG, "Error verifying vote: ${exception.message}", exception)
