@@ -43,13 +43,25 @@ class RegisterActivity2 : AppCompatActivity() {
     private val genderLevels = listOf("Female", "Male", "Prefer not to say") // 🚨 NEW GENDER OPTIONS
     private val colleges = listOf(
         "College of Liberal Arts and Sciences (CLAS)",
-        "College of Human Kinetics (CHK)",
-        "College of Continuing, Advanced and Professional Studies (CCAPS)",
-        "College of Business and Financial Science (CBFS)",
-        "Institute of Arts and Design (IAD)",
         "College of Innovative Teacher Education (CITE)",
+        "College of Human Kinetics (CHK)",
+        "College of Engineering and Technology (CET)",
+        "College of Tourism and Hospitality Management (CTHM)",
+        "School of Law (SOL)",
+        "College of Accountancy (IA)",
+        "College of Business and Financial Science (CBFS)",
+        "College of Governance and Public Policy (CGPP)",
         "College of Computing and Information Sciences (CCIS)",
-        "Institute of Technical Education and Skills Training (ITEST)"
+        "College of Construction Sciences and Engineering (CCSE)",
+        "Institute of Arts and Design (IAD)",
+        "Institute of Nursing (ION)",
+        "Institute of Health Sciences (IIHS)",
+        "Institute for Social Development and Nation Building (ISDNB)",
+        "Institute of Pharmacy (IOP)",
+        "Institute of Psychology (IOPsy)",
+        "Institute of Social Work (ISW)",
+        "Institute of Technical Education and Skills Training (ITEST)",
+        "Institute for Disaster and Emergency Management (IDEM)"
     )
     private val yearLevels = listOf("1st Year", "2nd Year", "3rd Year", "4th Year")
 
