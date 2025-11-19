@@ -38,6 +38,7 @@ class Leader_homepage : AppCompatActivity() {
     private lateinit var resultPreviewCard: LinearLayout
     private lateinit var electionStatusValue: TextView
     private lateinit var electionStatusDateTimeValue: TextView
+    private lateinit var leaderCourseTitle: TextView
 
     private lateinit var btnViewElectionSetup: AppCompatButton
     private lateinit var btnManageCandidates: AppCompatButton
@@ -137,6 +138,7 @@ class Leader_homepage : AppCompatActivity() {
         // 💡 NEW: Initialize Status and Button Views
         electionStatusValue = findViewById(R.id.ElectionStatusValue)
         electionStatusDateTimeValue = findViewById(R.id.ElectionStatusDateTimeValue)
+        leaderCourseTitle = findViewById(R.id.LeaderCourseTitle)
         btnViewElectionSetup = findViewById(R.id.btnViewElectionSetup)
         btnManageCandidates = findViewById(R.id.btnManageCandidates)
         btnManageVoter = findViewById(R.id.btnManageVoter)
@@ -145,28 +147,37 @@ class Leader_homepage : AppCompatActivity() {
     }
 
     private fun populateHeaderData() {
-        // Get leader name from Firestore
+        // Get leader name and college from Firestore
         val currentUser = FirebaseAuthHelper.getCurrentUser()
         currentUser?.let { user ->
             FirebaseAuthHelper.getUserDataFromFirestore(
                 userId = user.uid,
                 onSuccess = { userData ->
+                    // Set first name only in header
                     val firstName = userData?.get("firstname") as? String ?: ""
-                    val lastName = userData?.get("lastname") as? String ?: ""
-                    val fullName = if (firstName.isNotEmpty() || lastName.isNotEmpty()) {
-                        "$firstName $lastName".trim()
+                    nameTitle.text = if (firstName.isNotEmpty()) {
+                        firstName
                     } else {
                         user.email?.substringBefore("@") ?: "Leader"
                     }
-                    nameTitle.text = fullName
+                    
+                    // Set college dynamically
+                    val college = userData?.get("college") as? String ?: ""
+                    leaderCourseTitle.text = if (college.isNotEmpty()) {
+                        college
+                    } else {
+                        "College not specified"
+                    }
                 },
                 onFailure = { error ->
-                    // Fallback to email
+                    // Fallback to email for name
                     nameTitle.text = currentUser.email?.substringBefore("@") ?: "Leader"
+                    leaderCourseTitle.text = "College not specified"
                 }
             )
         } ?: run {
             nameTitle.text = "Leader"
+            leaderCourseTitle.text = "College not specified"
         }
     }
 
