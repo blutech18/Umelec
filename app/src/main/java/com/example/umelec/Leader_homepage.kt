@@ -122,6 +122,16 @@ class Leader_homepage : AppCompatActivity() {
         loadElectionState()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh election state when returning to this activity
+        // This ensures the UI updates after creating a new election
+        if (::electionStatusValue.isInitialized) {
+            android.util.Log.d("Leader_homepage", "onResume: Refreshing election state")
+            loadElectionState()
+        }
+    }
+
     private fun initializeViews() {
         // Header Views
         nameTitle = findViewById(R.id.NameTitle)
@@ -208,8 +218,10 @@ class Leader_homepage : AppCompatActivity() {
      * Load election state from Firestore
      */
     private fun loadElectionState() {
+        android.util.Log.d("Leader_homepage", "loadElectionState: Starting to determine election state")
         FirestoreElectionHelper.determineElectionState(
             onSuccess = { state ->
+                android.util.Log.d("Leader_homepage", "loadElectionState: Election state determined: $state")
                 updateElectionUI(state)
                 // If ongoing, fetch end date details
                 if (state == ElectionState.ONGOING) {

@@ -43,13 +43,15 @@ object FirestoreElectionHelper {
                 }
 
                 // Get elections for user's college only
+                Log.d(TAG, "Querying elections for college: $userCollege")
                 firestore.collection(ELECTIONS_COLLECTION)
                     .whereEqualTo("isActive", true)
                     .whereEqualTo("college", userCollege)
                     .get()
                     .addOnSuccessListener { documents ->
+                Log.d(TAG, "Found ${documents.size()} active election(s) for college: $userCollege")
                 if (documents.isEmpty) {
-                    Log.d(TAG, "No active elections found")
+                    Log.d(TAG, "No active elections found for college: $userCollege")
                     onSuccess(ElectionState.NO_ELECTION)
                     return@addOnSuccessListener
                 }
@@ -61,7 +63,7 @@ object FirestoreElectionHelper {
                 }
 
                 if (mostRecentElection == null) {
-                    Log.d(TAG, "No valid election found")
+                    Log.d(TAG, "No valid election found (all elections missing startDate)")
                     onSuccess(ElectionState.NO_ELECTION)
                     return@addOnSuccessListener
                 }
@@ -72,14 +74,26 @@ object FirestoreElectionHelper {
                 
                 val startDate = startDateTimestamp?.toDate() ?: Date(Long.MAX_VALUE)
                 val endDate = endDateTimestamp?.toDate() ?: Date(0)
+                
+                val electionStatus = mostRecentElection.getString("status") ?: "unknown"
+                Log.d(TAG, "Most recent election: ${mostRecentElection.id}, status: $electionStatus, startDate: $startDate, endDate: $endDate, now: $now")
 
                 val state = when {
-                    now.before(startDate) -> ElectionState.UPCOMING
-                    now.after(endDate) -> ElectionState.ENDED
-                    else -> ElectionState.ONGOING
+                    now.before(startDate) -> {
+                        Log.d(TAG, "Election is UPCOMING (now is before startDate)")
+                        ElectionState.UPCOMING
+                    }
+                    now.after(endDate) -> {
+                        Log.d(TAG, "Election is ENDED (now is after endDate)")
+                        ElectionState.ENDED
+                    }
+                    else -> {
+                        Log.d(TAG, "Election is ONGOING (now is between startDate and endDate)")
+                        ElectionState.ONGOING
+                    }
                 }
 
-                        Log.d(TAG, "Election state determined: $state (start: $startDate, end: $endDate)")
+                        Log.d(TAG, "Election state determined: $state (start: $startDate, end: $endDate, now: $now)")
                         onSuccess(state)
                     }
                     .addOnFailureListener { exception ->

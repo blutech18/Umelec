@@ -8,6 +8,7 @@ import com.google.firebase.Timestamp
 import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Helper class for Leader-specific Firestore operations
@@ -212,26 +213,29 @@ object FirestoreLeaderHelper {
     }
 
     /**
-     * Format date for display
+     * Format date for display (using Philippines timezone)
      */
     fun formatDate(date: Date): String {
         val format = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+        format.timeZone = TimeZone.getTimeZone("Asia/Manila")
         return format.format(date)
     }
 
     /**
-     * Format time for display
+     * Format time for display (using Philippines timezone)
      */
     fun formatTime(date: Date): String {
         val format = SimpleDateFormat("hh:mm a", Locale.getDefault())
+        format.timeZone = TimeZone.getTimeZone("Asia/Manila")
         return format.format(date)
     }
 
     /**
-     * Format date and time for display
+     * Format date and time for display (using Philippines timezone)
      */
     fun formatDateTime(date: Date): String {
         val format = SimpleDateFormat("MMMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
+        format.timeZone = TimeZone.getTimeZone("Asia/Manila")
         return format.format(date)
     }
 }

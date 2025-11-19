@@ -515,32 +515,61 @@ class Leader_electionsetup : AppCompatActivity() {
 
     private fun parseDateTime(dateStr: String, timeStr: String): java.util.Date? {
         return try {
-            // Parse date: "MMM dd, yyyy" (e.g., "Oct 15, 2025")
+            // Use Philippines timezone (UTC+8) explicitly
+            val timeZone = java.util.TimeZone.getTimeZone("Asia/Manila")
+            
+            // Parse date: "MMM dd, yyyy" (e.g., "Nov 19, 2025")
             val dateFormat = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+            dateFormat.timeZone = timeZone
             val date = dateFormat.parse(dateStr) ?: return null
 
-            // Parse time: "hh:mm AM/PM" (e.g., "05:00 PM")
-            val timeFormat = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
-            val time = timeFormat.parse(timeStr) ?: return null
+            // Manually parse time: "hh:mm AM/PM" (e.g., "11:03 AM" or "07:00 PM")
+            val timeParts = timeStr.trim().split(" ")
+            if (timeParts.size != 2) return null
+            
+            val timeComponent = timeParts[0] // "11:03" or "07:00"
+            val amPm = timeParts[1].uppercase() // "AM" or "PM"
+            
+            val hourMinute = timeComponent.split(":")
+            if (hourMinute.size != 2) return null
+            
+            var hour = hourMinute[0].toIntOrNull() ?: return null
+            val minute = hourMinute[1].toIntOrNull() ?: return null
+            
+            // Convert 12-hour format to 24-hour format
+            if (amPm == "PM" && hour != 12) {
+                hour += 12
+            } else if (amPm == "AM" && hour == 12) {
+                hour = 0
+            }
 
-            // Combine date and time
-            val calendar = java.util.Calendar.getInstance()
-            val dateCal = java.util.Calendar.getInstance()
+            // Create calendar in the correct timezone and set all components
+            val calendar = java.util.Calendar.getInstance(timeZone)
+            val dateCal = java.util.Calendar.getInstance(timeZone)
             dateCal.time = date
-            val timeCal = java.util.Calendar.getInstance()
-            timeCal.time = time
-
+            
+            // Set all components directly in the calendar with the correct timezone
             calendar.set(
-                dateCal.get(java.util.Calendar.YEAR),
-                dateCal.get(java.util.Calendar.MONTH),
-                dateCal.get(java.util.Calendar.DAY_OF_MONTH),
-                timeCal.get(java.util.Calendar.HOUR_OF_DAY),
-                timeCal.get(java.util.Calendar.MINUTE),
-                0
+                java.util.Calendar.YEAR,
+                dateCal.get(java.util.Calendar.YEAR)
             )
+            calendar.set(
+                java.util.Calendar.MONTH,
+                dateCal.get(java.util.Calendar.MONTH)
+            )
+            calendar.set(
+                java.util.Calendar.DAY_OF_MONTH,
+                dateCal.get(java.util.Calendar.DAY_OF_MONTH)
+            )
+            calendar.set(java.util.Calendar.HOUR_OF_DAY, hour)
+            calendar.set(java.util.Calendar.MINUTE, minute)
+            calendar.set(java.util.Calendar.SECOND, 0)
+            calendar.set(java.util.Calendar.MILLISECOND, 0)
+            
+            // Return the Date object (which will be correctly stored in Firestore)
             calendar.time
         } catch (e: Exception) {
-            android.util.Log.e("Leader_electionsetup", "Error parsing date/time: ${e.message}")
+            android.util.Log.e("Leader_electionsetup", "Error parsing date/time: ${e.message}", e)
             null
         }
     }
