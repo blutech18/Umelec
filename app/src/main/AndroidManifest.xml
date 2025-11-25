@@ -35,10 +35,14 @@
             android:exported="false" />
         <activity
             android:name=".Privacy"
-            android:exported="false" />
+            android:exported="false"
+            android:hardwareAccelerated="true"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity
             android:name=".Terms"
-            android:exported="false" />
+            android:exported="false"
+            android:hardwareAccelerated="true"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity
             android:name=".Leader_manage_voters_list"
             android:exported="false" />

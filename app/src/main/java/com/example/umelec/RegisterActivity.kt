@@ -184,9 +184,65 @@ class RegisterActivity : AppCompatActivity() {
 
         // 🔹 Navigation Listeners
         btnBack.setOnClickListener {
-            finish()
-            @Suppress("DEPRECATION")
-            overridePendingTransition(0, 0)
+            // Clean up incomplete registration if user goes back from step 1
+            val currentUser = FirebaseAuthHelper.getCurrentUser()
+            if (currentUser != null) {
+                // Check if registration is complete
+                FirebaseAuthHelper.isRegistrationComplete(
+                    userId = currentUser.uid,
+                    onComplete = { isComplete ->
+                        if (!isComplete) {
+                            // Registration not complete, delete the Firebase Auth account
+                            FirebaseAuthHelper.deleteCurrentUser(
+                                onSuccess = {
+                                    android.util.Log.d("RegisterActivity", "Incomplete registration cleaned up")
+                                    // Clear temporary credentials
+                                    FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                    finish()
+                                    @Suppress("DEPRECATION")
+                                    overridePendingTransition(0, 0)
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("RegisterActivity", "Failed to clean up incomplete registration: $error")
+                                    // Still finish even if cleanup fails
+                                    FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                    finish()
+                                    @Suppress("DEPRECATION")
+                                    overridePendingTransition(0, 0)
+                                }
+                            )
+                        } else {
+                            // Registration is complete, just go back
+                            finish()
+                            @Suppress("DEPRECATION")
+                            overridePendingTransition(0, 0)
+                        }
+                    },
+                    onError = { error ->
+                        android.util.Log.e("RegisterActivity", "Error checking registration status: $error")
+                        // If we can't check, assume incomplete and try to clean up
+                        FirebaseAuthHelper.deleteCurrentUser(
+                            onSuccess = {
+                                FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                finish()
+                                @Suppress("DEPRECATION")
+                                overridePendingTransition(0, 0)
+                            },
+                            onFailure = {
+                                FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                finish()
+                                @Suppress("DEPRECATION")
+                                overridePendingTransition(0, 0)
+                            }
+                        )
+                    }
+                )
+            } else {
+                // No user, just go back
+                finish()
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            }
         }
         loginButton.setOnClickListener {
             startActivity(Intent(this, Login::class.java))

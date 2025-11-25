@@ -2,31 +2,91 @@ package com.example.umelec
 
 import android.os.Bundle
 import android.widget.ImageButton
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 
 class Privacy : AppCompatActivity() {
+    
+    private var backCallback: OnBackPressedCallback? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        android.util.Log.d("Privacy", "onCreate started")
+        
+        // Set up global exception handler to catch any uncaught exceptions
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, exception ->
+            android.util.Log.e("Privacy", "Uncaught exception in thread ${thread.name}: ${exception.message}", exception)
+            exception.printStackTrace()
+            // Restore default handler and let it handle the crash
+            defaultHandler?.uncaughtException(thread, exception)
+        }
+        
         try {
             setContentView(R.layout.activity_privacy)
+            android.util.Log.d("Privacy", "setContentView completed")
 
-            // Back button behavior
-            val btnBack: ImageButton = findViewById(R.id.btnBack)
-            btnBack.setOnClickListener {
-                finish()
-                @Suppress("DEPRECATION")
-                overridePendingTransition(0, 0)
+            // Back button behavior with null safety
+            val btnBack: ImageButton? = findViewById(R.id.btnBack)
+            btnBack?.setOnClickListener {
+                try {
+                    finish()
+                    @Suppress("DEPRECATION")
+                    overridePendingTransition(0, 0)
+                } catch (e: Exception) {
+                    android.util.Log.e("Privacy", "Error in back button: ${e.message}", e)
+                    finish()
+                }
             }
+
+            // Handle system back button with OnBackPressedDispatcher
+            backCallback = object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    try {
+                        finish()
+                        @Suppress("DEPRECATION")
+                        overridePendingTransition(0, 0)
+                    } catch (e: Exception) {
+                        android.util.Log.e("Privacy", "Error in onBackPressed: ${e.message}", e)
+                        finish()
+                    }
+                }
+            }
+            onBackPressedDispatcher.addCallback(this, backCallback!!)
+
+            android.util.Log.d("Privacy", "onCreate completed successfully")
         } catch (e: Exception) {
             android.util.Log.e("Privacy", "Error in onCreate: ${e.message}", e)
-            finish()
+            android.util.Log.e("Privacy", "Stack trace: ", e)
+            e.printStackTrace()
+            // Don't finish on error - let the activity try to display
         }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        super.onBackPressed()
-        @Suppress("DEPRECATION")
-        overridePendingTransition(0, 0)
+    override fun onStart() {
+        super.onStart()
+        android.util.Log.d("Privacy", "onStart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        android.util.Log.d("Privacy", "onResume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        android.util.Log.d("Privacy", "onPause")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        android.util.Log.d("Privacy", "onStop")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        android.util.Log.d("Privacy", "onDestroy")
+        // Remove callback to prevent memory leaks
+        backCallback?.remove()
     }
 }

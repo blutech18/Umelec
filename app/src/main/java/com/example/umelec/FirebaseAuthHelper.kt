@@ -269,6 +269,59 @@ object FirebaseAuthHelper {
     }
 
     /**
+     * Delete the current user's Firebase Auth account
+     * This is used to clean up incomplete registrations
+     */
+    fun deleteCurrentUser(
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val user = auth.currentUser
+        if (user == null) {
+            onFailure("No user is currently signed in")
+            return
+        }
+
+        user.delete()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    android.util.Log.d("FirebaseAuthHelper", "User account deleted successfully")
+                    onSuccess()
+                } else {
+                    val errorMessage = task.exception?.message ?: "Failed to delete user account"
+                    android.util.Log.e("FirebaseAuthHelper", "Error deleting user: $errorMessage")
+                    onFailure(errorMessage)
+                }
+            }
+    }
+
+    /**
+     * Check if user registration is complete by checking Firestore
+     */
+    fun isRegistrationComplete(
+        userId: String,
+        onComplete: (Boolean) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        firestore.collection("users")
+            .document(userId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val registrationCompleted = document.getBoolean("registrationCompleted") ?: false
+                    onComplete(registrationCompleted)
+                } else {
+                    // No user document exists, registration is not complete
+                    onComplete(false)
+                }
+            }
+            .addOnFailureListener { exception ->
+                android.util.Log.e("FirebaseAuthHelper", "Error checking registration status: ${exception.message}")
+                onError(exception.message ?: "Failed to check registration status")
+            }
+    }
+
+    /**
      * Save user data to Firestore
      * Uses merge option to avoid overwriting existing data
      */

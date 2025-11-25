@@ -53,6 +53,8 @@ class RegisterActivity3 : AppCompatActivity() {
         // 1. Initialize Views
         btnBack = findViewById(R.id.btnBack)
         signaturePad = findViewById(R.id.signaturePad)
+        // Disable state saving for SignaturePad to prevent "Could not copy bitmap to parcel blob" errors
+        signaturePad.setSaveEnabled(false)
         btnClearSignature = findViewById(R.id.btnClearSignature)
 
         // --- NEW/UPDATED VIEW INITIALIZATION ---
@@ -78,20 +80,79 @@ class RegisterActivity3 : AppCompatActivity() {
 
         // 3. Set Listeners
         btnBack.setOnClickListener {
-            finish() // Goes back to the previous activity (RegisterActivity2)
-            @Suppress("DEPRECATION")
-            overridePendingTransition(0, 0)
+            // Check if registration is complete before going back
+            val currentUser = FirebaseAuthHelper.getCurrentUser()
+            if (currentUser != null) {
+                // Check if registration is complete
+                FirebaseAuthHelper.isRegistrationComplete(
+                    userId = currentUser.uid,
+                    onComplete = { isComplete ->
+                        if (!isComplete) {
+                            // Registration not complete, delete the Firebase Auth account
+                            FirebaseAuthHelper.deleteCurrentUser(
+                                onSuccess = {
+                                    android.util.Log.d("RegisterActivity3", "Incomplete registration cleaned up")
+                                    // Clear temporary credentials
+                                    FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                    finish()
+                                    @Suppress("DEPRECATION")
+                                    overridePendingTransition(0, 0)
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("RegisterActivity3", "Failed to clean up incomplete registration: $error")
+                                    // Still finish even if cleanup fails
+                                    FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                    finish()
+                                    @Suppress("DEPRECATION")
+                                    overridePendingTransition(0, 0)
+                                }
+                            )
+                        } else {
+                            // Registration is complete, just go back
+                            finish()
+                            @Suppress("DEPRECATION")
+                            overridePendingTransition(0, 0)
+                        }
+                    },
+                    onError = { error ->
+                        android.util.Log.e("RegisterActivity3", "Error checking registration status: $error")
+                        // If we can't check, assume incomplete and try to clean up
+                        FirebaseAuthHelper.deleteCurrentUser(
+                            onSuccess = {
+                                FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                finish()
+                                @Suppress("DEPRECATION")
+                                overridePendingTransition(0, 0)
+                            },
+                            onFailure = {
+                                FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                finish()
+                                @Suppress("DEPRECATION")
+                                overridePendingTransition(0, 0)
+                            }
+                        )
+                    }
+                )
+            } else {
+                // No user, just go back
+                finish()
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            }
         }
 
         // ⭐️ NEW BEHAVIOR: Navigate to Terms.kt ⭐️
         tvReviewTnC.setOnClickListener {
             try {
                 val intent = Intent(this, TERMS_ACTIVITY_CLASS)
+                // Add flags to ensure proper activity launch
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
                 startActivity(intent)
                 @Suppress("DEPRECATION")
                 overridePendingTransition(0, 0)
             } catch (e: Exception) {
                 android.util.Log.e("RegisterActivity3", "Error navigating to Terms: ${e.message}", e)
+                e.printStackTrace()
                 android.widget.Toast.makeText(this, "Unable to open Terms and Conditions", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
@@ -100,11 +161,14 @@ class RegisterActivity3 : AppCompatActivity() {
         tvReviewPrivacy.setOnClickListener {
             try {
                 val intent = Intent(this, PRIVACY_ACTIVITY_CLASS)
+                // Add flags to ensure proper activity launch
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
                 startActivity(intent)
                 @Suppress("DEPRECATION")
                 overridePendingTransition(0, 0)
             } catch (e: Exception) {
                 android.util.Log.e("RegisterActivity3", "Error navigating to Privacy: ${e.message}", e)
+                e.printStackTrace()
                 android.widget.Toast.makeText(this, "Unable to open Privacy Policy", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
@@ -219,6 +283,23 @@ class RegisterActivity3 : AppCompatActivity() {
         // 4. Final Condition CheckBox is checked (isFinalConditionAgreed)
 
         btnNext.isEnabled = isSignatureDrawn && isTermsAgreed && isPrivacyAgreed && isFinalConditionAgreed
+    }
+
+    /**
+     * Override to prevent saving the signature bitmap in the activity state.
+     * This prevents "Could not copy bitmap to parcel blob" errors when navigating to other activities.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        // Don't save the signature bitmap - it's too large for the Bundle
+        // Disable state saving for SignaturePad view to prevent bitmap from being saved
+        signaturePad.setSaveEnabled(false)
+        try {
+            super.onSaveInstanceState(outState)
+        } finally {
+            // Re-enable after saving (even if there was an error)
+            signaturePad.setSaveEnabled(true)
+        }
+        // The signature will need to be redrawn if the activity is recreated, which is acceptable
     }
 
     /**

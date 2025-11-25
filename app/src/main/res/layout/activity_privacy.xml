@@ -41,7 +41,7 @@
             android:id="@+id/TallyTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Terms and Condition"
+            android:text="Privacy Policy"
             android:textSize="24sp"
             android:fontFamily="@font/montserrat_semi_bold"
             android:textColor="#313131"
@@ -68,8 +68,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:fillViewport="true"
-        android:backgroundTint="#FAFCFE">
+        android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/registerContainer"
@@ -89,10 +88,201 @@
                     android:id="@+id/tvTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="No content available at the moment"
+                    android:text="UMelec Privacy Policy"
                     android:textSize="20sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/montserrat_semi_bold"
+                    android:layout_marginBottom="20dp"/>
+
+                <!-- 1. Introduction -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1. Introduction and Scope"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="UMelec (&quot;We,&quot; &quot;Us,&quot; or &quot;Our&quot;) is committed to protecting your privacy. This Privacy Policy explains how We collect, use, disclose, and safeguard your information when You use the UMelec System. By using the System, You consent to the data practices described in this policy. This policy applies to all users of the System, including Student Voters, Leaders, and Advisers."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 2. Information We Collect -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2. Information We Collect"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Personal Information: We collect information that You provide during registration, including your UMak email address, Student ID, first name, last name, gender, year level, and college. Authentication Data: We use Firebase Authentication to securely manage your password and account credentials. Voting Data: When You cast a vote, We collect your ballot selections, digital signature, and submission timestamp. System Usage Data: We may collect information about how You interact with the System, including login times and feature usage."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 3. How We Use Your Information -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3. How We Use Your Information"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Election Administration: To facilitate and manage student elections, verify voter eligibility, and ensure one-time voting restrictions. Account Management: To create and maintain your account, authenticate your identity, and provide access to System features. Vote Processing: To securely process and record your votes, generate vote receipts, and maintain election integrity. System Security: To detect and prevent fraud, unauthorized access, and other security threats. Communication: To send You important notifications about elections, account updates, and System changes."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 4. Data Storage and Security -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4. Data Storage and Security"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Storage: Your data is stored securely using Firebase (Firestore and Firebase Authentication), which employs industry-standard security measures. Encryption: Sensitive data, including passwords and digital signatures, are encrypted using secure protocols. Access Control: Access to your personal information is restricted to authorized System administrators and is protected by authentication mechanisms. Vote Anonymity: Your individual vote selections are kept confidential and are not linked to your personal identity in election results. Audit Trails: We maintain secure audit logs for system integrity and transparency purposes."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 5. Data Sharing and Disclosure -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="5. Data Sharing and Disclosure"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="We do not sell, trade, or rent your personal information to third parties. We may disclose your information only in the following circumstances: To authorized UMak COSEL administrators for election oversight and verification purposes. To comply with legal obligations, court orders, or government requests. To protect the rights, property, or safety of the System, its users, or others. Aggregate, anonymized data may be used for statistical analysis and reporting, but this will not identify individual users."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 6. Your Rights -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="6. Your Rights and Choices"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Access: You have the right to access the personal information We hold about You. Correction: You may request corrections to inaccurate or incomplete information. Deletion: You may request deletion of your account and associated data, subject to legal and operational requirements. Vote Secrecy: Once a vote is submitted, it cannot be modified or deleted to maintain election integrity. Data Portability: You may request a copy of your personal data in a portable format."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 7. Data Retention -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="7. Data Retention"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, comply with legal obligations, and maintain election records for audit and verification purposes. Vote records are retained permanently to ensure election integrity and transparency, but are stored in an anonymized format that does not reveal individual voter identities."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 8. Children's Privacy -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="8. Children's Privacy"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="The System is designed for use by currently enrolled University of Makati students. We do not knowingly collect personal information from individuals under the age of 18 who are not enrolled students. If You believe We have inadvertently collected such information, please contact Us immediately."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 9. Changes to This Policy -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="9. Changes to This Privacy Policy"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="We reserve the right to update this Privacy Policy at any time. Material changes will be communicated to You through the System or via email. Your continued use of the System after such changes constitutes acceptance of the updated policy. We encourage You to review this policy periodically."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- 10. Contact Information -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10. Contact Information"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="If You have questions, concerns, or requests regarding this Privacy Policy or Our data practices, please contact the UMelec Project Team at: jalbaladejo.a12345573@umak.edu.ph."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
                     android:layout_marginBottom="20dp"/>
 
             </LinearLayout>
