@@ -276,7 +276,18 @@ class Homepage : AppCompatActivity() {
         noElectionText: TextView,
         upcomingLayout: LinearLayout,
         electionEndedText: TextView,
-        voteNowButton: AppCompatButton
+        voteNowButton: AppCompatButton,
+        electionTitleValue: TextView,
+        votingPeriodValue: TextView,
+        statusValue: TextView,
+        candidatesContainer: ConstraintLayout,
+        candidatesCardTitle: TextView,
+        textNoCandidates: TextView,
+        textCandidatesEnded: TextView,
+        btnViewAll: TextView,
+        candidateListContainer: LinearLayout,
+        electionLoadingGroup: LinearLayout,
+        candidateLoadingGroup: LinearLayout
     ) {
         ongoingLayout.visibility = View.GONE
         noElectionText.visibility = View.GONE
@@ -288,6 +299,27 @@ class Homepage : AppCompatActivity() {
         voteNowButton.isEnabled = false // Disable by default
         voteNowButton.alpha = 0.5f // Optional: Dim the button when disabled
         voteNowButton.visibility = View.VISIBLE // Ensure it's visible before state logic might hide it
+
+        // Clear election info placeholders to avoid flashing stale data
+        electionTitleValue.text = ""
+        votingPeriodValue.text = ""
+        statusValue.text = ""
+        voteNowButton.text = "Vote now"
+        voteNowButton.setOnClickListener(null)
+
+        // Reset candidate/results section
+        candidatesContainer.visibility = View.GONE
+        candidatesCardTitle.text = "Candidates Preview"
+        textNoCandidates.visibility = View.GONE
+        textCandidatesEnded.visibility = View.GONE
+        btnViewAll.isClickable = false
+        btnViewAll.setTextColor(Color.parseColor("#AAAAAA"))
+        btnViewAll.setOnClickListener(null)
+        candidateListContainer.removeAllViews()
+
+        // Show loading placeholders until new data arrives
+        electionLoadingGroup.visibility = View.VISIBLE
+        candidateLoadingGroup.visibility = View.VISIBLE
     }
 
     /**
@@ -302,39 +334,39 @@ class Homepage : AppCompatActivity() {
         val textElectionEnded: TextView = findViewById(R.id.textElectionEnded)
         val btnVoteNow: AppCompatButton = findViewById(R.id.btnVoteNow)
 
-        // Candidate Preview Card Views
-
-
-        val candidatesContainer: ConstraintLayout = findViewById(R.id.CandidateContainer)
-        val textNoCandidates: TextView = findViewById(R.id.textNoCandidates)
-        val textCandidatesEnded: TextView = findViewById(R.id.textCandidatesEnded)
-        // FIX: Change type from AppCompatButton to TextView
-        val btnViewAll: TextView = findViewById(R.id.btnViewAll) // <--- FIXED TYPE
-        val candidateListContainer: LinearLayout = findViewById(R.id.candidateListContainer)
-        val candidatesCardTitle: TextView = findViewById(R.id.candidatesCardTitle)
-
-
-
-        // Reset all views before setting the state-specific ones
-
-        resetElectionViews(ongoingLayout, textNoElection, upcomingLayout, textElectionEnded, btnVoteNow)
-        candidatesContainer.visibility = View.GONE
-        candidatesCardTitle.text = "Candidates Preview"
-
-
-        textNoCandidates.visibility = View.GONE
-        textCandidatesEnded.visibility = View.GONE
-        // FIX: Use isClickable and set text color instead of isEnabled/alpha
-        btnViewAll.isClickable = false // Make non-clickable by default
-        btnViewAll.setTextColor(Color.parseColor("#AAAAAA")) // Dim the text color (optional)
-
-
-
-
-        // Views for ONGOING election data (for easy backend integration)
         val electionTitleValue: TextView = findViewById(R.id.electionTitleValue)
         val votingPeriodValue: TextView = findViewById(R.id.votingPeriodValue)
         val statusValue: TextView = findViewById(R.id.statusValue)
+        val electionLoadingGroup: LinearLayout = findViewById(R.id.electionLoadingGroup)
+
+        // Candidate Preview Card Views
+        val candidatesContainer: ConstraintLayout = findViewById(R.id.CandidateContainer)
+        val textNoCandidates: TextView = findViewById(R.id.textNoCandidates)
+        val textCandidatesEnded: TextView = findViewById(R.id.textCandidatesEnded)
+        val btnViewAll: TextView = findViewById(R.id.btnViewAll)
+        val candidateListContainer: LinearLayout = findViewById(R.id.candidateListContainer)
+        val candidatesCardTitle: TextView = findViewById(R.id.candidatesCardTitle)
+        val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+
+        // Reset all views before setting the state-specific ones
+        resetElectionViews(
+            ongoingLayout = ongoingLayout,
+            noElectionText = textNoElection,
+            upcomingLayout = upcomingLayout,
+            electionEndedText = textElectionEnded,
+            voteNowButton = btnVoteNow,
+            electionTitleValue = electionTitleValue,
+            votingPeriodValue = votingPeriodValue,
+            statusValue = statusValue,
+            candidatesContainer = candidatesContainer,
+            candidatesCardTitle = candidatesCardTitle,
+            textNoCandidates = textNoCandidates,
+            textCandidatesEnded = textCandidatesEnded,
+            btnViewAll = btnViewAll,
+            candidateListContainer = candidateListContainer,
+            electionLoadingGroup = electionLoadingGroup,
+            candidateLoadingGroup = candidateLoadingGroup
+        )
 
         when (state) {
 
@@ -350,6 +382,7 @@ class Homepage : AppCompatActivity() {
 
                 // **Backend Integration Point (ONGOING)**
                 fetchElectionData { electionData ->
+                    electionLoadingGroup.visibility = View.GONE
                     electionTitleValue.text = electionData.title
                     votingPeriodValue.text = electionData.period
 
@@ -386,13 +419,19 @@ class Homepage : AppCompatActivity() {
                             electionId = electionId,
                             limit = 5,
                             onSuccess = { candidates ->
+                                candidateLoadingGroup.visibility = View.GONE
                                 populateCandidateList(candidateListContainer, candidates)
                                 setupCandidateScrollControls()
                             },
                             onFailure = { error ->
                                 android.util.Log.e("Homepage", "Error fetching candidates: $error")
+                                candidateLoadingGroup.visibility = View.GONE
+                                textNoCandidates.visibility = View.VISIBLE
                             }
                         )
+                    } ?: run {
+                        candidateLoadingGroup.visibility = View.GONE
+                        textNoCandidates.visibility = View.VISIBLE
                     }
 
                     // Set View All button click listener
@@ -408,7 +447,8 @@ class Homepage : AppCompatActivity() {
             ElectionState.NO_ELECTION -> {
                 // PHASE 2: NO ELECTION (Election Info Card)
                 textNoElection.visibility = View.VISIBLE
-
+                electionLoadingGroup.visibility = View.GONE
+                candidateLoadingGroup.visibility = View.GONE
 
                 // btnVoteNow remains disabled
 
@@ -428,6 +468,7 @@ class Homepage : AppCompatActivity() {
 
                 // **Backend Integration Point (UPCOMING)**
                 fetchElectionData { electionData ->
+                    electionLoadingGroup.visibility = View.GONE
                     electionTitleValue.text = electionData.title
                     votingPeriodValue.text = electionData.period
 
@@ -450,13 +491,19 @@ class Homepage : AppCompatActivity() {
                             electionId = electionId,
                             limit = 5,
                             onSuccess = { candidates ->
+                                candidateLoadingGroup.visibility = View.GONE
                                 populateCandidateList(candidateListContainer, candidates)
                                 setupCandidateScrollControls()
                             },
                             onFailure = { error ->
                                 android.util.Log.e("Homepage", "Error fetching candidates: $error")
+                                candidateLoadingGroup.visibility = View.GONE
+                                textNoCandidates.visibility = View.VISIBLE
                             }
                         )
+                    } ?: run {
+                        candidateLoadingGroup.visibility = View.GONE
+                        textNoCandidates.visibility = View.VISIBLE
                     }
 
                     // Set View All button click listener
@@ -478,6 +525,14 @@ class Homepage : AppCompatActivity() {
 
                 // 🚀 UPDATED LOGIC (From Vote.kt): Hide the Vote button
                 btnVoteNow.visibility = View.GONE
+
+                fetchElectionData { electionData ->
+                    electionLoadingGroup.visibility = View.GONE
+                    electionTitleValue.text = electionData.title
+                    votingPeriodValue.text = electionData.period
+                    statusValue.text = "Ended"
+                    statusValue.setTextColor(Color.parseColor("#333333"))
+                }
 
 
                 // PHASE 4: ENDED (Candidate Preview Card)
@@ -507,6 +562,7 @@ class Homepage : AppCompatActivity() {
                     FirestoreCandidateHelper.getWinningCandidates(
                         electionId = electionId,
                         onSuccess = { winners ->
+                            candidateLoadingGroup.visibility = View.GONE
                             val candidateList = winners.map {
                                 Candidate(it.name, it.position, it.photoResource)
                             }
@@ -515,10 +571,14 @@ class Homepage : AppCompatActivity() {
                         },
                         onFailure = { error ->
                             android.util.Log.e("Homepage", "Error fetching winners: $error")
+                            candidateLoadingGroup.visibility = View.GONE
+                            textCandidatesEnded.visibility = View.VISIBLE
                         }
                     )
                 } ?: run {
                     android.util.Log.e("Homepage", "No election ID available")
+                    candidateLoadingGroup.visibility = View.GONE
+                    textCandidatesEnded.visibility = View.VISIBLE
                 }
 
                 // 5. Set View All button click listener
