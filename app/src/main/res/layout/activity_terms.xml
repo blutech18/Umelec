@@ -68,8 +68,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:fillViewport="true"
-        android:backgroundTint="#FAFCFE">
+        android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/registerContainer"
@@ -106,7 +105,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="By checking the acceptance box during registration, accessing, or using the UMelec System, You acknowledge that You have read, understood, and agree to be bound by these Terms and Conditions and our accompanying Privacy Policy. The purpose of UMelec is to provide a centralized, secure, and transparent e-governance platform for conducting UMak student elections. If You do not agree with all of these terms, You are expressly prohibited from using the System and must discontinue use immediately."
                     android:textSize="12sp"
@@ -125,7 +124,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Account Creation and Access: Student Voters register using their official UMak Gmail account and Student ID. Leaders and Advisers access the System using their designated organizational credentials. You agree to provide and maintain accurate, current, and complete registration information. Authentication and Security: You are responsible for safeguarding your password, which is managed securely using Firebase Authentication. You agree to notify Us immediately upon becoming aware of any unauthorized use or security breach. Eligibility: Use of the System is strictly limited to currently enrolled UMak students, verified COSEL-approved organization leaders, and designated Advisers."
                     android:textSize="12sp"
@@ -144,7 +143,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="One-Time Voting: The System enforces a strict one-time voting restriction. Once a ballot is submitted, You will receive a 'You have already voted' notification if a subsequent attempt is made. Digital Signature and Validation (DSA): Each submitted ballot is securely hashed and digitally signed using DSA. The System generates and provides You with a secure reference code and an encrypted on-screen Vote Receipt for verification, which excludes personal voter details to maintain anonymity. Fixed Duration: Voting is only permitted during the fixed duration set by the Election Setup process, and the System automatically closes submissions afterward."
                     android:textSize="12sp"
@@ -163,7 +162,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="You agree not to use the System to: Violate any UMak academic or organizational policy, or any local, state, or national law. Attempt to interfere with the integrity, operation, or security of the System, including unauthorized access to voter data, audit trails, or election management features. Transmit viruses, corrupted data, or any other destructive programs. Engage in any activity that could be construed as voter fraud, illegal election manipulation, or disruption of the transparent voting process. Any breach of this clause will result in immediate termination of access and may be reported to UMak COSEL."
                     android:textSize="12sp"
@@ -182,7 +181,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="System Ownership: The UMelec App, including its source code (Kotlin, Jetpack Compose, Flutter, PHP), design (Figma, Canva), and underlying logic, is the property of the Project Team. Candidate Platforms: The content and media provided by candidates for their profiles are the responsibility of the respective candidate. UMelec is not responsible for the accuracy or legality of candidate platforms."
                     android:textSize="12sp"
@@ -201,7 +200,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="UMelec reserves the right to terminate or suspend your account access immediately, without prior notice, if You violate these Terms, particularly those relating to system integrity and security."
                     android:textSize="12sp"
@@ -220,7 +219,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="This System is a school project and is provided 'as is' and 'as available.' The Project Team and the University of Makati are not liable for any indirect, incidental, or punitive damages resulting from your use or inability to use the App, including data loss or system downtime."
                     android:textSize="12sp"
@@ -239,7 +238,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="These Terms shall be governed and construed in accordance with the policies and rules of the University of Makati and the laws of the Philippines."
                     android:textSize="12sp"
@@ -258,7 +257,7 @@
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="For any questions about these Terms, please contact the UMelec Project Team at: jalbaladejo.a12345573@umak.edu.ph."
                     android:textSize="12sp"
