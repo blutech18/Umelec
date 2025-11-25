@@ -76,8 +76,8 @@ const USER_DATA = {
   password: "Password123!",
   firstName: "Blu",
   lastName: "Tech",
-  college: "Technology",
-  acronym: "TECH",
+  college: "College of Computing and Information Sciences (CCIS)",
+  acronym: "CCIS",
   year: "3rd",
   role: "VOTER",
   isVerified: true,
@@ -165,11 +165,15 @@ async function upsertFirestoreUser(uid, userData) {
     lastname: userData.lastName,
     college: userData.college,
     acronym: userData.acronym,
-    year: userData.year,
     role: userData.role,
     isVerified: userData.isVerified,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   };
+
+  // Add year for voters (normalize format: "2nd Year" -> "2nd")
+  if (userData.year) {
+    payload.year = userData.year.replace(" Year", "").trim();
+  }
 
   await userRef.set(
     {

@@ -83,8 +83,8 @@ const SEED_DATA = {
         password: "Leader123@",
         firstName: "Test",
         lastName: "Leader",
-        college: "Engineering",
-        acronym: "ENG",
+        college: "College of Engineering and Technology (CET)",
+        acronym: "CET",
         role: "LEADER",
         isVerified: true
       }
@@ -93,11 +93,13 @@ const SEED_DATA = {
       {
         email: "voter1@umak.edu.ph",
         password: "Voter123@",
+        studentId: "K20240001",
         firstName: "John",
         lastName: "Doe",
-        college: "Engineering",
-        acronym: "ENG",
-        year: "3rd",
+        gender: "Male",
+        college: "College of Engineering and Technology (CET)",
+        acronym: "CET",
+        year: "3rd Year",
         role: "VOTER",
         isVerified: true,
         shouldVote: true
@@ -105,11 +107,13 @@ const SEED_DATA = {
       {
         email: "voter2@umak.edu.ph",
         password: "Voter123@",
+        studentId: "K20240002",
         firstName: "Jane",
         lastName: "Smith",
-        college: "Engineering",
-        acronym: "ENG",
-        year: "4th",
+        gender: "Female",
+        college: "College of Engineering and Technology (CET)",
+        acronym: "CET",
+        year: "4th Year",
         role: "VOTER",
         isVerified: true,
         shouldVote: true
@@ -117,11 +121,13 @@ const SEED_DATA = {
       {
         email: "voter3@umak.edu.ph",
         password: "Voter123@",
+        studentId: "K20240003",
         firstName: "Bob",
         lastName: "Johnson",
-        college: "Engineering",
-        acronym: "ENG",
-        year: "2nd",
+        gender: "Male",
+        college: "College of Engineering and Technology (CET)",
+        acronym: "CET",
+        year: "2nd Year",
         role: "VOTER",
         isVerified: true,
         shouldVote: false
@@ -129,11 +135,13 @@ const SEED_DATA = {
       {
         email: "voter4@umak.edu.ph",
         password: "Voter123@",
+        studentId: "K20240004",
         firstName: "Alice",
         lastName: "Reyes",
-        college: "Engineering",
-        acronym: "ENG",
-        year: "1st",
+        gender: "Female",
+        college: "College of Engineering and Technology (CET)",
+        acronym: "CET",
+        year: "1st Year",
         role: "VOTER",
         isVerified: true,
         shouldVote: false
@@ -141,11 +149,13 @@ const SEED_DATA = {
       {
         email: "voter5@umak.edu.ph",
         password: "Voter123@",
+        studentId: "K20240005",
         firstName: "Carlos",
         lastName: "Lim",
-        college: "Engineering",
-        acronym: "ENG",
-        year: "5th",
+        gender: "Male",
+        college: "College of Engineering and Technology (CET)",
+        acronym: "CET",
+        year: "5th Year",
         role: "VOTER",
         isVerified: true,
         shouldVote: false
@@ -153,13 +163,15 @@ const SEED_DATA = {
     ]
   },
 
-  // Election
+  // Election (matches leader's college - CET)
   election: {
-    title: "2025 Engineering Student Council Election",
+    title: "2025 College of Engineering and Technology Student Council Election",
     startDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago (so it's ONGOING)
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     isAbstainEnabled: true,
-    status: "approved" // pending, approved, active, ended - set to approved so it's visible
+    status: "approved", // pending, approved, active, ended - set to approved so it's visible
+    college: "College of Engineering and Technology (CET)", // Must match leader's college
+    acronym: "CET" // Must match leader's acronym
   },
 
   // Positions and Candidates
@@ -167,31 +179,56 @@ const SEED_DATA = {
     {
       positionName: "President",
       candidates: [
-        { name: "Alice Martinez", courseInfo: "4th Year - Computer Engineering", credentials: "Former Vice President, 3 years experience", advocacy: "Improving student services and campus facilities" },
-        { name: "Carlos Rodriguez", courseInfo: "4th Year - Electrical Engineering", credentials: "Former Secretary, 2 years experience", advocacy: "Academic excellence and student welfare" },
-        { name: "Maria Santos", courseInfo: "3rd Year - Civil Engineering", credentials: "Class Representative, 1 year experience", advocacy: "Transparency and student engagement" }
+        { name: "Alice Martinez", courseInfo: "4th Year", credentials: "Computer Engineering, Former Vice President with 3 years of leadership experience in student government", advocacy: "Improving student services and campus facilities through enhanced communication and resource allocation" },
+        { name: "Carlos Rodriguez", courseInfo: "4th Year", credentials: "Electrical Engineering, Former Secretary with 2 years of experience in organizational management", advocacy: "Academic excellence and student welfare by promoting tutoring programs and mental health support" },
+        { name: "Maria Santos", courseInfo: "3rd Year", credentials: "Civil Engineering, Class Representative with 1 year of experience in student advocacy", advocacy: "Transparency and student engagement through regular town halls and feedback sessions" }
       ]
     },
     {
       positionName: "Vice President",
       candidates: [
-        { name: "David Kim", courseInfo: "3rd Year - Mechanical Engineering", credentials: "Former Treasurer, 2 years experience", advocacy: "Financial transparency and budget management" },
-        { name: "Sarah Lee", courseInfo: "4th Year - Industrial Engineering", credentials: "Event Coordinator, 1 year experience", advocacy: "Student activities and events" }
+        { name: "David Kim", courseInfo: "3rd Year", credentials: "Mechanical Engineering, Former Treasurer with 2 years of financial management experience", advocacy: "Financial transparency and budget management to ensure responsible use of student funds" },
+        { name: "Sarah Lee", courseInfo: "4th Year", credentials: "Industrial Engineering, Event Coordinator with 1 year of experience organizing campus activities", advocacy: "Student activities and events to build a vibrant campus community and school spirit" }
       ]
     },
     {
       positionName: "Secretary",
       candidates: [
-        { name: "Michael Chen", courseInfo: "2nd Year - Computer Engineering", credentials: "Class Secretary, 1 year experience", advocacy: "Efficient communication and documentation" },
-        { name: "Emily Garcia", courseInfo: "3rd Year - Electrical Engineering", credentials: "Student Volunteer, 1 year experience", advocacy: "Student representation and voice" }
+        { name: "Michael Chen", courseInfo: "2nd Year", credentials: "Computer Engineering, Class Secretary with 1 year of experience in documentation and record-keeping", advocacy: "Efficient communication and documentation to keep students informed and engaged" },
+        { name: "Emily Garcia", courseInfo: "3rd Year", credentials: "Electrical Engineering, Student Volunteer with 1 year of community service experience", advocacy: "Student representation and voice to ensure every student's concerns are heard and addressed" }
       ]
     },
     {
       positionName: "Treasurer",
       candidates: [
-        { name: "James Wilson", courseInfo: "4th Year - Civil Engineering", credentials: "Former Auditor, 2 years experience", advocacy: "Financial accountability and transparency" },
-        { name: "Lisa Anderson", courseInfo: "3rd Year - Industrial Engineering", credentials: "Budget Committee Member, 1 year experience", advocacy: "Wise budget allocation and planning" }
+        { name: "James Wilson", courseInfo: "4th Year", credentials: "Civil Engineering, Former Auditor with 2 years of experience in financial oversight and accountability", advocacy: "Financial accountability and transparency through detailed budget reports and open financial records" },
+        { name: "Lisa Anderson", courseInfo: "3rd Year", credentials: "Industrial Engineering, Budget Committee Member with 1 year of experience in financial planning", advocacy: "Wise budget allocation and planning to maximize benefits for all students and campus programs" }
       ]
+    }
+  ],
+
+  // Notifications
+  notifications: [
+    {
+      title: "Election Reminder (Open)",
+      previewText: "University Election is now open for voting.",
+      fullText: "The University Election is now open for voting. Please cast your vote before the deadline. Click here to view candidates and make your selections.",
+      type: "REMINDER",
+      targetUserId: null // null means all users
+    },
+    {
+      title: "Election Reminder (Closed)",
+      previewText: "University Election voting period has ended.",
+      fullText: "The University Election voting period has ended. Thank you for your participation. Results will be announced soon.",
+      type: "REMINDER",
+      targetUserId: null
+    },
+    {
+      title: "Vote Submitted",
+      previewText: "Your vote has been successfully submitted.",
+      fullText: "Your vote has been successfully submitted. Thank you for participating in the election. Your Vote ID will be provided in your receipt.",
+      type: "SUBMISSION",
+      targetUserId: null // Will be set per user when vote is submitted
     }
   ],
 
@@ -260,7 +297,7 @@ const SEED_DATA = {
   ]
 };
 
-const COLLECTIONS_TO_CLEAR = ["votes", "candidates", "positions", "elections", "faqs", "users"];
+const COLLECTIONS_TO_CLEAR = ["votes", "candidates", "positions", "elections", "faqs", "users", "notifications"];
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -354,9 +391,17 @@ async function createUser(userData) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Add year for voters (normalize format: "2nd Year" -> "2nd")
+    if (userData.studentId) {
+      firestoreUserData.studentId = userData.studentId;
+    }
+
+    if (userData.gender) {
+      firestoreUserData.gender = userData.gender;
+    }
+
+    // Add year level from registration step
     if (userData.year) {
-      firestoreUserData.year = userData.year.replace(" Year", "").trim();
+      firestoreUserData.year = userData.year;
     }
 
     // Update or create Firestore document
@@ -378,7 +423,7 @@ async function createUser(userData) {
 }
 
 
-async function createElection(electionData) {
+async function createElection(electionData, leaderUid = null) {
   try {
     const electionDoc = {
       title: electionData.title,
@@ -387,11 +432,18 @@ async function createElection(electionData) {
       isActive: true,
       isAbstainEnabled: electionData.isAbstainEnabled,
       status: electionData.status,
+      college: electionData.college || "", // College name (required for filtering)
+      acronym: electionData.acronym || "", // College acronym (required for filtering)
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
+    // Add createdBy field if leader UID is provided
+    if (leaderUid) {
+      electionDoc.createdBy = leaderUid;
+    }
+
     const docRef = await db.collection("elections").add(electionDoc);
-    console.log(`   ✓ Created election: ${electionData.title}`);
+    console.log(`   ✓ Created election: ${electionData.title} (${electionData.college || 'No college specified'})`);
     return docRef.id;
   } catch (error) {
     console.error("   ❌ Error creating election:", error.message);
@@ -417,7 +469,7 @@ async function createPosition(electionId, positionData) {
   }
 }
 
-async function createCandidate(electionId, positionId, positionName, candidateData) {
+async function createCandidate(electionId, positionId, positionName, candidateData, createdBy = null) {
   try {
     const candidateDoc = {
       electionId: electionId,
@@ -427,6 +479,11 @@ async function createCandidate(electionId, positionId, positionName, candidateDa
       isActive: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
+
+    // Add createdBy field if provided (leader UID)
+    if (createdBy) {
+      candidateDoc.createdBy = createdBy;
+    }
 
     // Add optional fields if provided
     if (candidateData.courseInfo) {
@@ -438,12 +495,41 @@ async function createCandidate(electionId, positionId, positionName, candidateDa
     if (candidateData.advocacy) {
       candidateDoc.advocacy = candidateData.advocacy;
     }
+    
+    // Add photoUrl field - use provided URL or default avatar
+    const DEFAULT_AVATAR_URL = "https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png";
+    candidateDoc.photoUrl = candidateData.photoUrl || DEFAULT_AVATAR_URL;
 
     const docRef = await db.collection("candidates").add(candidateDoc);
     console.log(`     ✓ Created candidate: ${candidateData.name}`);
     return docRef.id;
   } catch (error) {
     console.error(`   ❌ Error creating candidate ${candidateData.name}:`, error.message);
+    throw error;
+  }
+}
+
+async function createNotification(notificationData, targetUserId = null) {
+  try {
+    const notificationDoc = {
+      title: notificationData.title,
+      previewText: notificationData.previewText,
+      fullText: notificationData.fullText,
+      type: notificationData.type,
+      timestamp: admin.firestore.Timestamp.now(),
+      readBy: []
+    };
+
+    // Add targetUserId if specified
+    if (targetUserId) {
+      notificationDoc.targetUserId = targetUserId;
+    }
+
+    const docRef = await db.collection("notifications").add(notificationDoc);
+    console.log(`   ✓ Created notification: ${notificationData.title}`);
+    return docRef.id;
+  } catch (error) {
+    console.error(`   ❌ Error creating notification:`, error.message);
     throw error;
   }
 }
@@ -654,24 +740,39 @@ async function seedData() {
 
     console.log(`✓ Created ${userIds.leaders.length} leader(s) and ${userIds.voters.length} voter(s)\n`);
 
-    // 3. Create election
+    // 3. Create election (using leader's college)
     console.log("🗳️  Creating election...");
-    const electionId = await createElection(SEED_DATA.election);
-    console.log(`✓ Election ID: ${electionId}\n`);
+    const leaderUid = userIds.leaders[0]; // Get the first leader's UID
+    const leaderCollege = SEED_DATA.users.leaders[0].college;
+    const leaderAcronym = SEED_DATA.users.leaders[0].acronym;
+    
+    // Ensure election data matches leader's college
+    const electionData = {
+      ...SEED_DATA.election,
+      college: leaderCollege,
+      acronym: leaderAcronym
+    };
+    
+    const electionId = await createElection(electionData, leaderUid);
+    console.log(`✓ Election ID: ${electionId}`);
+    console.log(`✓ Election college: ${leaderCollege} (${leaderAcronym})\n`);
 
     // 4. Create Positions and Candidates
     console.log("👥 Creating positions and candidates...");
     const positionIds = [];
     const candidatesMap = {}; // positionId -> array of {candidateId, name}
 
+    // Get the leader UID to assign as createdBy
+    const leaderUid = userIds.leaders[0]; // Use the first leader's UID
+
     for (const position of SEED_DATA.positions) {
       const positionId = await createPosition(electionId, position);
       positionIds.push({ positionId, positionName: position.positionName });
       candidatesMap[positionId] = [];
 
-      // Create candidates for this position
+      // Create candidates for this position with createdBy field
       for (const candidate of position.candidates) {
-        const candidateId = await createCandidate(electionId, positionId, position.positionName, candidate);
+        const candidateId = await createCandidate(electionId, positionId, position.positionName, candidate, leaderUid);
         candidatesMap[positionId].push({ candidateId, name: candidate.name });
       }
     }
@@ -750,7 +851,24 @@ async function seedData() {
     
     console.log(`✓ Processed ${SEED_DATA.faqs.length} FAQ(s) (${faqCreated} created, ${faqUpdated} updated)\n`);
 
-    // 6. Create Votes
+    // 6. Create Notifications
+    console.log("🔔 Creating notifications...");
+    let notificationCount = 0;
+    for (const notification of SEED_DATA.notifications) {
+      // For REMINDER notifications, create for all users (targetUserId = null)
+      // For SUBMISSION notifications, we'll create them when votes are submitted
+      if (notification.type === "REMINDER") {
+        await createNotification(notification, null);
+        notificationCount++;
+      }
+      // Note: SUBMISSION notifications are created automatically when votes are submitted
+      // So we don't seed them here, but we include them in the seed data structure
+      // for reference/documentation purposes
+    }
+    console.log(`✓ Created ${notificationCount} notification(s) (Election Reminder types)\n`);
+    console.log(`   Note: Vote Submitted notifications are created automatically when votes are submitted\n`);
+
+    // 7. Create Votes
     const voteCount = await createVotesForVoters(electionId, userIds, positionIds, candidatesMap);
 
     // Summary
@@ -761,6 +879,7 @@ async function seedData() {
     console.log(`   - Positions: ${positionIds.length}`);
     console.log(`   - Candidates: ${SEED_DATA.positions.reduce((sum, p) => sum + p.candidates.length, 0)}`);
     console.log(`   - FAQs: ${SEED_DATA.faqs.length}`);
+    console.log(`   - Notifications: ${notificationCount} (Election Reminder types)`);
     console.log(`   - Votes: ${voteCount}`);
     console.log("\n🎉 You can now test the application with seeded data!");
     console.log("\n📧 Test Accounts:");

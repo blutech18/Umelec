@@ -85,14 +85,28 @@ class RegisterActivity3 : AppCompatActivity() {
 
         // ⭐️ NEW BEHAVIOR: Navigate to Terms.kt ⭐️
         tvReviewTnC.setOnClickListener {
-            val intent = Intent(this, TERMS_ACTIVITY_CLASS)
-            startActivity(intent)
+            try {
+                val intent = Intent(this, TERMS_ACTIVITY_CLASS)
+                startActivity(intent)
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            } catch (e: Exception) {
+                android.util.Log.e("RegisterActivity3", "Error navigating to Terms: ${e.message}", e)
+                android.widget.Toast.makeText(this, "Unable to open Terms and Conditions", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
 
         // ⭐️ NEW BEHAVIOR: Navigate to Privacy.kt ⭐️
         tvReviewPrivacy.setOnClickListener {
-            val intent = Intent(this, PRIVACY_ACTIVITY_CLASS)
-            startActivity(intent)
+            try {
+                val intent = Intent(this, PRIVACY_ACTIVITY_CLASS)
+                startActivity(intent)
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            } catch (e: Exception) {
+                android.util.Log.e("RegisterActivity3", "Error navigating to Privacy: ${e.message}", e)
+                android.widget.Toast.makeText(this, "Unable to open Privacy Policy", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
 
         // --- NEW CHECKBOX LISTENERS ---

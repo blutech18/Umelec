@@ -15,11 +15,6 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=c9635970" />
-              </handle>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <handle>
                 <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Acer\.android\avd\Medium_Phone.avd" />
               </handle>
             </Target>

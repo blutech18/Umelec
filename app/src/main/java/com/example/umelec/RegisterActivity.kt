@@ -209,7 +209,26 @@ class RegisterActivity : AppCompatActivity() {
             // Disable button during registration
             btnNext.isEnabled = false
 
-            // Create Firebase user account
+            // 🔹 FIX: Check if user is already authenticated with the same email
+            // This handles the case where user goes back from RegisterActivity2
+            val currentUser = FirebaseAuthHelper.getCurrentUser()
+            if (currentUser != null) {
+                if (currentUser.email?.equals(email, ignoreCase = true) == true) {
+                    // User is already authenticated with this email, proceed to next step
+                    // Save credentials temporarily for next steps
+                    FirebaseAuthHelper.saveTemporaryCredentials(this, email, password)
+                    
+                    // Navigate to next registration step
+                    val intent = Intent(this, RegisterActivity2::class.java)
+                    startActivity(intent)
+                    return@setOnClickListener
+                } else {
+                    // User is authenticated with a different email, sign out first
+                    FirebaseAuthHelper.signOut()
+                }
+            }
+
+            // Create Firebase user account (only if not already authenticated with same email)
             FirebaseAuthHelper.createUser(
                 email = email,
                 password = password,
