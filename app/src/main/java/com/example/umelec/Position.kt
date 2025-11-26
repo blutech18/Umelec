@@ -67,9 +67,14 @@ class Position : AppCompatActivity() {
      */
     private fun populateCandidates() {
         val registerContainer: LinearLayout? = findViewById(R.id.registerContainer)
+        val candidateLoadingGroup: LinearLayout? = findViewById(R.id.candidateLoadingGroup)
 
         // Exit if the container cannot be found (crash-proof)
         if (registerContainer == null) return
+
+        // Hide loading, show content
+        candidateLoadingGroup?.visibility = View.GONE
+        registerContainer.visibility = View.VISIBLE
 
         // 1. Find and temporarily detach the static CompareLayout before clearing
         val compareLayout: LinearLayout? = registerContainer.findViewById(R.id.CompareLayout)

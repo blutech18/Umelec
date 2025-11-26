@@ -58,6 +58,9 @@ class Candidates : AppCompatActivity() {
                         electionId = electionId,
                         onSuccess = { positions ->
                             val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                            val positionLoadingGroup: LinearLayout = findViewById(R.id.positionLoadingGroup)
+                            positionLoadingGroup.visibility = View.GONE
+                            positionContainer.visibility = View.VISIBLE
                             positionContainer.removeAllViews()
 
                             // Convert to PositionItem list
@@ -87,6 +90,9 @@ class Candidates : AppCompatActivity() {
                         onFailure = { error ->
                             android.util.Log.e("Candidates", "Error loading positions: $error")
                             val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                            val positionLoadingGroup: LinearLayout = findViewById(R.id.positionLoadingGroup)
+                            positionLoadingGroup.visibility = View.GONE
+                            positionContainer.visibility = View.VISIBLE
                             positionContainer.removeAllViews()
                             showNoPositionsMessage(positionContainer)
                         }
@@ -94,6 +100,9 @@ class Candidates : AppCompatActivity() {
                 } else {
                     android.util.Log.e("Candidates", "No active election")
                     val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                    val positionLoadingGroup: LinearLayout = findViewById(R.id.positionLoadingGroup)
+                    positionLoadingGroup.visibility = View.GONE
+                    positionContainer.visibility = View.VISIBLE
                     positionContainer.removeAllViews()
                     showNoPositionsMessage(positionContainer)
                 }
@@ -101,6 +110,9 @@ class Candidates : AppCompatActivity() {
             onFailure = { error ->
                 android.util.Log.e("Candidates", "Error getting election ID: $error")
                 val positionContainer: LinearLayout = findViewById(R.id.PositionContainer)
+                val positionLoadingGroup: LinearLayout = findViewById(R.id.positionLoadingGroup)
+                positionLoadingGroup.visibility = View.GONE
+                positionContainer.visibility = View.VISIBLE
                 positionContainer.removeAllViews()
                 showNoPositionsMessage(positionContainer)
             }
@@ -154,7 +166,7 @@ class Candidates : AppCompatActivity() {
 
         // 2. Position TextView
         val positionText = TextView(context).apply {
-            id = R.id.Positions
+            id = View.generateViewId() // Generate unique ID instead of using static R.id.Positions
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT

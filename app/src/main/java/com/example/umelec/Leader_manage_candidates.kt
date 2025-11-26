@@ -95,6 +95,11 @@ class Leader_manage_candidates : AppCompatActivity() {
 
     private fun inflatePositionsAndCandidates(positions: List<ManagePosition>) {
         val inflater = LayoutInflater.from(this)
+        val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+        
+        // Hide loading, show content
+        candidateLoadingGroup.visibility = View.GONE
+        contentContainer.visibility = View.VISIBLE
 
         // Clear content container before inflating
         contentContainer.removeAllViews()
@@ -234,6 +239,9 @@ class Leader_manage_candidates : AppCompatActivity() {
                     .addOnSuccessListener { documents ->
                         if (documents.isEmpty) {
                             // No election found
+                            val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+                            candidateLoadingGroup.visibility = View.GONE
+                            contentContainer.visibility = View.VISIBLE
                             contentContainer.removeAllViews()
                             val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                             noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No election found"
@@ -253,6 +261,9 @@ class Leader_manage_candidates : AppCompatActivity() {
                             android.util.Log.d("Leader_manage_candidates", "Found election: ${mostRecentDoc.id}")
                             loadCandidatesForElection(mostRecentDoc.id)
                         } else {
+                            val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+                            candidateLoadingGroup.visibility = View.GONE
+                            contentContainer.visibility = View.VISIBLE
                             contentContainer.removeAllViews()
                             val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                             noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No election found"
@@ -262,6 +273,9 @@ class Leader_manage_candidates : AppCompatActivity() {
                     }
                     .addOnFailureListener { exception ->
                         android.util.Log.e("Leader_manage_candidates", "Error getting election: ${exception.message}")
+                        val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+                        candidateLoadingGroup.visibility = View.GONE
+                        contentContainer.visibility = View.VISIBLE
                         contentContainer.removeAllViews()
                     }
             }
@@ -284,6 +298,9 @@ class Leader_manage_candidates : AppCompatActivity() {
                 android.util.Log.d("Leader_manage_candidates", "Loaded ${positions.size} positions with candidates")
                 if (positions.isEmpty()) {
                     // No candidates found
+                    val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+                    candidateLoadingGroup.visibility = View.GONE
+                    contentContainer.visibility = View.VISIBLE
                     contentContainer.removeAllViews()
                     val noCandidatesView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                     noCandidatesView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No candidates found"
@@ -309,6 +326,9 @@ class Leader_manage_candidates : AppCompatActivity() {
             },
             onFailure = { error ->
                 android.util.Log.e("Leader_manage_candidates", "Error loading candidates: $error")
+                val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+                candidateLoadingGroup.visibility = View.GONE
+                contentContainer.visibility = View.VISIBLE
                 contentContainer.removeAllViews()
                 val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                 errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading candidates"

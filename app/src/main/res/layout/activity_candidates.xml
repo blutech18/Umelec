@@ -113,6 +113,31 @@
 
 
 
+        <!-- Loading State Group -->
+        <LinearLayout
+            android:id="@+id/positionLoadingGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="40dp"
+            android:visibility="visible">
+            
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminateTint="#00537A"/>
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Loading..."
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:fontFamily="@font/poppins_regular"
+                android:layout_marginTop="16dp"/>
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/PositionContainer"
             android:layout_width="match_parent"
@@ -120,32 +145,8 @@
             android:orientation="vertical"
             android:gravity="center_horizontal"
             android:layout_marginBottom="20dp"
+            android:visibility="gone"
             >
-
-            <LinearLayout
-                android:id="@+id/btnPosition"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp"
-                android:gravity="center"
-                android:background="@drawable/blue_rounded_button"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="10dp">
-
-                <TextView
-                    android:id="@+id/Positions"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Chairperson"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:fontFamily="@font/poppins_bold"/>
-
-            </LinearLayout>
-
-
         </LinearLayout>
 
 

@@ -2,13 +2,16 @@ package com.example.umelec
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ImageView
+import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.google.android.material.textfield.TextInputEditText
 
 // 💡 NEW IMPORTS for Keyboard and Focus Management and TextWatcher
@@ -41,6 +44,7 @@ class Leader_manage_voters_list : AppCompatActivity() {
     private lateinit var inputVoter: TextInputEditText
     private lateinit var btnSearch: AppCompatButton
     private lateinit var voterItemLayout: LinearLayout
+    private lateinit var voterLoadingGroup: LinearLayout
     // Added reference to the TextInputLayout to change its outline color
     private lateinit var layoutSearchVoters: TextInputLayout
 
@@ -60,6 +64,7 @@ class Leader_manage_voters_list : AppCompatActivity() {
         inputVoter = findViewById(R.id.inputVoter)
         btnSearch = findViewById(R.id.btnSearch)
         voterItemLayout = findViewById(R.id.VoterItemLayout)
+        voterLoadingGroup = findViewById(R.id.voterLoadingGroup)
         // Initialize the TextInputLayout reference
         layoutSearchVoters = findViewById(R.id.SearchVoters)
 
@@ -167,6 +172,8 @@ class Leader_manage_voters_list : AppCompatActivity() {
                                     }
                                     
                                     android.util.Log.d("Leader_manage_voters_list", "Total voters: ${allVoters.size}, Voted: ${allVoters.count { it.hasVoted }}")
+                                    voterLoadingGroup.visibility = View.GONE
+                                    voterItemLayout.visibility = View.VISIBLE
                                     updateVoterCounts(allVoters)
                                     inflateVoterList(allVoters)
                                 },
@@ -182,6 +189,8 @@ class Leader_manage_voters_list : AppCompatActivity() {
                                         val year = yearRaw.replace(" Year", "").trim()
                                         Voter(userId, name, year, false)
                                     }
+                                    voterLoadingGroup.visibility = View.GONE
+                                    voterItemLayout.visibility = View.VISIBLE
                                     updateVoterCounts(allVoters)
                                     inflateVoterList(allVoters)
                                 }
@@ -189,6 +198,8 @@ class Leader_manage_voters_list : AppCompatActivity() {
                         },
                         onFailure = { error ->
                             android.util.Log.e("Leader_manage_voters_list", "Error loading voters: $error")
+                            voterLoadingGroup.visibility = View.GONE
+                            voterItemLayout.visibility = View.VISIBLE
                             allVoters = emptyList()
                             updateVoterCounts(allVoters)
                             inflateVoterList(allVoters)
@@ -197,6 +208,8 @@ class Leader_manage_voters_list : AppCompatActivity() {
                 } else {
                     // No active election
                     android.util.Log.w("Leader_manage_voters_list", "No active election found")
+                    voterLoadingGroup.visibility = View.GONE
+                    voterItemLayout.visibility = View.VISIBLE
                     allVoters = emptyList()
                     updateVoterCounts(allVoters)
                     inflateVoterList(allVoters)
@@ -204,6 +217,8 @@ class Leader_manage_voters_list : AppCompatActivity() {
             },
             onFailure = { error ->
                 android.util.Log.e("Leader_manage_voters_list", "Error getting election ID: $error")
+                voterLoadingGroup.visibility = View.GONE
+                voterItemLayout.visibility = View.VISIBLE
                 allVoters = emptyList()
                 updateVoterCounts(allVoters)
                 inflateVoterList(allVoters)
@@ -229,6 +244,17 @@ class Leader_manage_voters_list : AppCompatActivity() {
 
         if (votersToDisplay.isEmpty()) {
             android.util.Log.w("Leader_manage_voters_list", "No voters to display")
+            // Show empty state message
+            val emptyTextView = TextView(this).apply {
+                text = "No voters found."
+                textSize = 14f
+                setTextColor(Color.parseColor("#666666"))
+                textAlignment = View.TEXT_ALIGNMENT_CENTER
+                val paddingPx = (40 * resources.displayMetrics.density).toInt()
+                setPadding(0, paddingPx, 0, paddingPx)
+                typeface = ResourcesCompat.getFont(this@Leader_manage_voters_list, R.font.poppins_regular)
+            }
+            voterItemLayout.addView(emptyTextView)
             return
         }
 
