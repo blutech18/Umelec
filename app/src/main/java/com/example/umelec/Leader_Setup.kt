@@ -241,17 +241,15 @@ class Leader_Setup : AppCompatActivity() {
                 loadSetupDetails()
             }
             ElectionState.ENDED -> {
-                // Phase 4: Ended - Show setup details
+                // Phase 4: Ended - Allow creating new election
                 electionStatusDateTimeValue.visibility = View.GONE
                 electionStatusValue.text = "Ended"
-                btnViewElectionSetup.text = "View Election Setup"
+                btnViewElectionSetup.text = "Create New Election"
                 btnViewElectionSetup.setOnClickListener {
-                    startActivity(Intent(this, Leader_electionsetup_details::class.java))
+                    startActivity(Intent(this, Leader_electionsetup::class.java))
                     @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
                 }
-                // Load setup details
-                loadSetupDetails()
             }
         }
     }

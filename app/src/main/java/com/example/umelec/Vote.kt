@@ -186,7 +186,7 @@ class Vote : AppCompatActivity() {
                         btnVoteNow.alpha = 0.5f
                         btnVoteNow.setOnClickListener(null)
                     } else {
-                        statusValue?.text = "Ongoing"
+                        statusValue?.text = "Eligible"
                         statusValue?.setTextColor(Color.parseColor("#333333"))
 
                         btnVoteNow.text = "Cast your vote"

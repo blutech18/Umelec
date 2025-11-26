@@ -395,7 +395,7 @@ class Homepage : AppCompatActivity() {
                         btnVoteNow.setOnClickListener(null)
                     } else {
                         // 🚀 UPDATED LOGIC (From Vote.kt): Status text and button text
-                        statusValue.text = "Ongoing"
+                        statusValue.text = "Eligible"
                         statusValue.setTextColor(Color.parseColor("#333333"))
                         btnVoteNow.text = "Vote now"
                         btnVoteNow.isEnabled = true
