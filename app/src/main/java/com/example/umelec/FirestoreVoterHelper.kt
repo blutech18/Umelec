@@ -146,6 +146,41 @@ object FirestoreVoterHelper {
     }
 
     /**
+     * Get list of voters filtered by college
+     */
+    fun getVotersByCollege(
+        college: String,
+        onSuccess: (List<Map<String, Any>>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        Log.d(TAG, "Getting voters for college: $college")
+        firestore.collection(USERS_COLLECTION)
+            .whereEqualTo("role", "VOTER")
+            .whereEqualTo("college", college)
+            .get()
+            .addOnSuccessListener { documents ->
+                Log.d(TAG, "Found ${documents.size()} voters in Firestore for college: $college")
+                val voters = documents.documents.mapNotNull { doc ->
+                    val data = doc.data?.toMutableMap() ?: run {
+                        Log.w(TAG, "Voter document ${doc.id} has no data")
+                        return@mapNotNull null
+                    }
+                    data["userId"] = doc.id
+                    Log.d(TAG, "Voter: ${data["firstname"]} ${data["lastname"]} (ID: ${doc.id})")
+                    data
+                }
+                // Sort client-side to avoid index requirement
+                val sortedVoters = voters.sortedBy { it["firstname"] as? String ?: "" }
+                Log.d(TAG, "Returning ${sortedVoters.size} sorted voters for college: $college")
+                onSuccess(sortedVoters)
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Error getting voters for college: ${exception.message}", exception)
+                onFailure(exception.message ?: "Failed to get voters for college")
+            }
+    }
+
+    /**
      * Get voters who have voted in an election
      */
     fun getVotersWhoVoted(

@@ -23,6 +23,8 @@ import android.graphics.Color
 import android.text.Editable
 import android.text.TextWatcher
 import com.google.android.material.textfield.TextInputLayout // Need this for the boxStrokeColor change
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 // 1. Data Class to represent a Voter
 data class Voter(
@@ -134,19 +136,61 @@ class Leader_manage_voters_list : AppCompatActivity() {
     }
 
     /**
-     * Load voters from Firestore
+     * Load voters from Firestore (filtered by college)
      */
     private fun loadVoters() {
         android.util.Log.d("Leader_manage_voters_list", "Loading voters...")
-        // Get current election ID
-        FirestoreElectionHelper.getCurrentElectionId(
-            onSuccess = { electionId ->
-                android.util.Log.d("Leader_manage_voters_list", "Current election ID: $electionId")
-                currentElectionId = electionId
-                if (electionId != null) {
-                    // Load all voters
-                    FirestoreVoterHelper.getAllVoters(
-                        onSuccess = { votersData ->
+        
+        // Get current user's college first
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            android.util.Log.e("Leader_manage_voters_list", "User not authenticated")
+            voterLoadingGroup.visibility = View.GONE
+            voterItemLayout.visibility = View.VISIBLE
+            allVoters = emptyList()
+            updateVoterCounts(allVoters)
+            inflateVoterList(allVoters)
+            return
+        }
+
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    android.util.Log.e("Leader_manage_voters_list", "User profile not found")
+                    voterLoadingGroup.visibility = View.GONE
+                    voterItemLayout.visibility = View.VISIBLE
+                    allVoters = emptyList()
+                    updateVoterCounts(allVoters)
+                    inflateVoterList(allVoters)
+                    return@addOnSuccessListener
+                }
+
+                val userCollege = userDoc.getString("college") ?: ""
+                if (userCollege.isEmpty()) {
+                    android.util.Log.e("Leader_manage_voters_list", "User college information not found")
+                    voterLoadingGroup.visibility = View.GONE
+                    voterItemLayout.visibility = View.VISIBLE
+                    allVoters = emptyList()
+                    updateVoterCounts(allVoters)
+                    inflateVoterList(allVoters)
+                    return@addOnSuccessListener
+                }
+
+                android.util.Log.d("Leader_manage_voters_list", "Loading voters for college: $userCollege")
+                
+                // Get current election ID
+                FirestoreElectionHelper.getCurrentElectionId(
+                    onSuccess = { electionId ->
+                        android.util.Log.d("Leader_manage_voters_list", "Current election ID: $electionId")
+                        currentElectionId = electionId
+                        if (electionId != null) {
+                            // Load voters filtered by college
+                            FirestoreVoterHelper.getVotersByCollege(
+                                college = userCollege,
+                                onSuccess = { votersData ->
                             android.util.Log.d("Leader_manage_voters_list", "Loaded ${votersData.size} voters from Firestore")
                             // Load voters who have voted
                             FirestoreVoterHelper.getVotersWhoVoted(
@@ -224,6 +268,15 @@ class Leader_manage_voters_list : AppCompatActivity() {
                 inflateVoterList(allVoters)
             }
         )
+            }
+            .addOnFailureListener { exception ->
+                android.util.Log.e("Leader_manage_voters_list", "Error getting user profile: ${exception.message}")
+                voterLoadingGroup.visibility = View.GONE
+                voterItemLayout.visibility = View.VISIBLE
+                allVoters = emptyList()
+                updateVoterCounts(allVoters)
+                inflateVoterList(allVoters)
+            }
     }
 
     // Function 2 & 3: Update Voted/Unvoted Counts

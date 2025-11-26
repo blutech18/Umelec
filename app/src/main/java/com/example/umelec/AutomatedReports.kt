@@ -8,6 +8,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 // Assuming DoughnutChartView is a custom class defined in a separate file (as implied by the source)
 // We only need the import or the class itself to be accessible.
@@ -18,12 +20,9 @@ class AutomatedReports : AppCompatActivity() {
     data class YearVoteData(val yearLabel: String, val voteCount: Int, val barItemViewId: Int)
 
     // 2. Sample Data (Replace with your actual data source)
-    private val voteData = listOf(
-        YearVoteData("1st", 15, R.id.barItem1st),
-        YearVoteData("2nd", 8, R.id.barItem2nd),
-        YearVoteData("3rd", 7, R.id.barItem3rd),
-        YearVoteData("4th", 4, R.id.barItem4th)
-    )
+    private val voteData = mutableListOf<YearVoteData>()
+    private var userCollege: String = ""
+    private var currentElectionId: String? = null
 
     // 3. Define data structure for Declared Winners (Existing)
     data class Winner(val candidateName: String, val position: String)
@@ -40,23 +39,65 @@ class AutomatedReports : AppCompatActivity() {
         // 💡 NEW: Set up the back button logic
         setupBackButton()
 
-        // Set up the bar chart logic
-        setupYearBarChart()
+        // Get user's college first, then load all data
+        loadUserCollegeAndData()
+    }
 
-        // ⭐️ INTEGRATED: Set up the Vote Turnout card logic
-        setupVoterTurnoutCard()
+    /**
+     * Get user's college and then load all report data filtered by college
+     */
+    private fun loadUserCollegeAndData() {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            android.util.Log.e("AutomatedReports", "User not authenticated")
+            return
+        }
 
-        // ⭐️ NEW: Set up the Report Header/Status logic (Dates, PDF Download)
-        setupReportHeader()
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { userDoc ->
+                if (!userDoc.exists()) {
+                    android.util.Log.e("AutomatedReports", "User profile not found")
+                    return@addOnSuccessListener
+                }
 
-        // ⭐️ NEW: Set up the Demographic Card logic
-        setupDemographicCard()
+                userCollege = userDoc.getString("college") ?: ""
+                if (userCollege.isEmpty()) {
+                    android.util.Log.e("AutomatedReports", "User college information not found")
+                    return@addOnSuccessListener
+                }
 
-        // ⭐️ NEW: Set up the Declared Winners Card logic
-        setupDeclaredWinnersCard()
+                android.util.Log.d("AutomatedReports", "Loading data for college: $userCollege")
 
-        // ⭐️ NEW: Set up the Position Rank Card logic (Main Request)
-        setupPositionRankCards()
+                // Get current election ID for this college
+                FirestoreElectionHelper.getCurrentElectionId(
+                    onSuccess = { electionId ->
+                        currentElectionId = electionId
+                        // Load all data filtered by college
+                        setupYearBarChart()
+                        setupVoterTurnoutCard()
+                        setupReportHeader()
+                        setupDemographicCard()
+                        setupDeclaredWinnersCard()
+                        setupPositionRankCards()
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("AutomatedReports", "Error getting election ID: $error")
+                        // Still try to load data without election ID
+                        setupYearBarChart()
+                        setupVoterTurnoutCard()
+                        setupReportHeader()
+                        setupDemographicCard()
+                        setupDeclaredWinnersCard()
+                        setupPositionRankCards()
+                    }
+                )
+            }
+            .addOnFailureListener { exception ->
+                android.util.Log.e("AutomatedReports", "Error getting user profile: ${exception.message}")
+            }
     }
 
     /**
@@ -80,48 +121,39 @@ class AutomatedReports : AppCompatActivity() {
         val mainContainer: LinearLayout = findViewById(R.id.llPositionRanksContainer)
         mainContainer.removeAllViews() // Clear previous views
 
-        // ----------------------------------------------------------------------
-        // ⭐️ BACKEND/DATABASE INTEGRATION POINT for Position Ranks ⭐️
-        // Fetch data structured by Position, containing all candidates and their votes.
-        // ----------------------------------------------------------------------
-        val allPositionData = listOf(
-            PositionRank(
-                "President",
-                listOf(
-                    CandidateVote("Anne Garcia", 100),
-                    CandidateVote("Ben Torres", 75),
-                    CandidateVote("Cathy Lim", 50)
-                ),
-                abstentionCount = 15
-            ),
-            PositionRank(
-                "Vice President",
-                listOf(
-                    CandidateVote("Michael Sison", 120),
-                    CandidateVote("Sarah Cruz", 90),
-                    CandidateVote("David Lee", 30),
-                    CandidateVote("Elena Reyes", 25)
-                ),
-                abstentionCount = 10
-            ),
-            PositionRank(
-                "Secretary",
-                listOf(
-                    CandidateVote("Elisa Reyes", 80),
-                    CandidateVote("Francis Dee", 78)
-                ),
-                abstentionCount = 5
-            ),
-            PositionRank(
-                "Treasurer",
-                listOf(
-                    CandidateVote("John Smith", 150)
-                ),
-                abstentionCount = 20
-            )
-        )
-        // ----------------------------------------------------------------------
+        if (userCollege.isEmpty() || currentElectionId == null) {
+            android.util.Log.w("AutomatedReports", "Cannot load position ranks: college or election ID missing")
+            return
+        }
 
+        // Get vote tallies for this election (already filtered by college via election)
+        FirestoreVoteHelper.getVoteTallies(
+            electionId = currentElectionId!!,
+            onSuccess = { tallies ->
+                // Group tallies by position
+                val positionGroups = tallies.groupBy { it.positionName }
+                
+                // Convert to PositionRank format
+                val allPositionData = positionGroups.map { (positionName, positionTallies) ->
+                    PositionRank(
+                        positionTitle = positionName,
+                        candidates = positionTallies.map { tally ->
+                            CandidateVote(tally.candidateName, tally.voteCount)
+                        }.sortedByDescending { it.votes },
+                        abstentionCount = 0 // Abstentions would need to be calculated separately if needed
+                    )
+                }.sortedBy { it.positionTitle }
+                
+                renderPositionRankCards(mainContainer, allPositionData)
+            },
+            onFailure = { error ->
+                android.util.Log.e("AutomatedReports", "Error getting vote tallies: $error")
+                renderPositionRankCards(mainContainer, emptyList())
+            }
+        )
+    }
+
+    private fun renderPositionRankCards(mainContainer: LinearLayout, allPositionData: List<PositionRank>) {
         val inflater = layoutInflater
 
         allPositionData.forEach { positionRank ->
@@ -171,21 +203,27 @@ class AutomatedReports : AppCompatActivity() {
         val winnersContainer: LinearLayout = findViewById(R.id.llWinnersRowsContainer)
         winnersContainer.removeAllViews()
 
-        // ----------------------------------------------------------------------
-        // ⭐️ BACKEND/DATABASE INTEGRATION POINT for Declared Winners ⭐️
-        // ----------------------------------------------------------------------
-        val declaredWinnersData = listOf(
-            Winner("Anne Garcia", "President"),
-            Winner("Michael Sison", "Vice President"),
-            Winner("Elisa Reyes", "Secretary"),
-            Winner("John Smith", "Treasurer"),
-            Winner("Jane Doe", "Auditor")
-        )
-        // ----------------------------------------------------------------------
+        if (userCollege.isEmpty() || currentElectionId == null) {
+            android.util.Log.w("AutomatedReports", "Cannot load winners: college or election ID missing")
+            return
+        }
 
-        val inflater = layoutInflater
+        // Get vote tallies and determine winners (already filtered by college via election)
+        FirestoreVoteHelper.getVoteTallies(
+            electionId = currentElectionId!!,
+            onSuccess = { tallies ->
+                // Group by position and get top candidate per position
+                val positionGroups = tallies.groupBy { it.positionName }
+                val declaredWinnersData = positionGroups.mapNotNull { (positionName, positionTallies) ->
+                    val topCandidate = positionTallies.maxByOrNull { it.voteCount }
+                    topCandidate?.let {
+                        Winner(it.candidateName, positionName)
+                    }
+                }.sortedBy { it.position }
 
-        declaredWinnersData.forEach { winner ->
+                val inflater = layoutInflater
+
+                declaredWinnersData.forEach { winner ->
             val rowView = inflater.inflate(R.layout.winner_data_row, winnersContainer, false)
 
             val tvName: TextView = rowView.findViewById(R.id.tvWinnerCandidateName)
@@ -196,6 +234,11 @@ class AutomatedReports : AppCompatActivity() {
 
             winnersContainer.addView(rowView)
         }
+            },
+            onFailure = { error ->
+                android.util.Log.e("AutomatedReports", "Error getting vote tallies for winners: $error")
+            }
+        )
     }
 
 
@@ -240,26 +283,77 @@ class AutomatedReports : AppCompatActivity() {
         val tvFemaleSummaryRate: TextView = findViewById(R.id.tvFemaleSummaryRate)
         val tvMaleSummaryRate: TextView = findViewById(R.id.tvMaleSummaryRate)
 
-        // ----------------------------------------------------------------------
-        // ⭐️ BACKEND/DATABASE INTEGRATION POINT for Demographics ⭐️
-        // ----------------------------------------------------------------------
-        val femaleEligibleCount = 200
-        val femaleVotedCount = 40
-        val maleEligibleCount = 150
-        val maleVotedCount = 75
-        // ----------------------------------------------------------------------
+        if (userCollege.isEmpty()) {
+            tvFemaleEligible.text = "0"
+            tvMaleEligible.text = "0"
+            tvFemaleTurnout.text = "0%"
+            tvFemaleSummaryRate.text = "0%"
+            tvMaleTurnout.text = "0%"
+            tvMaleSummaryRate.text = "0%"
+            return
+        }
 
-        val femaleTurnoutPercent = calculateTurnout(femaleVotedCount, femaleEligibleCount)
-        val maleTurnoutPercent = calculateTurnout(maleVotedCount, maleEligibleCount)
+        // Get voters for this college
+        FirestoreVoterHelper.getVotersByCollege(
+            college = userCollege,
+            onSuccess = { voters ->
+                val femaleVoters = voters.filter { (it["gender"] as? String ?: "").equals("Female", ignoreCase = true) }
+                val maleVoters = voters.filter { (it["gender"] as? String ?: "").equals("Male", ignoreCase = true) }
+                
+                val femaleEligibleCount = femaleVoters.size
+                val maleEligibleCount = maleVoters.size
 
-        tvFemaleEligible.text = femaleEligibleCount.toString()
-        tvMaleEligible.text = maleEligibleCount.toString()
+                if (currentElectionId != null) {
+                    // Get votes for this election
+                    FirestoreVoterHelper.getVotersWhoVoted(
+                        electionId = currentElectionId!!,
+                        onSuccess = { votedVoters ->
+                            val votedIds = votedVoters.mapNotNull { it["userId"] as? String }.toSet()
+                            
+                            val femaleVotedCount = femaleVoters.count { it["userId"] as? String in votedIds }
+                            val maleVotedCount = maleVoters.count { it["userId"] as? String in votedIds }
 
-        tvFemaleTurnout.text = "$femaleTurnoutPercent%"
-        tvFemaleSummaryRate.text = "$femaleTurnoutPercent%"
+                            val femaleTurnoutPercent = calculateTurnout(femaleVotedCount, femaleEligibleCount)
+                            val maleTurnoutPercent = calculateTurnout(maleVotedCount, maleEligibleCount)
 
-        tvMaleTurnout.text = "$maleTurnoutPercent%"
-        tvMaleSummaryRate.text = "$maleTurnoutPercent%"
+                            tvFemaleEligible.text = femaleEligibleCount.toString()
+                            tvMaleEligible.text = maleEligibleCount.toString()
+
+                            tvFemaleTurnout.text = "$femaleTurnoutPercent%"
+                            tvFemaleSummaryRate.text = "$femaleTurnoutPercent%"
+
+                            tvMaleTurnout.text = "$maleTurnoutPercent%"
+                            tvMaleSummaryRate.text = "$maleTurnoutPercent%"
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("AutomatedReports", "Error getting voted voters: $error")
+                            tvFemaleEligible.text = femaleEligibleCount.toString()
+                            tvMaleEligible.text = maleEligibleCount.toString()
+                            tvFemaleTurnout.text = "0%"
+                            tvFemaleSummaryRate.text = "0%"
+                            tvMaleTurnout.text = "0%"
+                            tvMaleSummaryRate.text = "0%"
+                        }
+                    )
+                } else {
+                    tvFemaleEligible.text = femaleEligibleCount.toString()
+                    tvMaleEligible.text = maleEligibleCount.toString()
+                    tvFemaleTurnout.text = "0%"
+                    tvFemaleSummaryRate.text = "0%"
+                    tvMaleTurnout.text = "0%"
+                    tvMaleSummaryRate.text = "0%"
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("AutomatedReports", "Error getting voters: $error")
+                tvFemaleEligible.text = "0"
+                tvMaleEligible.text = "0"
+                tvFemaleTurnout.text = "0%"
+                tvFemaleSummaryRate.text = "0%"
+                tvMaleTurnout.text = "0%"
+                tvMaleSummaryRate.text = "0%"
+            }
+        )
     }
 
     private fun calculateTurnout(votedCount: Int, eligibleCount: Int): Int {
@@ -279,24 +373,51 @@ class AutomatedReports : AppCompatActivity() {
         val tvVotedPercent: TextView = findViewById(R.id.tvVotedPercentage)
         val tvNotVotedPercent: TextView = findViewById(R.id.tvNotVotedPercentage)
 
-        // ----------------------------------------------------------------------
-        // ⭐️ BACKEND/DATABASE INTEGRATION POINT for Overall Turnout ⭐️
-        // ----------------------------------------------------------------------
-        val totalVoters = 350
-        val votedCount = 115
+        if (userCollege.isEmpty()) {
+            tvVotedPercent.text = "0%"
+            tvNotVotedPercent.text = "100%"
+            return
+        }
 
-        val votedPercentageFloat = if (totalVoters > 0) (votedCount.toFloat() / totalVoters) * 100 else 0f
-        val votedPercentage = votedPercentageFloat.toInt().coerceIn(0, 100)
-        val notVotedPercentage = 100 - votedPercentage
+        // Get voters for this college
+        FirestoreVoterHelper.getVotersByCollege(
+            college = userCollege,
+            onSuccess = { voters ->
+                val totalVoters = voters.size
+                
+                if (currentElectionId != null) {
+                    // Get votes for this election
+                    FirestoreVoterHelper.getVotersWhoVoted(
+                        electionId = currentElectionId!!,
+                        onSuccess = { votedVoters ->
+                            // Filter voted voters by college
+                            val votedIds = votedVoters.mapNotNull { it["userId"] as? String }.toSet()
+                            val collegeVotedCount = voters.count { it["userId"] as? String in votedIds }
+                            
+                            val votedPercentageFloat = if (totalVoters > 0) (collegeVotedCount.toFloat() / totalVoters) * 100 else 0f
+                            val votedPercentage = votedPercentageFloat.toInt().coerceIn(0, 100)
+                            val notVotedPercentage = 100 - votedPercentage
 
-        // ----------------------------------------------------------------------
-        // ⭐️ END OF DATABASE INTEGRATION POINT ⭐️
-        // ----------------------------------------------------------------------
-
-        // NOTE: The next line is commented out as DoughnutChartView class is not available to cast
-        // donutView.votedPercentage = votedPercentage
-        tvVotedPercent.text = "$votedPercentage%"
-        tvNotVotedPercent.text = "$notVotedPercentage%"
+                            tvVotedPercent.text = "$votedPercentage%"
+                            tvNotVotedPercent.text = "$notVotedPercentage%"
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("AutomatedReports", "Error getting voted voters: $error")
+                            tvVotedPercent.text = "0%"
+                            tvNotVotedPercent.text = "100%"
+                        }
+                    )
+                } else {
+                    tvVotedPercent.text = "0%"
+                    tvNotVotedPercent.text = "100%"
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("AutomatedReports", "Error getting voters: $error")
+                tvVotedPercent.text = "0%"
+                tvNotVotedPercent.text = "100%"
+            }
+        )
     }
 
 
@@ -307,8 +428,101 @@ class AutomatedReports : AppCompatActivity() {
         val barAreaContainer: LinearLayout = findViewById(R.id.BarArea)
         val tvTotalVotedCount: TextView = findViewById(R.id.tvTotalVotedCount)
 
-        val totalVotes = voteData.sumOf { it.voteCount }
+        if (userCollege.isEmpty() || currentElectionId == null) {
+            tvTotalVotedCount.text = "0"
+            return
+        }
 
+        // Get voter statistics by year for this college's election
+        FirestoreVoterHelper.getVoterStatisticsByYear(
+            electionId = currentElectionId!!,
+            onSuccess = { yearCounts ->
+                // Filter to only include voters from this college
+                FirestoreVoterHelper.getVotersByCollege(
+                    college = userCollege,
+                    onSuccess = { collegeVoters ->
+                        val collegeVoterIds = collegeVoters.mapNotNull { it["userId"] as? String }.toSet()
+                        
+                        // Get votes and filter by college voters
+                        FirebaseFirestore.getInstance()
+                            .collection("votes")
+                            .whereEqualTo("electionId", currentElectionId)
+                            .get()
+                            .addOnSuccessListener { voteDocuments ->
+                                val collegeVoteUserIds = voteDocuments.documents
+                                    .mapNotNull { it.getString("userId") }
+                                    .filter { it in collegeVoterIds }
+                                    .distinct()
+
+                                // Get year distribution for college voters who voted
+                                val collegeYearCounts = mutableMapOf<String, Int>()
+                                var completed = 0
+                                val total = collegeVoteUserIds.size
+
+                                if (total == 0) {
+                                    voteData.clear()
+                                    voteData.add(YearVoteData("1st", 0, R.id.barItem1st))
+                                    voteData.add(YearVoteData("2nd", 0, R.id.barItem2nd))
+                                    voteData.add(YearVoteData("3rd", 0, R.id.barItem3rd))
+                                    voteData.add(YearVoteData("4th", 0, R.id.barItem4th))
+                                    updateBarChart(barAreaContainer, tvTotalVotedCount)
+                                    return@addOnSuccessListener
+                                }
+
+                                collegeVoteUserIds.forEach { userId ->
+                                    FirebaseFirestore.getInstance()
+                                        .collection("users")
+                                        .document(userId)
+                                        .get()
+                                        .addOnSuccessListener { userDoc ->
+                                            val yearRaw = userDoc.getString("year") ?: "Unknown"
+                                            val year = yearRaw.replace(" Year", "").trim()
+                                            collegeYearCounts[year] = (collegeYearCounts[year] ?: 0) + 1
+
+                                            completed++
+                                            if (completed == total) {
+                                                voteData.clear()
+                                                voteData.add(YearVoteData("1st", collegeYearCounts["1st"] ?: 0, R.id.barItem1st))
+                                                voteData.add(YearVoteData("2nd", collegeYearCounts["2nd"] ?: 0, R.id.barItem2nd))
+                                                voteData.add(YearVoteData("3rd", collegeYearCounts["3rd"] ?: 0, R.id.barItem3rd))
+                                                voteData.add(YearVoteData("4th", collegeYearCounts["4th"] ?: 0, R.id.barItem4th))
+                                                updateBarChart(barAreaContainer, tvTotalVotedCount)
+                                            }
+                                        }
+                                        .addOnFailureListener { exception ->
+                                            android.util.Log.e("AutomatedReports", "Error getting user data: ${exception.message}")
+                                            completed++
+                                            if (completed == total) {
+                                                voteData.clear()
+                                                voteData.add(YearVoteData("1st", collegeYearCounts["1st"] ?: 0, R.id.barItem1st))
+                                                voteData.add(YearVoteData("2nd", collegeYearCounts["2nd"] ?: 0, R.id.barItem2nd))
+                                                voteData.add(YearVoteData("3rd", collegeYearCounts["3rd"] ?: 0, R.id.barItem3rd))
+                                                voteData.add(YearVoteData("4th", collegeYearCounts["4th"] ?: 0, R.id.barItem4th))
+                                                updateBarChart(barAreaContainer, tvTotalVotedCount)
+                                            }
+                                        }
+                                }
+                            }
+                            .addOnFailureListener { exception ->
+                                android.util.Log.e("AutomatedReports", "Error getting votes: ${exception.message}")
+                                tvTotalVotedCount.text = "0"
+                            }
+                    },
+                    onFailure = { error ->
+                        android.util.Log.e("AutomatedReports", "Error getting college voters: $error")
+                        tvTotalVotedCount.text = "0"
+                    }
+                )
+            },
+            onFailure = { error ->
+                android.util.Log.e("AutomatedReports", "Error getting voter statistics: $error")
+                tvTotalVotedCount.text = "0"
+            }
+        )
+    }
+
+    private fun updateBarChart(barAreaContainer: LinearLayout, tvTotalVotedCount: TextView) {
+        val totalVotes = voteData.sumOf { it.voteCount }
         tvTotalVotedCount.text = totalVotes.toString()
 
         if (totalVotes == 0) return
