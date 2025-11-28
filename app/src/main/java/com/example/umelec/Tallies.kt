@@ -77,48 +77,271 @@ class Tallies : AppCompatActivity() {
                     onSuccess = { electionId ->
                         currentElectionId = electionId
                         if (electionId != null) {
-                            // Get vote tallies
-                            FirestoreVoteHelper.getVoteTallies(
+                            // Get all candidates for the election first, then merge with vote tallies
+                            FirestoreCandidateHelper.getPositionsForElection(
                                 electionId = electionId,
-                                onSuccess = { tallies ->
-                                    // Group tallies by position and convert to TallyCandidate
-                                    val talliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
-                                    
-                                    tallies.forEach { tally ->
-                                        val positionName = tally.positionName
-                                        if (!talliesMap.containsKey(positionName)) {
-                                            talliesMap[positionName] = mutableListOf()
+                                onSuccess = { positions ->
+                                    // Get vote tallies
+                                    FirestoreVoteHelper.getVoteTallies(
+                                        electionId = electionId,
+                                        onSuccess = { tallies ->
+                                            // Create a map of candidate ID to vote count from tallies
+                                            val voteCountMap = tallies.groupBy { it.candidateId }
+                                                .mapValues { (_, tallyList) -> 
+                                                    tallyList.sumOf { it.voteCount } 
+                                                }
+                                            
+                                            // Create a map of candidate ID to photo URL (we'll fetch these)
+                                            val candidatePhotoMap = mutableMapOf<String, String>()
+                                            
+                                            // Group all candidates by position
+                                            val allCandidatesByPosition = mutableMapOf<String, MutableList<Pair<String, String>>>()
+                                            // positionName -> list of (candidateId, candidateName)
+                                            
+                                            positions.forEach { position ->
+                                                position.candidates.forEach { candidate ->
+                                                    if (!allCandidatesByPosition.containsKey(position.title)) {
+                                                        allCandidatesByPosition[position.title] = mutableListOf()
+                                                    }
+                                                    allCandidatesByPosition[position.title]?.add(
+                                                        Pair(candidate.id, candidate.name)
+                                                    )
+                                                }
+                                            }
+                                            
+                                            // Fetch photo URLs for all candidates
+                                            val candidateIds = positions.flatMap { it.candidates.map { it.id } }
+                                            var photoLoadCount = 0
+                                            val totalCandidates = candidateIds.size
+                                            
+                                            if (totalCandidates == 0) {
+                                                talliesData = emptyMap()
+                                                displayOverallVotesCount()
+                                                setupVoteTallyBehavior()
+                                                setupHeaderBehavior()
+                                                setupTalliesCards()
+                                                return@getVoteTallies
+                                            }
+                                            
+                                            candidateIds.forEach { candidateId ->
+                                                FirestoreCandidateHelper.getCandidateDetails(
+                                                    candidateId = candidateId,
+                                                    onSuccess = { details ->
+                                                        val photoUrl = details["photoUrl"] ?: DEFAULT_AVATAR_URL
+                                                        candidatePhotoMap[candidateId] = photoUrl
+                                                        
+                                                        photoLoadCount++
+                                                        if (photoLoadCount == totalCandidates) {
+                                                            // Now merge candidates with vote tallies
+                                                            val mergedTalliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
+                                                            
+                                                            allCandidatesByPosition.forEach { (positionName, candidates) ->
+                                                                val tallyCandidates = candidates.map { (candidateId, candidateName) ->
+                                                                    TallyCandidate(
+                                                                        name = candidateName,
+                                                                        votes = voteCountMap[candidateId] ?: 0,
+                                                                        photoUrl = candidatePhotoMap[candidateId] ?: DEFAULT_AVATAR_URL
+                                                                    )
+                                                                }
+                                                                
+                                                                // Sort by vote count (descending), then by name
+                                                                mergedTalliesMap[positionName] = tallyCandidates
+                                                                    .sortedWith(compareByDescending<TallyCandidate> { it.votes }
+                                                                        .thenBy { it.name })
+                                                                    .toMutableList()
+                                                            }
+                                                            
+                                                            talliesData = mergedTalliesMap
+                                                            
+                                                            // Update last update time
+                                                            lastUpdateTimeMillis = System.currentTimeMillis()
+                                                            
+                                                            // Setup UI
+                                                            displayOverallVotesCount()
+                                                            setupVoteTallyBehavior()
+                                                            setupHeaderBehavior()
+                                                            setupTalliesCards()
+                                                        }
+                                                    },
+                                                    onFailure = { error ->
+                                                        android.util.Log.e("Tallies", "Error loading candidate photo for $candidateId: $error")
+                                                        candidatePhotoMap[candidateId] = DEFAULT_AVATAR_URL
+                                                        
+                                                        photoLoadCount++
+                                                        if (photoLoadCount == totalCandidates) {
+                                                            // Merge candidates with vote tallies
+                                                            val mergedTalliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
+                                                            
+                                                            allCandidatesByPosition.forEach { (positionName, candidates) ->
+                                                                val tallyCandidates = candidates.map { (candidateId, candidateName) ->
+                                                                    TallyCandidate(
+                                                                        name = candidateName,
+                                                                        votes = voteCountMap[candidateId] ?: 0,
+                                                                        photoUrl = candidatePhotoMap[candidateId] ?: DEFAULT_AVATAR_URL
+                                                                    )
+                                                                }
+                                                                
+                                                                mergedTalliesMap[positionName] = tallyCandidates
+                                                                    .sortedWith(compareByDescending<TallyCandidate> { it.votes }
+                                                                        .thenBy { it.name })
+                                                                    .toMutableList()
+                                                            }
+                                                            
+                                                            talliesData = mergedTalliesMap
+                                                            
+                                                            lastUpdateTimeMillis = System.currentTimeMillis()
+                                                            
+                                                            displayOverallVotesCount()
+                                                            setupVoteTallyBehavior()
+                                                            setupHeaderBehavior()
+                                                            setupTalliesCards()
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        },
+                                        onFailure = { error ->
+                                            android.util.Log.e("Tallies", "Error loading tallies: $error")
+                                            // Still show all candidates with 0 votes
+                                            val allCandidatesByPosition = mutableMapOf<String, MutableList<Pair<String, String>>>()
+                                            
+                                            positions.forEach { position ->
+                                                position.candidates.forEach { candidate ->
+                                                    if (!allCandidatesByPosition.containsKey(position.title)) {
+                                                        allCandidatesByPosition[position.title] = mutableListOf()
+                                                    }
+                                                    allCandidatesByPosition[position.title]?.add(
+                                                        Pair(candidate.id, candidate.name)
+                                                    )
+                                                }
+                                            }
+                                            
+                                            val candidateIds = positions.flatMap { it.candidates.map { it.id } }
+                                            val candidatePhotoMap = mutableMapOf<String, String>()
+                                            var photoLoadCount = 0
+                                            val totalCandidates = candidateIds.size
+                                            
+                                            if (totalCandidates == 0) {
+                                                talliesData = emptyMap()
+                                                displayOverallVotesCount()
+                                                setupVoteTallyBehavior()
+                                                setupHeaderBehavior()
+                                                setupTalliesCards()
+                                                return@getVoteTallies
+                                            }
+                                            
+                                            candidateIds.forEach { candidateId ->
+                                                FirestoreCandidateHelper.getCandidateDetails(
+                                                    candidateId = candidateId,
+                                                    onSuccess = { details ->
+                                                        val photoUrl = details["photoUrl"] ?: DEFAULT_AVATAR_URL
+                                                        candidatePhotoMap[candidateId] = photoUrl
+                                                        
+                                                        photoLoadCount++
+                                                        if (photoLoadCount == totalCandidates) {
+                                                            val mergedTalliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
+                                                            
+                                                            allCandidatesByPosition.forEach { (positionName, candidates) ->
+                                                                val tallyCandidates = candidates.map { (candidateId, candidateName) ->
+                                                                    TallyCandidate(
+                                                                        name = candidateName,
+                                                                        votes = 0,
+                                                                        photoUrl = candidatePhotoMap[candidateId] ?: DEFAULT_AVATAR_URL
+                                                                    )
+                                                                }
+                                                                
+                                                                mergedTalliesMap[positionName] = tallyCandidates
+                                                                    .sortedBy { it.name }
+                                                                    .toMutableList()
+                                                            }
+                                                            
+                                                            talliesData = mergedTalliesMap
+                                                            lastUpdateTimeMillis = System.currentTimeMillis()
+                                                            
+                                                            displayOverallVotesCount()
+                                                            setupVoteTallyBehavior()
+                                                            setupHeaderBehavior()
+                                                            setupTalliesCards()
+                                                        }
+                                                    },
+                                                    onFailure = { photoError ->
+                                                        android.util.Log.e("Tallies", "Error loading candidate photo: $photoError")
+                                                        candidatePhotoMap[candidateId] = DEFAULT_AVATAR_URL
+                                                        
+                                                        photoLoadCount++
+                                                        if (photoLoadCount == totalCandidates) {
+                                                            val mergedTalliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
+                                                            
+                                                            allCandidatesByPosition.forEach { (positionName, candidates) ->
+                                                                val tallyCandidates = candidates.map { (candidateId, candidateName) ->
+                                                                    TallyCandidate(
+                                                                        name = candidateName,
+                                                                        votes = 0,
+                                                                        photoUrl = DEFAULT_AVATAR_URL
+                                                                    )
+                                                                }
+                                                                
+                                                                mergedTalliesMap[positionName] = tallyCandidates
+                                                                    .sortedBy { it.name }
+                                                                    .toMutableList()
+                                                            }
+                                                            
+                                                            talliesData = mergedTalliesMap
+                                                            lastUpdateTimeMillis = System.currentTimeMillis()
+                                                            
+                                                            displayOverallVotesCount()
+                                                            setupVoteTallyBehavior()
+                                                            setupHeaderBehavior()
+                                                            setupTalliesCards()
+                                                        }
+                                                    }
+                                                )
+                                            }
                                         }
-                                        talliesMap[positionName]?.add(
-                                            TallyCandidate(
-                                                name = tally.candidateName,
-                                                votes = tally.voteCount,
-                                                photoUrl = DEFAULT_AVATAR_URL
-                                            )
-                                        )
-                                    }
-
-                                    // Sort candidates by vote count (descending) per position
-                                    talliesData = talliesMap.mapValues { (_, candidates) ->
-                                        candidates.sortedByDescending { it.votes }
-                                    }
-
-                                    // Update last update time
-                                    lastUpdateTimeMillis = System.currentTimeMillis()
-
-                                    // Setup UI
-                                    displayOverallVotesCount()
-                                    setupVoteTallyBehavior()
-                                    setupHeaderBehavior()
-                                    setupTalliesCards()
+                                    )
                                 },
                                 onFailure = { error ->
-                                    android.util.Log.e("Tallies", "Error loading tallies: $error")
-                                    talliesData = emptyMap()
-                                    displayOverallVotesCount()
-                                    setupVoteTallyBehavior()
-                                    setupHeaderBehavior()
-                                    setupTalliesCards()
+                                    android.util.Log.e("Tallies", "Error loading candidates: $error")
+                                    // Fallback to just vote tallies if candidates can't be loaded
+                                    FirestoreVoteHelper.getVoteTallies(
+                                        electionId = electionId,
+                                        onSuccess = { tallies ->
+                                            val talliesMap = mutableMapOf<String, MutableList<TallyCandidate>>()
+                                            
+                                            tallies.forEach { tally ->
+                                                val positionName = tally.positionName
+                                                if (!talliesMap.containsKey(positionName)) {
+                                                    talliesMap[positionName] = mutableListOf()
+                                                }
+                                                talliesMap[positionName]?.add(
+                                                    TallyCandidate(
+                                                        name = tally.candidateName,
+                                                        votes = tally.voteCount,
+                                                        photoUrl = DEFAULT_AVATAR_URL
+                                                    )
+                                                )
+                                            }
+
+                                            talliesData = talliesMap.mapValues { (_, candidates) ->
+                                                candidates.sortedByDescending { it.votes }
+                                            }
+
+                                            lastUpdateTimeMillis = System.currentTimeMillis()
+
+                                            displayOverallVotesCount()
+                                            setupVoteTallyBehavior()
+                                            setupHeaderBehavior()
+                                            setupTalliesCards()
+                                        },
+                                        onFailure = { tallyError ->
+                                            android.util.Log.e("Tallies", "Error loading tallies: $tallyError")
+                                            talliesData = emptyMap()
+                                            displayOverallVotesCount()
+                                            setupVoteTallyBehavior()
+                                            setupHeaderBehavior()
+                                            setupTalliesCards()
+                                        }
+                                    )
                                 }
                             )
                         } else {
