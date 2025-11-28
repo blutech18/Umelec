@@ -181,8 +181,18 @@ class Login : AppCompatActivity() {
             }
 
             // Trigger Red border via standard Material Error property (used as a visual flag)
-            layoutEmail.error = " "
-            layoutPassword.error = " "
+            // 1. Clear the error state first
+            layoutEmail.error = null
+            layoutEmail.isErrorEnabled = false // Ensure error is completely disabled
+            // 2. Clear activation state (you're already doing this)
+            layoutEmail.isActivated = false
+            // 3. Set the desired color
+            layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+
+            layoutPassword.error = null
+            layoutPassword.isErrorEnabled = false
+            layoutPassword.isActivated = false
+            layoutPassword.boxStrokeColor = COLOR_ERROR_RED
 
             dialog.show()
         }
@@ -248,8 +258,9 @@ class Login : AppCompatActivity() {
                         emailRequirementsContainer.visibility = View.VISIBLE
                         reqEmail.setTextColor(COLOR_ERROR_RED)
                         reqEmail.text = "• Field is required"
-                        layoutEmail.error = " "
-                        layoutEmail.isActivated = false
+                        layoutEmail.isActivated = false // Clear green border
+                        //layoutEmail.error = " "
+                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                     }
                     isValid -> {
                         emailRequirementsContainer.visibility = View.GONE
@@ -260,8 +271,9 @@ class Login : AppCompatActivity() {
                     emailRequirementsContainer.visibility = View.VISIBLE
                     reqEmail.setTextColor(COLOR_ERROR_RED)
                     reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
-                    layoutEmail.error = " "
-                    layoutEmail.isActivated = false
+                        layoutEmail.isActivated = false // Clear green border
+                        //layoutEmail.error = " "
+                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                     }
                 }
             }
@@ -304,7 +316,8 @@ class Login : AppCompatActivity() {
 
                         // 🔴 LIVE FEEDBACK: Set to Red border
                         layoutEmail.isActivated = false // Clear green border
-                        layoutEmail.error = " "         // Triggers RED border
+                        //layoutEmail.error = " "
+                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                     }
 
                     // 🩶 DEFAULT TYPING STATE: Empty or still typing
@@ -338,7 +351,8 @@ class Login : AppCompatActivity() {
                         passwordRequirementsContainer.visibility = View.VISIBLE
                         reqPassword.setTextColor(COLOR_ERROR_RED)
                         reqPassword.text = "• Field is required"
-                        layoutPassword.error = " "
+                        //layoutEmail.error = " "
+                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                         layoutPassword.isActivated = false
                     }
                     isValid -> {

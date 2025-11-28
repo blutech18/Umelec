@@ -322,7 +322,8 @@ class Resetpassword : AppCompatActivity() {
 
                 reqField.setTextColor(COLOR_ERROR_RED)
                 reqField.text = "• Field is required"
-                layoutNewPassword.error = " " // Show Red border
+                //layoutNewPassword.error = " " // Show Red border
+                layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
                 layoutNewPassword.isActivated = false
             } else {
                 // State 2b: Filled field, focus lost: Show final validation status
@@ -334,7 +335,8 @@ class Resetpassword : AppCompatActivity() {
                     layoutNewPassword.isActivated = true
                 } else {
                     passwordRequirements.visibility = View.VISIBLE // Keep showing errors
-                    layoutNewPassword.error = " " // Show Red border
+                    //layoutNewPassword.error = " " // Show Red border
+                    layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutNewPassword.isActivated = false
                 }
             }
@@ -385,7 +387,8 @@ class Resetpassword : AppCompatActivity() {
                     layoutNewPassword.isActivated = true
                 }
                 else {
-                    layoutNewPassword.error = " " // Triggers red border
+                    //layoutNewPassword.error = " " // Triggers red border
+                    layoutNewPassword.isActivated = false
                 }
             }
 
@@ -420,7 +423,8 @@ class Resetpassword : AppCompatActivity() {
                     confirmPasswordRequirements.visibility = View.VISIBLE
                     reqMatch.setTextColor(COLOR_ERROR_RED)
                     reqMatch.text = "• Field is required"
-                    layoutConfirmPassword.error = " "
+                    //layoutConfirmPassword.error = " "
+                    layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutConfirmPassword.isActivated = false
                 }
                 isMatch -> {
@@ -432,7 +436,8 @@ class Resetpassword : AppCompatActivity() {
                     confirmPasswordRequirements.visibility = View.VISIBLE
                     reqMatch.setTextColor(COLOR_ERROR_RED)
                     reqMatch.text = "• Passwords must match"
-                    layoutConfirmPassword.error = " "
+                    //layoutConfirmPassword.error = " "
+                    layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutConfirmPassword.isActivated = false
                 }
             }
@@ -462,7 +467,8 @@ class Resetpassword : AppCompatActivity() {
                 reqMatch.visibility = View.VISIBLE
                 reqMatch.setTextColor(COLOR_ERROR_RED)
                 reqMatch.text = "• Passwords must match"
-                layoutConfirmPassword.error = " "
+                //layoutConfirmPassword.error = " "
+                layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                 layoutConfirmPassword.isActivated = false
             }
 

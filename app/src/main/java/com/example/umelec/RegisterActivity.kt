@@ -104,9 +104,9 @@ class RegisterActivity : AppCompatActivity() {
         dialogView.findViewById<TextView>(R.id.toast_value).text = "Email address already in use or registration failed."
 
         // Trigger Red border on the Email field
-        layoutEmail.error = " "
-        layoutPassword.error = null
-        layoutConfirmPassword.error = null
+        //layoutEmail.error = null
+        //layoutPassword.error = null
+        //layoutConfirmPassword.error = null
 
         // Clear all inputs on dialog close
         dialogView.findViewById<ImageButton>(R.id.btn_close).setOnClickListener {
@@ -338,7 +338,8 @@ class RegisterActivity : AppCompatActivity() {
                         EmailRequirements.visibility = View.VISIBLE
                         reqEmail.setTextColor(COLOR_ERROR_RED)
                         reqEmail.text = "• Field is required"
-                        layoutEmail.error = " "
+                        //layoutEmail.error = " "
+                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                         layoutEmail.isActivated = false
                     }
                     isValid -> {
@@ -350,7 +351,8 @@ class RegisterActivity : AppCompatActivity() {
                         EmailRequirements.visibility = View.VISIBLE
                         reqEmail.setTextColor(COLOR_ERROR_RED)
                         reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
-                        layoutEmail.error = " "
+                        //layoutEmail.error = " "
+                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                         layoutEmail.isActivated = false
                     }
                 }
@@ -378,7 +380,8 @@ class RegisterActivity : AppCompatActivity() {
                 } else {
                     reqEmail.setTextColor(COLOR_ERROR_RED)
                     reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
-                    layoutEmail.error = " "
+                    //layoutEmail.error = " "
+                    layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                 }
 
                 updateNextButtonState()
@@ -423,7 +426,8 @@ class RegisterActivity : AppCompatActivity() {
 
                     reqField.setTextColor(COLOR_ERROR_RED)
                     reqField.text = "• Field is required"
-                    layoutPassword.error = " " // Show Red border
+                    //layoutPassword.error = " " // Show Red border
+                    layoutPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutPassword.isActivated = false
                 } else {
                     // State 2b: Filled field, focus lost: Show final validation status
@@ -435,7 +439,8 @@ class RegisterActivity : AppCompatActivity() {
                         layoutPassword.isActivated = true
                     } else {
                         passwordRequirements.visibility = View.VISIBLE // Keep showing errors
-                        layoutPassword.error = " "
+                        //layoutPassword.error = " "
+                        layoutPassword.boxStrokeColor = COLOR_ERROR_RED
                         layoutPassword.isActivated = false
                     }
                 }
@@ -484,7 +489,8 @@ class RegisterActivity : AppCompatActivity() {
                         layoutPassword.boxStrokeColor = COLOR_SUCCESS_GREEN
                     }
                     else {
-                        layoutPassword.error = " "
+                        //layoutPassword.error = " "
+                        layoutPassword.boxStrokeColor = COLOR_ERROR_RED
                     }
                 }
 
@@ -521,7 +527,8 @@ class RegisterActivity : AppCompatActivity() {
                         ConfirmpasswordRequirements.visibility = View.VISIBLE
                         reqMatch.setTextColor(COLOR_ERROR_RED)
                         reqMatch.text = "• Field is required"
-                        layoutConfirmPassword.error = " "
+                        //layoutConfirmPassword.error = " "
+                        layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                         layoutConfirmPassword.isActivated = false
                     }
                     isMatch -> {
@@ -533,7 +540,8 @@ class RegisterActivity : AppCompatActivity() {
                         ConfirmpasswordRequirements.visibility = View.VISIBLE
                         reqMatch.setTextColor(COLOR_ERROR_RED)
                         reqMatch.text = "• Passwords must match"
-                        layoutConfirmPassword.error = " "
+                        //layoutConfirmPassword.error = " "
+                        layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                         layoutConfirmPassword.isActivated = false
                     }
                 }
@@ -562,7 +570,8 @@ class RegisterActivity : AppCompatActivity() {
                     reqMatch.visibility = View.VISIBLE
                     reqMatch.setTextColor(COLOR_ERROR_RED)
                     reqMatch.text = "• Passwords must match"
-                    layoutConfirmPassword.error = " "
+                    //layoutConfirmPassword.error = " "
+                    layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutConfirmPassword.isActivated = false
                 }
 

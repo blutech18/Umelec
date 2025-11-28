@@ -160,7 +160,7 @@ class RegisterActivity2 : AppCompatActivity() {
         }
 
         // Trigger Red border ONLY on the Student ID field
-        layoutStudentID.error = " "
+        //layoutStudentID.error = " "
 
         // Clear error state on other fields just in case
         layoutFirstname.error = null
@@ -374,14 +374,16 @@ class RegisterActivity2 : AppCompatActivity() {
                     studentIDRequirementsContainer.visibility = View.VISIBLE
                     reqStudentID.setTextColor(COLOR_ERROR_RED)
                     reqStudentID.text = "• Field is required"
-                    layoutStudentID.error = " " // Show red border
+                    //layoutStudentID.error = " " // Show red border
+                    layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     studentIDRequirementsContainer.visibility = View.GONE
                     layoutStudentID.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutStudentID.isActivated = true
                 } else {
                     studentIDRequirementsContainer.visibility = View.VISIBLE
-                    layoutStudentID.error = " " // Show red border
+                    //layoutStudentID.error = " " // Show red border
+                    layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -465,14 +467,16 @@ class RegisterActivity2 : AppCompatActivity() {
                     firstnameRequirementsContainer.visibility = View.VISIBLE
                     reqFirstname.setTextColor(COLOR_ERROR_RED)
                     reqFirstname.text = "• Field is required"
-                    layoutFirstname.error = " "
+                    //layoutFirstname.error = " "
+                    layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     firstnameRequirementsContainer.visibility = View.GONE
                     layoutFirstname.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutFirstname.isActivated = true
                 } else {
                     firstnameRequirementsContainer.visibility = View.VISIBLE
-                    layoutFirstname.error = " "
+                    //layoutFirstname.error = " "
+                    layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -567,14 +571,16 @@ class RegisterActivity2 : AppCompatActivity() {
                     lastnameRequirementsContainer.visibility = View.VISIBLE
                     reqLastname.setTextColor(COLOR_ERROR_RED)
                     reqLastname.text = "• Field is required"
-                    layoutLastname.error = " "
+                    //layoutLastname.error = " "
+                    layoutLastname.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     lastnameRequirementsContainer.visibility = View.GONE
                     layoutLastname.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutLastname.isActivated = true
                 } else {
                     lastnameRequirementsContainer.visibility = View.VISIBLE
-                    layoutLastname.error = " "
+                    //layoutLastname.error = " "
+                    layoutLastname.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -670,14 +676,16 @@ class RegisterActivity2 : AppCompatActivity() {
                     genderRequirementsContainer.visibility = View.VISIBLE
                     reqGender.setTextColor(COLOR_ERROR_RED)
                     reqGender.text = "• Field is required"
-                    layoutGender.error = " "
+                    //layoutGender.error = " "
+                    layoutGender.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     genderRequirementsContainer.visibility = View.GONE
                     layoutGender.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutGender.isActivated = true
                 } else {
                     genderRequirementsContainer.visibility = View.VISIBLE
-                    layoutGender.error = " "
+                    //layoutGender.error = " "
+                    layoutGender.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -744,14 +752,16 @@ class RegisterActivity2 : AppCompatActivity() {
                     yearRequirementsContainer.visibility = View.VISIBLE
                     reqYear.setTextColor(COLOR_ERROR_RED)
                     reqYear.text = "• Field is required"
-                    layoutYear.error = " "
+                    //layoutYear.error = " "
+                    layoutYear.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     yearRequirementsContainer.visibility = View.GONE
                     layoutYear.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutYear.isActivated = true
                 } else {
                     yearRequirementsContainer.visibility = View.VISIBLE
-                    layoutYear.error = " "
+                    //layoutYear.error = " "
+                    layoutYear.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -816,14 +826,16 @@ class RegisterActivity2 : AppCompatActivity() {
                     collegeRequirementsContainer.visibility = View.VISIBLE
                     reqCollege.setTextColor(COLOR_ERROR_RED)
                     reqCollege.text = "• Field is required"
-                    layoutCollege.error = " "
+                    //layoutCollege.error = " "
+                    layoutCollege.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     collegeRequirementsContainer.visibility = View.GONE
                     layoutCollege.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutCollege.isActivated = true
                 } else {
                     collegeRequirementsContainer.visibility = View.VISIBLE
-                    layoutCollege.error = " "
+                    //layoutCollege.error = " "
+                    layoutCollege.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()

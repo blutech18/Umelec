@@ -131,7 +131,7 @@ class Forgotpassword : AppCompatActivity() {
         }
 
         // Trigger Red border via standard Material Error property (visual flag)
-        layoutEmail.error = " "
+        //layoutEmail.error = " "
         emailRequirementsContainer.visibility = View.GONE
 
         dialog.show()
