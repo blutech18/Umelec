@@ -158,8 +158,10 @@ class RegisterActivity2 : AppCompatActivity() {
             // Clear the error/activation state on the Student ID field only
             clearValidationState(layoutStudentID)
         }
+
         // Trigger Red border ONLY on the Student ID field
         layoutStudentID.error = " "
+
         // Clear error state on other fields just in case
         layoutFirstname.error = null
         layoutLastname.error = null
