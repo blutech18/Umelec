@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Base64
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageButton
@@ -26,7 +27,8 @@ class RegisterActivity3 : AppCompatActivity() {
 
     // Views
     private lateinit var btnBack: ImageButton
-    private lateinit var signaturePad: SignaturePad
+    // FIX 1: Change type to use the custom view
+    private lateinit var signaturePad: ConstrainedSignaturePad
     private lateinit var btnClearSignature: AppCompatButton
     private lateinit var tvReviewTnC: TextView
     private lateinit var tvReviewPrivacy: TextView
@@ -34,9 +36,13 @@ class RegisterActivity3 : AppCompatActivity() {
     private lateinit var cbAgreePrivacy: CheckBox
     private lateinit var cbAgreeTerms: CheckBox
     private lateinit var btnNext: Button
+    // FIX 2: Add the error text view
+    private lateinit var signaturePadReqText: TextView
 
     // State
     private var isSignatureDrawn: Boolean = false
+    // FIX 3: Add validation state, defaults to valid
+    private var isSignatureValid: Boolean = true
     private var isTermsAgreed: Boolean = false
     private var isPrivacyAgreed: Boolean = false
     private var isFinalConditionAgreed: Boolean = false
@@ -52,6 +58,7 @@ class RegisterActivity3 : AppCompatActivity() {
 
         // 1. Initialize Views
         btnBack = findViewById(R.id.btnBack)
+        // FIX 4: Initialize as the custom view type (assuming XML was updated)
         signaturePad = findViewById(R.id.signaturePad)
         // Disable state saving for SignaturePad to prevent "Could not copy bitmap to parcel blob" errors
         signaturePad.setSaveEnabled(false)
@@ -63,6 +70,8 @@ class RegisterActivity3 : AppCompatActivity() {
         cbAgree = findViewById(R.id.cbAgree) // The final condition checkbox
         cbAgreePrivacy = findViewById(R.id.cbAgreePrivacy)
         cbAgreeTerms = findViewById(R.id.cbAgreeTerms)
+        // FIX 5: Initialize the error TextView
+        signaturePadReqText = findViewById(R.id.SignaturePadReqText)
         // --- END NEW/UPDATED VIEW INITIALIZATION ---
 
         btnNext = findViewById(R.id.btnNext)
@@ -70,12 +79,23 @@ class RegisterActivity3 : AppCompatActivity() {
         // 2. Setup Initial State
         updateNextButtonState()
         btnClearSignature.isEnabled = false
+        // FIX 6: Hide the constraint error text initially
+        signaturePadReqText.visibility = View.GONE
         // Note: isTermsAgreed now tracks cbAgreeTerms, cbAgreePrivacy, and cbAgree.
         // Let's ensure the initial state reflects the unchecked boxes.
         isTermsAgreed = cbAgreeTerms.isChecked
         isPrivacyAgreed = cbAgreePrivacy.isChecked
         isFinalConditionAgreed = cbAgree.isChecked
         updateNextButtonState()
+
+
+        // FIX 7: Implement the listener from the custom ConstrainedSignaturePad
+        signaturePad.onBoundaryCrossedListener = { isCrossed ->
+            // Update the activity's main state based on the custom view's report
+            isSignatureValid = !isCrossed
+            signaturePadReqText.visibility = if (isCrossed) View.VISIBLE else View.GONE
+            updateNextButtonState()
+        }
 
 
         // 3. Set Listeners
@@ -193,23 +213,31 @@ class RegisterActivity3 : AppCompatActivity() {
             updateNextButtonState()
         }
 
-        // 4. Working Signature Pad Logic (untouched)
+        // 4. Working Signature Pad Logic
         signaturePad.setOnSignedListener(object : SignaturePad.OnSignedListener {
             override fun onStartSigning() {
-                // Not needed for state tracking, but useful for UX hints
+                // FIX 8: Reset validation state when starting a new signature
+                isSignatureValid = true
+                signaturePadReqText.visibility = View.GONE
+                updateNextButtonState()
             }
 
             override fun onSigned() {
                 // Triggered when the user starts drawing and lifts their finger
                 isSignatureDrawn = true
                 btnClearSignature.isEnabled = true
+                // Validation state (isSignatureValid) is handled by the custom view's listener
                 updateNextButtonState()
             }
 
             override fun onClear() {
                 // Triggered when signaturePad.clear() is called
                 isSignatureDrawn = false
+                // FIX 9: Reset validation state
+                isSignatureValid = true
                 btnClearSignature.isEnabled = false
+                // FIX 10: Hide error text on clear
+                signaturePadReqText.visibility = View.GONE
                 updateNextButtonState()
             }
         })
@@ -219,9 +247,10 @@ class RegisterActivity3 : AppCompatActivity() {
             signaturePad.clear() // Clears the canvas and triggers the onClear listener
         }
 
-        // 6. Next Button Logic (Data Processing) (untouched except for state check)
+        // 6. Next Button Logic (Data Processing)
         btnNext.setOnClickListener {
-            if (isSignatureDrawn && isTermsAgreed) {
+            // FIX 11: Check all required conditions, including signature validity
+            if (isSignatureDrawn && isTermsAgreed && isPrivacyAgreed && isFinalConditionAgreed && isSignatureValid) {
                 // Get current Firebase user
                 val currentUser = FirebaseAuthHelper.getCurrentUser()
                 if (currentUser == null) {
@@ -245,7 +274,7 @@ class RegisterActivity3 : AppCompatActivity() {
                 // 3. Prepare signature data for Firestore
                 val signatureData = hashMapOf<String, Any>(
                     "signature" to signatureBase64String,
-                    "termsAgreed" to isTermsAgreed,
+                    "termsAgreed" to (isTermsAgreed && isPrivacyAgreed && isFinalConditionAgreed),
                     "registrationCompleted" to true,
                     "completedAt" to com.google.firebase.Timestamp.now()
                 )
@@ -267,22 +296,27 @@ class RegisterActivity3 : AppCompatActivity() {
                         android.widget.Toast.makeText(this, "Failed to save signature: $errorMessage", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 )
+            } else if (isSignatureDrawn && !isSignatureValid) {
+                // FIX 12: Handle invalid signature explicitly
+                Toast.makeText(this, "Please clear and re-sign inside the constraint box.", Toast.LENGTH_SHORT).show()
+                signaturePadReqText.visibility = View.VISIBLE
+            } else {
+                // Fallback for non-signature errors (e.g., agreements not checked)
+                Toast.makeText(this, "Please complete all steps (signature and agreements) to finish.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     /**
      * Updates the enabled state of the Next button based on required conditions.
-     * ⭐️ UPDATED LOGIC to check all three CheckBoxes. ⭐️
      */
     private fun updateNextButtonState() {
         // Button is enabled ONLY when:
         // 1. Signature is drawn (isSignatureDrawn)
-        // 2. Terms CheckBox is checked (isTermsAgreed)
-        // 3. Privacy CheckBox is checked (isPrivacyAgreed)
-        // 4. Final Condition CheckBox is checked (isFinalConditionAgreed)
+        // 2. All three CheckBoxes are checked (isTermsAgreed, isPrivacyAgreed, isFinalConditionAgreed)
+        // 3. FIX 13: Signature is valid (isSignatureValid)
 
-        btnNext.isEnabled = isSignatureDrawn && isTermsAgreed && isPrivacyAgreed && isFinalConditionAgreed
+        btnNext.isEnabled = isSignatureDrawn && isTermsAgreed && isPrivacyAgreed && isFinalConditionAgreed && isSignatureValid
     }
 
     /**

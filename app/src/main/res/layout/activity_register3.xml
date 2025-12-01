@@ -113,22 +113,54 @@
                 android:id="@+id/signatureValue"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Your manual signature is for Account Security and Identity Verification only. It is NOT linked to your vote to guarantee the secrecy of your ballot."
+                android:text="Your signature is only for verifying your identity for this voting process. It is not linked to your vote and will not be used for anything else."
                 android:textSize="16sp"
                 android:fontFamily="@font/poppins_regular"
                 android:textColor="#313131"
                 android:layout_marginBottom="24dp" />
 
-            <com.github.gcacace.signaturepad.views.SignaturePad
-                android:id="@+id/signaturePad"
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
-                android:background="@drawable/signature_pad_background"
-                app:penColor="@android:color/black"
-                app:velocityFilterWeight="0.9"
-                app:maxWidth="3dp"
-                app:minWidth="1dp"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/signature_pad_background">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@drawable/dashed_border_box"/>
+
+                <com.example.umelec.ConstrainedSignaturePad
+                    android:id="@+id/signaturePad"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    app:penColor="@android:color/black"
+                    app:velocityFilterWeight="0.9"
+                    app:maxWidth="3dp"
+                    app:minWidth="1dp" />
+
+            </RelativeLayout>
+            <LinearLayout
+                android:id="@+id/SignaturePadReq"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="10dp">
+                <TextView
+                    android:id="@+id/SignaturePadReqText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="• Signature Invalid. Please only sign inside the constraint box."
+                    android:textColor="#D32F2F"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/poppins_regular"/>
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"

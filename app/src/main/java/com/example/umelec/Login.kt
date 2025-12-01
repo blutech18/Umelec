@@ -182,17 +182,17 @@ class Login : AppCompatActivity() {
 
             // Trigger Red border via standard Material Error property (used as a visual flag)
             // 1. Clear the error state first
-            layoutEmail.error = null
-            layoutEmail.isErrorEnabled = false // Ensure error is completely disabled
+            //layoutEmail.error = null
+            //layoutEmail.isErrorEnabled = false // Ensure error is completely disabled
             // 2. Clear activation state (you're already doing this)
-            layoutEmail.isActivated = false
+            //layoutEmail.isActivated = false
             // 3. Set the desired color
-            layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+            //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
 
-            layoutPassword.error = null
-            layoutPassword.isErrorEnabled = false
-            layoutPassword.isActivated = false
-            layoutPassword.boxStrokeColor = COLOR_ERROR_RED
+            //layoutPassword.error = null
+            //layoutPassword.isErrorEnabled = false
+            //layoutPassword.isActivated = false
+            //layoutPassword.boxStrokeColor = COLOR_ERROR_RED
 
             dialog.show()
         }
@@ -251,7 +251,7 @@ class Login : AppCompatActivity() {
             val isValid = isEmailValid(email)
 
             if (hasFocus) {
-                emailRequirementsContainer.visibility = View.VISIBLE
+                emailRequirementsContainer.visibility = View.GONE
             } else {
                 when {
                     email.isEmpty() -> {
@@ -260,20 +260,20 @@ class Login : AppCompatActivity() {
                         reqEmail.text = "• Field is required"
                         layoutEmail.isActivated = false // Clear green border
                         //layoutEmail.error = " "
-                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                     }
                     isValid -> {
                         emailRequirementsContainer.visibility = View.GONE
-                        layoutEmail.error = null
-                        layoutEmail.isActivated = true
+                        //layoutEmail.error = null
+                        //layoutEmail.isActivated = true
                     }
                     else -> {
-                    emailRequirementsContainer.visibility = View.VISIBLE
-                    reqEmail.setTextColor(COLOR_ERROR_RED)
-                    reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
-                        layoutEmail.isActivated = false // Clear green border
+                    //emailRequirementsContainer.visibility = View.VISIBLE
+                    //reqEmail.setTextColor(COLOR_ERROR_RED)
+                    //reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
+                        //layoutEmail.isActivated = false // Clear green border
                         //layoutEmail.error = " "
-                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                     }
                 }
             }
@@ -299,34 +299,41 @@ class Login : AppCompatActivity() {
                 when {
                     // ✅ VALID MATCH: Complete and correct domain
                     isValid -> {
-                        reqEmail.setTextColor(COLOR_SUCCESS_GREEN)
-                        reqEmail.text = "✓ Please use your UMak email ($CORRECT_DOMAIN)"
-                        emailRequirementsContainer.visibility = View.VISIBLE
+                        //reqEmail.setTextColor(COLOR_SUCCESS_GREEN)
+                        //reqEmail.text = "✓ Please use your UMak email ($CORRECT_DOMAIN)"
+                        //emailRequirementsContainer.visibility = View.VISIBLE
 
                         // 🟢 LIVE FEEDBACK: Set to Green border
-                        layoutEmail.boxStrokeColor = COLOR_SUCCESS_GREEN
-                        layoutEmail.isActivated = true  // Triggers GREEN border
+                        //layoutEmail.boxStrokeColor = COLOR_SUCCESS_GREEN
+                        //layoutEmail.isActivated = true  // Triggers GREEN border
+                        //Reset to default/primary color border while actively typing
+                        layoutEmail.isActivated = false
+                        layoutEmail.error = null
                     }
 
                     // ❌ INVALID FORMAT: Contains text but doesn't end with required domain
                     text.isNotEmpty() && !text.endsWith(CORRECT_DOMAIN, ignoreCase = true) -> {
-                        reqEmail.setTextColor(COLOR_ERROR_RED)
-                        reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
-                        emailRequirementsContainer.visibility = View.VISIBLE
+                        //reqEmail.setTextColor(COLOR_ERROR_RED)
+                        //reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
+                        //emailRequirementsContainer.visibility = View.VISIBLE
 
                         // 🔴 LIVE FEEDBACK: Set to Red border
-                        layoutEmail.isActivated = false // Clear green border
+                        //layoutEmail.isActivated = false // Clear green border
                         //layoutEmail.error = " "
-                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+
+                        //Reset to default/primary color border while actively typing
+                        layoutEmail.isActivated = false
+                        layoutEmail.error = null
                     }
 
                     // 🩶 DEFAULT TYPING STATE: Empty or still typing
                     else -> {
-                        reqEmail.setTextColor(COLOR_HINT_GRAY)
-                        reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
-                        emailRequirementsContainer.visibility = View.VISIBLE
+                        //reqEmail.setTextColor(COLOR_HINT_GRAY)
+                        //reqEmail.text = "• Please use your UMak email ($CORRECT_DOMAIN)"
+                        //emailRequirementsContainer.visibility = View.VISIBLE
 
-                        // Reset to default/primary color border while actively typing
+                        //Reset to default/primary color border while actively typing
                         layoutEmail.isActivated = false
                         layoutEmail.error = null
                     }

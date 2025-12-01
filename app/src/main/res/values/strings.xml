@@ -13,4 +13,155 @@
     <string name="timer"><u>TIMER</u></string>
     <string name="click_link"><u>Click Here</u></string>
     <string name="masterpdf_link"><u>Download Master PDF</u></string>
+    <!-- Legal Agreement Section 1: Parties and Scope -->
+    <string name="legal_agreement_p1">
+        This Legal Agreement is a contract between you <b>(Client or User)</b> and the <b>UMelec Project Team (Group 9)</b>, operating the UMelec application/service for the University of Makati COSEL (the <b>Company or We</b>).
+    </string>
+
+    <!-- Legal Agreement Section 2: Acceptance of Terms -->
+    <string name="legal_agreement_p2">
+        By clicking &quot;<b>I Agree</b>&quot; during registration or by otherwise accessing or using the Service, you confirm that you have read, understood, and agree to be bound by the <b>Terms and Conditions of Service (T&amp;Cs). If you do not agree to these terms, you must not use the Service.</b>
+    </string>
+
+    <!-- Legal Agreement Section 3: Governing Law -->
+    <string name="legal_agreement_p3">
+        This section governs the rules for using the UMelec Service, establishing the legal relationship between the User and the Company, and is governed by the laws of the <b>Republic of the Philippines.</b>
+    </string>
+    <!-- Definitions: Service -->
+    <string name="definition_service">
+        \u2022 <b>Service</b>: The UMelec mobile/web application and all related election services for the University of Makati.
+    </string>
+
+    <!-- Definitions: Applicable Laws -->
+    <string name="definition_applicable_laws">
+        \u2022 <b>Applicable Laws</b>: All relevant laws of the Philippines, including RA 10173 (Data Privacy Act) and RA 8792 (E-Commerce Act).
+    </string>
+
+    <!-- Definitions: Electronic Signatures -->
+    <string name="definition_electronic_signatures">
+        \u2022 <b>Electronic Signatures</b>: The manual digital signature captured during voting and the required UMak Gmail login credentials used for verification.
+    </string>
+    <!-- Privacy Policy Introduction - Paragraph 1 (Core Explanation) -->
+    <string name="privacy_policy_intro_p1">
+        This Privacy Policy explains how <b>UMelec Project Team (Group 9)</b>, acting as the <b>Personal Information Controller (PIC)</b> for this academic project, collects, uses, protects, and handles your Personal Data in compliance with the Republic Act No. 10173, otherwise known as the <b>Data Privacy Act of 2012 (DPA)</b>, and its Implementing Rules and Regulations (IRR).
+    </string>
+
+    <!-- Privacy Policy Introduction - Paragraph 2 (Layered Notice Note) -->
+    <string name="privacy_policy_intro_p2">
+        <b>Note on Format (Layered Notice Requirement):</b> In presenting information to you, we adopt the layered privacy notice approach. For the UMelec mobile application, a link to this comprehensive notice is always readily available within the Registration and Profile sections.
+    </string>
+
+    <!-- Data Collected: 1. Identity and Eligibility Data (Voters) -->
+    <string name="data_collected_1">
+        <b>1. Identity and Eligibility Data (Voters):</b> Full Name, UMak Gmail, Student ID, Course, College, Year Level, and Encrypted Password (via Firebase Authentication).
+    </string>
+
+    <!-- Data Collected: 2. Identity and Management Data (Leaders/Advisers) -->
+    <string name="data_collected_2">
+        <b>2. Identity and Management Data (Leaders/Advisers):</b> Name, Organizational Email, Role, and Encrypted Password.
+    </string>
+
+    <string name="data_collected_3">
+        <b>3. Authentication/Security Data:</b>
+    </string>
+
+    <!-- Data Collected: 3. Authentication/Security Data - Digital Signature -->
+    <string name="data_collected_3a_digital_signature">
+        <b>\u2022 Digital Signature:</b> A manual signature provided upon registration/voting, used strictly for identity verification and ballot integrity (Sensitive Personal Information). This is securely separated from the ballot choices.
+    </string>
+
+    <!-- Data Collected: 3. Authentication/Security Data - Encrypted Credentials -->
+    <string name="data_collected_3b_credentials">
+        <b>\u2022 Encrypted Credentials:</b> Hashed and salted password/credentials stored via Firebase Authentication.
+    </string>
+
+    <!-- Data Collected: 4. Transaction Data (Ballot/Security) -->
+    <string name="data_collected_4">
+        <b>4. Transaction Data (Ballot/Security):</b> Vote selections, Vote ID (Reference Code/Hash), and Digital Signature (Full Hash) for post-election verification. Ballot selections are anonymized from Identity Data immediately after the Digital Signature and Validation (DSA) process.
+    </string>
+
+    <!-- Data Collected: 5. Technical Data/Usage Data -->
+    <string name="data_collected_5">
+        <b>5. Technical Data/Usage Data:</b> IP address, device type, operating system, application usage logs, and network activity, collected for system maintenance and Audit Trail Monitoring.
+    </string>
+
+    <!-- Data Collected: Note for Mobile Applications -->
+    <string name="data_collected_note_mobile">
+        <b>Note for Mobile Applications:</b> UMelec may require Automated Notifications permissions (via Firebase Cloud Messaging) to send election alerts and vote confirmations.
+    </string>
+
+    <!-- Consent and Secrecy Principles: No Implied Consent -->
+    <string name="consent_no_implied">
+        \u2022 <b>No Implied Consent:</b> Consent is tied to the explicit actions required to register and vote.
+    </string>
+
+    <!-- Consent and Secrecy Principles: Ballot Secrecy -->
+    <string name="consent_ballot_secrecy">
+        \u2022 <b>Ballot Secrecy:</b> Your consent covers the collection of your vote and identity, but the system guarantees anonymity of the ballot selection by securely separating vote choices from identity data immediately after validation.
+    </string>
+
+    <!-- Data Disclosure: 1. Personal Information Processors (PIPs) Header (NEW) -->
+    <string name="disclosure_header_1">
+        <b>1. Personal Information Processors (PIPs):</b>
+    </string>
+
+    <!-- Data Disclosure: 1a. Personal Information Processors - Firebase -->
+    <string name="disclosure_pip_firebase">
+        <b>\u2022 Firebase Authentication &amp; Cloud Messaging (FCM):</b> Manages secure user credentials and handles notification delivery.
+    </string>
+
+    <!-- Data Disclosure: 1b. Personal Information Processors - Database -->
+    <string name="disclosure_pip_database">
+        <b>\u2022 Supabase (PostgreSQL) / Database Providers:</b> Stores all core application data, voter lists, and the secure, anonymized ballot tallies.
+    </string>
+
+    <!-- Data Disclosure: 2. University/COSEL Officials -->
+    <string name="disclosure_cosel_officials">
+        <b>2. University/COSEL Officials:</b> Data (Name, Student ID, Voting Status, Audit Trail records) is disclosed to authorized Leaders and Advisers for Voter Management, Election Monitoring, Election Approval, and Results Verification.
+    </string>
+
+    <!-- Data Disclosure: 3. Law Enforcement/Legal -->
+    <string name="disclosure_law_enforcement">
+        <b>3. Law Enforcement/Legal:</b> When required by subpoena or official UMak directive.
+    </string>
+
+    <!-- Data Disclosure: 4. Retention Period Header (NEW) -->
+    <string name="retention_header_1">
+        <b>1. Retention Period:</b>
+    </string>
+
+    <!-- Data Disclosure: 4a. Account Data Retention -->
+    <string name="retention_account_data">
+        <b>\u2022 Account Data (Voter/Leader/Adviser):</b> Retained only for the duration of the project deployment period and the subsequent [Specify Contract/Project Duration, e.g., 1-year] period, or as mandated by COSEL for election record keeping.
+    </string>
+
+    <!-- Data Disclosure: 4b. Ballot/Audit Data Retention -->
+    <string name="retention_ballot_audit_data">
+        <b>\u2022 Ballot/Audit Data (Vote ID/Hash):</b> Retained indefinitely as part of the official Audit Trail and election record for transparency and verification purposes.
+    </string>
+
+    <!-- Data Disclosure: 5. Disposal Header (NEW) -->
+    <string name="disposal_header_2">
+        <b>2. Disposal:</b> Upon the end of the retention period, personal data will be disposed of using secure methods (e.g., secure deletion from PostgreSQL/Supabase). Data forming the essential Audit Trail will be archived securely as required by COSEL/University policy.
+    </string>
+
+    <!-- Security Measures: 1. Encryption -->
+    <string name="security_encryption">
+        \u2022 <b>Encryption:</b> Passwords are hashed and salted via Firebase Authentication. Sensitive data is encrypted both at rest (in Supabase/PostgreSQL) and in transit (using HTTPS/SSL).
+    </string>
+
+    <!-- Security Measures: 2. Ballot Security -->
+    <string name="security_ballot_security">
+        \u2022 <b>Ballot Security:</b> The use of Digital Signature and Validation (DSA) ensures ballot integrity and the separation of voter identity from vote choice in the final tally.
+    </string>
+
+    <!-- Security Measures: 3. Monitoring -->
+    <string name="security_monitoring">
+        \u2022 <b>Monitoring:</b> Continuous Audit Trail Monitoring is implemented for the Adviser/COSEL to detect and respond to suspicious activity.
+    </string>
+
+    <!-- Personal Data Breach Notification -->
+    <string name="breach_notification">
+        <b>Personal Data Breach Notification:</b> In the event of a personal data breach, we shall notify the National Privacy Commission and the affected Data Subjects within seventy-two (72) hours upon knowledge of, or when there is reasonable belief, that a breach requiring notification has occurred.
+    </string>
 </resources>

@@ -193,7 +193,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="• Must be at least 8 characters"
-                android:textColor="#8C8CA1"
+                android:textColor="#5C5C77"
                 android:fontFamily="@font/poppins_regular"
                 android:textSize="14sp" />
             <TextView
@@ -201,7 +201,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="• Mixed case"
-                android:textColor="#8C8CA1"
+                android:textColor="#5C5C77"
                 android:fontFamily="@font/poppins_regular"
                 android:textSize="14sp" />
             <TextView
@@ -209,7 +209,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="• Must contain a special character"
-                android:textColor="#8C8CA1"
+                android:textColor="#5C5C77"
                 android:fontFamily="@font/poppins_regular"
                 android:textSize="14sp" />
             <TextView
@@ -217,7 +217,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="• Must contain a number"
-                android:textColor="#8C8CA1"
+                android:textColor="#5C5C77"
                 android:fontFamily="@font/poppins_regular"
                 android:textSize="14sp" />
         </LinearLayout>

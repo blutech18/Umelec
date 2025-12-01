@@ -169,7 +169,7 @@
                     android:id="@+id/reqStudentID"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Field is required"
+                    android:text="• Field is required"
                     android:textColor="#8C8CA1"
                     android:textSize="14sp"
                     android:fontFamily="@font/poppins_regular" />
@@ -204,7 +204,7 @@
                     android:id="@+id/reqFirstname"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Field is required"
+                    android:text="• Field is required"
                     android:textColor="#8C8CA1"
                     android:textSize="14sp"
                     android:fontFamily="@font/poppins_regular"/>
@@ -239,7 +239,7 @@
                     android:id="@+id/reqLastname"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Field is required"
+                    android:text="• Field is required"
                     android:textColor="#8C8CA1"
                     android:textSize="14sp"
                     android:fontFamily="@font/poppins_regular"/>
@@ -313,7 +313,7 @@
                     android:id="@+id/reqYear"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Field is required"
+                    android:text="• Field is required"
                     android:textColor="#8C8CA1"
                     android:textSize="14sp"
                     android:fontFamily="@font/poppins_regular"/>
@@ -350,7 +350,7 @@
                     android:id="@+id/reqCollege"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Field is required"
+                    android:text="• Field is required"
                     android:textColor="#8C8CA1"
                     android:textSize="14sp"
                     android:fontFamily="@font/poppins_regular"/>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gradient_bg">
 
-    <!-- App Logo in the Center -->
     <ImageView
         android:id="@+id/appLogo"
         android:layout_width="350dp"
@@ -12,15 +12,25 @@
         android:src="@mipmap/ic_launcher_foreground"
         android:layout_centerInParent="true" />
 
-    <!-- Loading Progress at the Bottom -->
     <ProgressBar
         android:id="@+id/loadingSpinner"
         android:layout_width="60dp"
         android:layout_height="60dp"
-        android:layout_alignParentBottom="true"
+        android:layout_below="@id/appLogo"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="10dp"
         android:indeterminate="true"
         android:indeterminateTint="@android:color/white" />
+
+    <TextView
+        android:id="@+id/progressPercent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/loadingSpinner"
+        android:layout_centerHorizontal="true"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:text="0%"
+        android:fontFamily="@font/montserrat_semi_bold"/>
 
 </RelativeLayout>

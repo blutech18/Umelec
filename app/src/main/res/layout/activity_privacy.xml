@@ -68,7 +68,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:backgroundTint="#FAFCFE">
 
         <LinearLayout
             android:id="@+id/registerContainer"
@@ -88,210 +89,1190 @@
                     android:id="@+id/tvTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="UMelec Privacy Policy"
+                    android:text="UMelec Privacy Policy (UMak COSEL Project)"
                     android:textSize="20sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/montserrat_semi_bold"
                     android:layout_marginBottom="20dp"/>
 
-                <!-- 1. Introduction -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="1. Introduction and Scope"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="UMelec (&quot;We,&quot; &quot;Us,&quot; or &quot;Our&quot;) is committed to protecting your privacy. This Privacy Policy explains how We collect, use, disclose, and safeguard your information when You use the UMelec System. By using the System, You consent to the data practices described in this policy. This policy applies to all users of the System, including Student Voters, Leaders, and Advisers."
+                    android:text="Effective Date: November 25, 2025"
                     android:textSize="12sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="4dp"/>
 
-                <!-- 2. Information We Collect -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="2. Information We Collect"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Personal Information: We collect information that You provide during registration, including your UMak email address, Student ID, first name, last name, gender, year level, and college. Authentication Data: We use Firebase Authentication to securely manage your password and account credentials. Voting Data: When You cast a vote, We collect your ballot selections, digital signature, and submission timestamp. System Usage Data: We may collect information about how You interact with the System, including login times and feature usage."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 3. How We Use Your Information -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="3. How We Use Your Information"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Election Administration: To facilitate and manage student elections, verify voter eligibility, and ensure one-time voting restrictions. Account Management: To create and maintain your account, authenticate your identity, and provide access to System features. Vote Processing: To securely process and record your votes, generate vote receipts, and maintain election integrity. System Security: To detect and prevent fraud, unauthorized access, and other security threats. Communication: To send You important notifications about elections, account updates, and System changes."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 4. Data Storage and Security -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="4. Data Storage and Security"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Storage: Your data is stored securely using Firebase (Firestore and Firebase Authentication), which employs industry-standard security measures. Encryption: Sensitive data, including passwords and digital signatures, are encrypted using secure protocols. Access Control: Access to your personal information is restricted to authorized System administrators and is protected by authentication mechanisms. Vote Anonymity: Your individual vote selections are kept confidential and are not linked to your personal identity in election results. Audit Trails: We maintain secure audit logs for system integrity and transparency purposes."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 5. Data Sharing and Disclosure -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="5. Data Sharing and Disclosure"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="We do not sell, trade, or rent your personal information to third parties. We may disclose your information only in the following circumstances: To authorized UMak COSEL administrators for election oversight and verification purposes. To comply with legal obligations, court orders, or government requests. To protect the rights, property, or safety of the System, its users, or others. Aggregate, anonymized data may be used for statistical analysis and reporting, but this will not identify individual users."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 6. Your Rights -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="6. Your Rights and Choices"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Access: You have the right to access the personal information We hold about You. Correction: You may request corrections to inaccurate or incomplete information. Deletion: You may request deletion of your account and associated data, subject to legal and operational requirements. Vote Secrecy: Once a vote is submitted, it cannot be modified or deleted to maintain election integrity. Data Portability: You may request a copy of your personal data in a portable format."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 7. Data Retention -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="7. Data Retention"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, comply with legal obligations, and maintain election records for audit and verification purposes. Vote records are retained permanently to ensure election integrity and transparency, but are stored in an anonymized format that does not reveal individual voter identities."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 8. Children's Privacy -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="8. Children's Privacy"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="The System is designed for use by currently enrolled University of Makati students. We do not knowingly collect personal information from individuals under the age of 18 who are not enrolled students. If You believe We have inadvertently collected such information, please contact Us immediately."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 9. Changes to This Policy -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="9. Changes to This Privacy Policy"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="We reserve the right to update this Privacy Policy at any time. Material changes will be communicated to You through the System or via email. Your continued use of the System after such changes constitutes acceptance of the updated policy. We encourage You to review this policy periodically."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 10. Contact Information -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="10. Contact Information"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="If You have questions, concerns, or requests regarding this Privacy Policy or Our data practices, please contact the UMelec Project Team at: jalbaladejo.a12345573@umak.edu.ph."
+                    android:text="@string/privacy_policy_intro_p1"
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
                     android:layout_marginTop="4dp"
-                    android:layout_marginBottom="20dp"/>
+                    android:layout_marginBottom="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/privacy_policy_intro_p2"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_marginStart="10dp"/>
+
+
+                <!-- 1. Acceptance -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="I. Identity of the Personal Information Controller (PIC) and Contact Details"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+
+
+                <!-- table -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <!-- Column 1: Information (Fixed Width) -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Information"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="start"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <!-- Divider 1 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 2: Details (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Details"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 2 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 3: Purpose (NEW - Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Source"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 3 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 4: Source (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Support"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+
+                    <!-- End Divider -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+                <!-- table -->
+                <!-- table -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <!-- Column 1: Information (Fixed Width) -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Personal Information Controller (PIC) / Organization"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="start"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <!-- Divider 1 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 2: Details (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="UMelec Project Team (Group 9) &amp; University of Makati COSEL (End-User)"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 2 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 3: Purpose (NEW - Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 3 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 4: Source (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="end"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+
+                    <!-- End Divider -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+                <!-- table -->
+                <!-- table -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <!-- Column 1: Information (Fixed Width) -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Business Address (Academic)"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="start"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <!-- Divider 1 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 2: Details (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="University of Makati (for project oversight)"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 2 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 3: Purpose (NEW - Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 3 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 4: Source (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="end"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+
+                    <!-- End Divider -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+                <!-- table -->
+                <!-- table -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <!-- Column 1: Information (Fixed Width) -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Contact Number / Official Email"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="start"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <!-- Divider 1 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 2: Details (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="09300095784 / jalbaladejo.a12345573@umak.edu.ph"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 2 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 3: Purpose (NEW - Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 3 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 4: Source (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="end"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+
+                    <!-- End Divider -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+                <!-- table -->
+                <!-- table -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <!-- Column 1: Information (Fixed Width) -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Data Protection Officer (DPO)"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="start"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <!-- Divider 1 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 2: Details (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Name: Jazzelle Grace Albaladejo (Project Leader)
+Contact Details: jalbaladejo.a12345573@umak.edu.ph"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 2 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 3: Purpose (NEW - Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp"/>
+
+                    <!-- Divider 3 -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <!-- Column 4: Source (Weighted) -->
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:gravity="end"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+
+                    <!-- End Divider -->
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+                <!-- table -->
+
+                <!-- 2. User Accounts -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="II. Personal Data Collected"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="We collect Personal Data that is adequate, relevant, suitable, necessary, and not excessive in relation to our declared purpose of managing secure student elections.
+We collect the following categories of data when you use the UMelec Application:"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_1"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_2"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_3"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_3a_digital_signature"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_3b_credentials"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_4"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_5"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/data_collected_note_mobile"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+
+                <!-- 3. Voting -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="III. Purposes and Legal Basis for Processing"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="The processing of personal data is for the declared, specified, and legitimate purpose of modernizing and securing the student election process at UMak."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <!-- table -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Purpose of Processing"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Description / Scope of Processing"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingHorizontal="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Legal Basis (DPA Section)"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Voter Eligibility and Authentication"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Voter Eligibility and Authentication to verify your identity as an eligible UMak student, secure your login via UMak Gmail/Student ID, and manage your account using Firebase Authentication."
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Contractual Obligation (Sec. 21(b))"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Secure Digital Voting and DSA"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="To facilitate the casting of the vote, capture the Digital Signature for identity verification, and generate the Vote ID/Hash (Vote Receipt) for audit trail."
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Legal Obligation / Public Safety (Sec. 21(c,e)) - Ensuring election integrity and compliance."
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Audit Trail and Transparency"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="To monitor all system activities (login, vote submission, admin actions) in the Audit Trail Monitoring and generate Automated Reports for COSEL/Adviser oversight."
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Legitimate Interest (Sec. 21(g))"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="#FFFFFF">
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                    <TextView
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:text="Service Provision / Notifications"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_bold"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="To provide the core functions (Candidate Profiles, Monitoring, Results Announcement) and send Automated Notifications (election schedules, vote confirmations via FCM)."
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingHorizontal="4dp"/>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Legitimate Interest (Sec. 21(g))"
+                        android:textSize="12sp"
+                        android:textColor="#000000"
+                        android:fontFamily="@font/poppins_regular"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="4dp"/>
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:background="#D0D0D0"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#D0D0D0"/>
+
+                <!-- 4. Acceptable Use -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IV. Collection, Consent, and Data Subject Rights"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="A. Data Subject Rights (Rule VIII)"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="As a Data Subject, you are entitled to exercise the rights outlined in the previous policy, including the Right to be Informed, Right to Object (to non-mandated processing), Right to Access, Right to Rectification/Correction, Right to Erasure or Blocking, Right to Data Portability, and Right to Damages."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="B. Mechanism for Obtaining Valid Consent"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="By completing the registration process and submitting your Digital Signature (a clear assenting action), you provide informed and specific consent for the processing of your Identity Data for the purpose of verifying eligibility and securing your ballot via DSA."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/consent_no_implied"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/consent_ballot_secrecy"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="C. Withdrawal of Consent"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Consent for the use of the platform is tied to the election process. While you may withdraw consent for data retention post-election, we are obliged to implement procedures to suspend, withdraw, or order the blocking, removal, or destruction of your personal data from our systems, except for data necessary to maintain the integrity of the official Audit Trail and for compliance with University/COSEL regulations."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"/>
+
+                <!-- 5. Intellectual Property -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="V. Data Sharing, Recipients, and Outsourcing"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="We may disclose your personal data (excluding anonymized vote choices) to the following recipients:"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disclosure_header_1"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disclosure_pip_firebase"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="20dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disclosure_pip_database"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="20dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disclosure_cosel_officials"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disclosure_law_enforcement"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="B. Data Sharing Agreements"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Data sharing between the Project Team and UMak COSEL (as the end-user) is based on the necessity for election management and is covered by the academic project agreement, which dictates that COSEL is the authorized custodian of the data after project turnover."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"/>
+
+                <!-- 6. Termination -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VI. Data Retention and Disposal"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="We adhere to the principle that Personal Data shall not be retained longer than necessary."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/retention_header_1"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/retention_account_data"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="20dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/retention_ballot_audit_data"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="20dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disposal_header_2"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginStart="10dp"/>
+
+                <!-- 7.  -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VII. Security Measures and Breach Notification"
+                    android:textSize="16sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="We are committed to implementing reasonable and appropriate organizational, physical, and technical security measures."
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Technical measures focus on security and ballot integrity:"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/security_encryption"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/security_ballot_security"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/security_monitoring"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/breach_notification"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="10dp"/>
 
             </LinearLayout>
-
-
-
         </LinearLayout>
-
-
     </androidx.core.widget.NestedScrollView>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

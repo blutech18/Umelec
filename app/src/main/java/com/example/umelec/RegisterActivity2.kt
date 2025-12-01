@@ -40,7 +40,7 @@ class RegisterActivity2 : AppCompatActivity() {
     private val COLOR_HINT_GRAY = Color.parseColor("#5C5C77")
 
     // Dropdown options (Defined at class level for use in helper functions)
-    private val genderLevels = listOf("Female", "Male", "Prefer not to say") // 🚨 NEW GENDER OPTIONS
+    private val genderLevels = listOf("Female", "Male") // 🚨 NEW GENDER OPTIONS
     private val colleges = listOf(
         "College of Liberal Arts and Sciences (CLAS)",
         "College of Innovative Teacher Education (CITE)",
@@ -158,10 +158,8 @@ class RegisterActivity2 : AppCompatActivity() {
             // Clear the error/activation state on the Student ID field only
             clearValidationState(layoutStudentID)
         }
-
         // Trigger Red border ONLY on the Student ID field
-        //layoutStudentID.error = " "
-
+        layoutStudentID.error = " "
         // Clear error state on other fields just in case
         layoutFirstname.error = null
         layoutLastname.error = null
@@ -204,9 +202,9 @@ class RegisterActivity2 : AppCompatActivity() {
                                     android.util.Log.e("RegisterActivity2", "Failed to clean up incomplete registration: $error")
                                     // Still finish even if cleanup fails
                                     FirebaseAuthHelper.clearTemporaryCredentials(this)
-                                    finish()
-                                    @Suppress("DEPRECATION")
-                                    overridePendingTransition(0, 0)
+            finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                                 }
                             )
                         } else {
@@ -362,6 +360,8 @@ class RegisterActivity2 : AppCompatActivity() {
 
             if (hasFocus) {
                 studentIDRequirementsContainer.visibility = View.VISIBLE
+                layoutStudentID.isActivated = false
+                layoutStudentID.error = null
                 if (isValid) {
                     reqStudentID.setTextColor(COLOR_SUCCESS_GREEN)
                     layoutStudentID.boxStrokeColor = COLOR_SUCCESS_GREEN
@@ -375,15 +375,15 @@ class RegisterActivity2 : AppCompatActivity() {
                     reqStudentID.setTextColor(COLOR_ERROR_RED)
                     reqStudentID.text = "• Field is required"
                     //layoutStudentID.error = " " // Show red border
-                    layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     studentIDRequirementsContainer.visibility = View.GONE
-                    layoutStudentID.boxStrokeColor = COLOR_SUCCESS_GREEN
-                    layoutStudentID.isActivated = true
+                    //layoutStudentID.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    //layoutStudentID.isActivated = true
                 } else {
                     studentIDRequirementsContainer.visibility = View.VISIBLE
                     //layoutStudentID.error = " " // Show red border
-                    layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -415,7 +415,7 @@ class RegisterActivity2 : AppCompatActivity() {
                     text.length > 9 || (text.isNotEmpty() && !VALID_ID_PATTERN.matches(text) && text.length == 9) -> {
                         reqStudentID.setTextColor(COLOR_ERROR_RED)
                         reqStudentID.text = "• Invalid Student ID (Format: K12345678)"
-                        layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutStudentID.boxStrokeColor = COLOR_ERROR_RED
                         studentIDRequirementsContainer.visibility = View.VISIBLE
                     }
 
@@ -423,9 +423,9 @@ class RegisterActivity2 : AppCompatActivity() {
                     VALID_ID_PATTERN.matches(text) -> {
                         reqStudentID.setTextColor(COLOR_SUCCESS_GREEN)
                         reqStudentID.text = "✓ Valid Student ID"
-                        layoutStudentID.boxStrokeColor = COLOR_SUCCESS_GREEN
+                        //layoutStudentID.boxStrokeColor = COLOR_SUCCESS_GREEN
                         studentIDRequirementsContainer.visibility = View.VISIBLE
-                        if (inputStudentID.isFocused) layoutStudentID.isActivated = true
+                        //if (inputStudentID.isFocused) layoutStudentID.isActivated = true
                     }
 
                     // 🩶 Still typing, following the pattern (or empty)
@@ -468,15 +468,15 @@ class RegisterActivity2 : AppCompatActivity() {
                     reqFirstname.setTextColor(COLOR_ERROR_RED)
                     reqFirstname.text = "• Field is required"
                     //layoutFirstname.error = " "
-                    layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     firstnameRequirementsContainer.visibility = View.GONE
-                    layoutFirstname.boxStrokeColor = COLOR_SUCCESS_GREEN
-                    layoutFirstname.isActivated = true
+                    //layoutFirstname.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    //layoutFirstname.isActivated = true
                 } else {
                     firstnameRequirementsContainer.visibility = View.VISIBLE
                     //layoutFirstname.error = " "
-                    layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -512,7 +512,7 @@ class RegisterActivity2 : AppCompatActivity() {
                     !VALID_NAME_PATTERN.matches(text) && text.isNotEmpty() -> {
                         reqFirstname.setTextColor(COLOR_ERROR_RED)
                         reqFirstname.text = "• Firstname cannot contain numbers or symbols."
-                        layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutFirstname.boxStrokeColor = COLOR_ERROR_RED
                     }
 
                     // 🚫 Too short
@@ -530,6 +530,8 @@ class RegisterActivity2 : AppCompatActivity() {
                         //layoutFirstname.boxStrokeColor = COLOR_SUCCESS_GREEN
                         //if (inputFirstname.isFocused) layoutFirstname.isActivated = true
                         //firstnameRequirementsContainer.visibility = View.VISIBLE
+                        reqFirstname.setTextColor(COLOR_HINT_GRAY)
+                        reqFirstname.text = "• Field is required."
                         layoutFirstname.boxStrokeColor = COLOR_PRIMARY_BLUE
                     }
 
@@ -572,7 +574,7 @@ class RegisterActivity2 : AppCompatActivity() {
                     reqLastname.setTextColor(COLOR_ERROR_RED)
                     reqLastname.text = "• Field is required"
                     //layoutLastname.error = " "
-                    layoutLastname.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutLastname.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     lastnameRequirementsContainer.visibility = View.GONE
                     layoutLastname.boxStrokeColor = COLOR_SUCCESS_GREEN
@@ -580,7 +582,7 @@ class RegisterActivity2 : AppCompatActivity() {
                 } else {
                     lastnameRequirementsContainer.visibility = View.VISIBLE
                     //layoutLastname.error = " "
-                    layoutLastname.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutLastname.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -616,7 +618,7 @@ class RegisterActivity2 : AppCompatActivity() {
                     !VALID_NAME_PATTERN.matches(text) && text.isNotEmpty() -> {
                         reqLastname.setTextColor(COLOR_ERROR_RED)
                         reqLastname.text = "• Lastname cannot contain numbers or symbols."
-                        layoutLastname.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutLastname.boxStrokeColor = COLOR_ERROR_RED
                     }
 
                     // 🚫 Too short
@@ -634,6 +636,8 @@ class RegisterActivity2 : AppCompatActivity() {
                         //layoutLastname.boxStrokeColor = COLOR_SUCCESS_GREEN
                         //if (inputLastname.isFocused) layoutLastname.isActivated = true
                         //lastnameRequirementsContainer.visibility = View.VISIBLE
+                        reqLastname.setTextColor(COLOR_HINT_GRAY)
+                        reqLastname.text = "• Field is required."
                         layoutLastname.boxStrokeColor = COLOR_PRIMARY_BLUE
                     }
 
@@ -677,15 +681,15 @@ class RegisterActivity2 : AppCompatActivity() {
                     reqGender.setTextColor(COLOR_ERROR_RED)
                     reqGender.text = "• Field is required"
                     //layoutGender.error = " "
-                    layoutGender.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutGender.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     genderRequirementsContainer.visibility = View.GONE
-                    layoutGender.boxStrokeColor = COLOR_SUCCESS_GREEN
-                    layoutGender.isActivated = true
+                    //layoutGender.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    //layoutGender.isActivated = true
                 } else {
                     genderRequirementsContainer.visibility = View.VISIBLE
                     //layoutGender.error = " "
-                    layoutGender.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutGender.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -712,12 +716,12 @@ class RegisterActivity2 : AppCompatActivity() {
                     //reqGender.text = "✓ Gender selected"
                     //layoutGender.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutGender.boxStrokeColor = COLOR_PRIMARY_BLUE
-                    if (inputGender.isFocused) layoutGender.isActivated = true
+                    //if (inputGender.isFocused) layoutGender.isActivated = true
                     genderRequirementsContainer.visibility = View.VISIBLE
                 } else {
                     reqGender.setTextColor(COLOR_ERROR_RED)
                     reqGender.text = "• Invalid selection. Please choose from the options."
-                    layoutGender.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutGender.boxStrokeColor = COLOR_ERROR_RED
                     genderRequirementsContainer.visibility = View.VISIBLE
                 }
                 updateConfirmButtonState()
@@ -753,15 +757,15 @@ class RegisterActivity2 : AppCompatActivity() {
                     reqYear.setTextColor(COLOR_ERROR_RED)
                     reqYear.text = "• Field is required"
                     //layoutYear.error = " "
-                    layoutYear.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutYear.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     yearRequirementsContainer.visibility = View.GONE
-                    layoutYear.boxStrokeColor = COLOR_SUCCESS_GREEN
-                    layoutYear.isActivated = true
+                    //layoutYear.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    //layoutYear.isActivated = true
                 } else {
                     yearRequirementsContainer.visibility = View.VISIBLE
                     //layoutYear.error = " "
-                    layoutYear.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutYear.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -788,12 +792,12 @@ class RegisterActivity2 : AppCompatActivity() {
                     //reqYear.text = "✓ Year level selected"
                     //layoutYear.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutYear.boxStrokeColor = COLOR_PRIMARY_BLUE
-                    if (inputYear.isFocused) layoutYear.isActivated = true
+                    //if (inputYear.isFocused) layoutYear.isActivated = true
                     yearRequirementsContainer.visibility = View.VISIBLE
                 } else {
                     reqYear.setTextColor(COLOR_ERROR_RED)
                     reqYear.text = "• Invalid selection. Please choose from the options."
-                    layoutYear.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutYear.boxStrokeColor = COLOR_ERROR_RED
                     yearRequirementsContainer.visibility = View.VISIBLE
                 }
                 updateConfirmButtonState()
@@ -827,15 +831,15 @@ class RegisterActivity2 : AppCompatActivity() {
                     reqCollege.setTextColor(COLOR_ERROR_RED)
                     reqCollege.text = "• Field is required"
                     //layoutCollege.error = " "
-                    layoutCollege.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutCollege.boxStrokeColor = COLOR_ERROR_RED
                 } else if (isValid) {
                     collegeRequirementsContainer.visibility = View.GONE
-                    layoutCollege.boxStrokeColor = COLOR_SUCCESS_GREEN
-                    layoutCollege.isActivated = true
+                    //layoutCollege.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    //layoutCollege.isActivated = true
                 } else {
                     collegeRequirementsContainer.visibility = View.VISIBLE
                     //layoutCollege.error = " "
-                    layoutCollege.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutCollege.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
             updateConfirmButtonState()
@@ -862,12 +866,12 @@ class RegisterActivity2 : AppCompatActivity() {
                     //reqCollege.text = "✓ College selected"
                     //layoutCollege.boxStrokeColor = COLOR_SUCCESS_GREEN
                     layoutCollege.boxStrokeColor = COLOR_PRIMARY_BLUE
-                    if (inputCollege.isFocused) layoutCollege.isActivated = true
+                    //if (inputCollege.isFocused) layoutCollege.isActivated = true
                     collegeRequirementsContainer.visibility = View.VISIBLE
                 } else {
                     reqCollege.setTextColor(COLOR_ERROR_RED)
                     reqCollege.text = "• Invalid selection. Please choose from the options."
-                    layoutCollege.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutCollege.boxStrokeColor = COLOR_ERROR_RED
                     collegeRequirementsContainer.visibility = View.VISIBLE
                 }
                 updateConfirmButtonState()

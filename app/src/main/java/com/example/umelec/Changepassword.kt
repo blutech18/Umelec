@@ -119,7 +119,7 @@ class Changepassword : AppCompatActivity() {
     /**
      * Custom alert dialog for password change error (e.g., old password mismatch).
      */
-    private fun showChangeErrorDialog() {
+    private fun showChangeErrorDialog(errorMessage: String = "Old password incorrect. Please try again.") {
         val layoutInflater = LayoutInflater.from(this)
         val dialogView = layoutInflater.inflate(R.layout.custom_toast_error, null)
 
@@ -131,9 +131,9 @@ class Changepassword : AppCompatActivity() {
         dialog.window?.setGravity(Gravity.CENTER)
         dialog.setCanceledOnTouchOutside(false)
 
-        // Set custom error text
-        dialogView.findViewById<TextView>(R.id.toast_title).text = "Old password incorrect."
-        dialogView.findViewById<TextView>(R.id.toast_value).text = "Please try again."
+        // Set custom error text with the actual error message
+        dialogView.findViewById<TextView>(R.id.toast_title).text = "Password Change Failed"
+        dialogView.findViewById<TextView>(R.id.toast_value).text = errorMessage
 
         // Close button listener
         dialogView.findViewById<ImageButton>(R.id.btn_close).setOnClickListener {
@@ -145,7 +145,7 @@ class Changepassword : AppCompatActivity() {
         }
 
         // Trigger Red border via standard Material Error property for ALL three fields
-        //layoutCurrentPassword.error = " "
+        layoutCurrentPassword.error = " "
         //layoutNewPassword.error = " "
         //layoutConfirmPassword.error = " "
 
@@ -219,17 +219,43 @@ class Changepassword : AppCompatActivity() {
         btnConfirm.setOnClickListener {
             hideKeyboardAndClearFocus()
 
-            // 1. Get the current password input
-            val currentPasswordInput = inputCurrentPassword.text.toString()
+            // 1. Get input values
+            val currentPassword = inputCurrentPassword.text.toString()
+            val newPassword = inputNewPassword.text.toString()
+            val confirmPassword = inputConfirmPassword.text.toString()
 
-            // 2. SIMULATED BACKEND CHECK: Check if the current password is correct
-            // REMEMBER TO REPLACE THIS WITH A REAL API CALL LATER.
-            if (currentPasswordInput != FAKE_CURRENT_PASSWORD_FOR_TEST) {
-                showChangeErrorDialog() // Show error dialog
-            } else {
-                // 3. SUCCESS PATH
-                showChangeSuccessDialog()
+            // 2. Validate that new password matches confirm password
+            if (newPassword != confirmPassword) {
+                showChangeErrorDialog("New passwords do not match. Please try again.")
+                return@setOnClickListener
             }
+
+            // 3. Check if user is logged in
+            val currentUser = FirebaseAuthHelper.getCurrentUser()
+            if (currentUser == null) {
+                showChangeErrorDialog("You are not logged in. Please log in and try again.")
+                return@setOnClickListener
+            }
+
+            // 4. Disable button during password change
+            btnConfirm.isEnabled = false
+
+            // 5. Change password using Firebase Auth
+            FirebaseAuthHelper.changePassword(
+                currentPassword = currentPassword,
+                newPassword = newPassword,
+                onSuccess = {
+                    // Password changed successfully
+                    showChangeSuccessDialog()
+                },
+                onFailure = { errorMessage ->
+                    // Re-enable button
+                    btnConfirm.isEnabled = true
+
+                    // Show error dialog with the actual error message
+                    showChangeErrorDialog(errorMessage)
+                }
+            )
         }
         // ------------------------------------
 
@@ -324,10 +350,11 @@ class Changepassword : AppCompatActivity() {
 
             if (password.isEmpty()) {
                 // State 1a: Empty field, focus gained: Show BOTH containers (Hint state)
-                fieldRequirementsContainer.visibility = View.VISIBLE
+                //fieldRequirementsContainer.visibility = View.VISIBLE
+                fieldRequirementsContainer.visibility = View.GONE
                 passwordRequirements.visibility = View.VISIBLE
-                reqField.setTextColor(COLOR_HINT_GRAY)
-                reqField.text = "• Field is required"
+                //reqField.setTextColor(COLOR_HINT_GRAY)
+                //reqField.text = "• Field is required"
             } else {
                 // State 2a: Filled field, focus gained: Show ONLY detailed requirements
                 fieldRequirementsContainer.visibility = View.GONE
@@ -344,7 +371,7 @@ class Changepassword : AppCompatActivity() {
                 reqField.setTextColor(COLOR_ERROR_RED)
                 reqField.text = "• Field is required"
                 //layoutNewPassword.error = " " // Show Red border
-                layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
+                //layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
                 layoutNewPassword.isActivated = false
             } else {
                 // State 2b: Filled field, focus lost: Show final validation status
@@ -357,7 +384,7 @@ class Changepassword : AppCompatActivity() {
                 } else {
                     passwordRequirements.visibility = View.VISIBLE // Keep showing errors
                     //layoutNewPassword.error = " " // Show Red border
-                    layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutNewPassword.isActivated = false
                 }
             }
@@ -381,21 +408,21 @@ class Changepassword : AppCompatActivity() {
 
             // Detailed validation logic
             var isLengthValid = password.length >= 8
-            reqLength.setTextColor(if (isLengthValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+            reqLength.setTextColor(if (isLengthValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
             reqLength.text = if (isLengthValid) "✓ Must be at least 8 characters" else "• Must be at least 8 characters"
 
             val hasUpper = password.any { it.isUpperCase() }
             val hasLower = password.any { it.isLowerCase() }
             var isMixedcaseValid = hasUpper && hasLower
-            reqMixedcase.setTextColor(if (isMixedcaseValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+            reqMixedcase.setTextColor(if (isMixedcaseValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
             reqMixedcase.text = if (isMixedcaseValid) "✓ Mixed case" else "• Mixed case"
 
             var isSpecialValid = password.any { it in specialChars }
-            reqSpecial.setTextColor(if (isSpecialValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+            reqSpecial.setTextColor(if (isSpecialValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
             reqSpecial.text = if (isSpecialValid) "✓ Must contain a special character" else "• Must contain a special character"
 
             var isNumberValid = password.any { it.isDigit() }
-            reqNumber.setTextColor(if (isNumberValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+            reqNumber.setTextColor(if (isNumberValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
             reqNumber.text = if (isNumberValid) "✓ Must contain a number" else "• Must contain a number"
 
             allPasswordValidationsPassed = isLengthValid && isMixedcaseValid && isSpecialValid && isNumberValid
@@ -405,11 +432,11 @@ class Changepassword : AppCompatActivity() {
             // Apply green/red border state while focused
             if (inputNewPassword.isFocused) {
                 if (allPasswordValidationsPassed) {
-                    layoutNewPassword.isActivated = true
+                    //layoutNewPassword.isActivated = true
                 }
                 else {
                     //layoutNewPassword.error = " " // Triggers red border
-                    layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutNewPassword.boxStrokeColor = COLOR_ERROR_RED
                 }
             }
 
@@ -436,7 +463,6 @@ class Changepassword : AppCompatActivity() {
         if (hasFocus) {
             confirmPasswordRequirements.visibility = View.VISIBLE
             clearValidationState(layoutConfirmPassword)
-            // Use the hint color for the initial state
             reqMatch.setTextColor(COLOR_HINT_GRAY)
             reqMatch.text = "• Passwords must match"
         } else {
@@ -446,20 +472,20 @@ class Changepassword : AppCompatActivity() {
                     reqMatch.setTextColor(COLOR_ERROR_RED)
                     reqMatch.text = "• Field is required"
                     //layoutConfirmPassword.error = " "
-                    layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutConfirmPassword.isActivated = false
                 }
                 isMatch -> {
                     confirmPasswordRequirements.visibility = View.GONE
                     layoutConfirmPassword.error = null
-                    layoutConfirmPassword.isActivated = true
+                    //layoutConfirmPassword.isActivated = true
                 }
                 else -> {
                     confirmPasswordRequirements.visibility = View.VISIBLE
                     reqMatch.setTextColor(COLOR_ERROR_RED)
                     reqMatch.text = "• Passwords must match"
                     //layoutConfirmPassword.error = " "
-                    layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutConfirmPassword.isActivated = false
                 }
             }
@@ -478,19 +504,19 @@ class Changepassword : AppCompatActivity() {
             clearValidationState(layoutConfirmPassword)
 
             if (confirmPassword.isEmpty()) {
-                reqMatch.visibility = View.GONE
+                reqMatch.visibility = View.VISIBLE
                 layoutConfirmPassword.isActivated = false
             } else if (isMatch) {
                 reqMatch.visibility = View.VISIBLE
                 reqMatch.setTextColor(COLOR_SUCCESS_GREEN)
                 reqMatch.text = "✓ Passwords match"
-                layoutConfirmPassword.isActivated = true
+                //layoutConfirmPassword.isActivated = true
             } else {
                 reqMatch.visibility = View.VISIBLE
                 reqMatch.setTextColor(COLOR_ERROR_RED)
                 reqMatch.text = "• Passwords must match"
                 //layoutConfirmPassword.error = " "
-                layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
+                //layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                 layoutConfirmPassword.isActivated = false
             }
 

@@ -16,7 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
-import com.github.gcacace.signaturepad.views.SignaturePad
+import com.github.gcacace.signaturepad.views.SignaturePad // Import remains for the view's original context, but we use the custom one
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,18 +40,23 @@ import android.os.Environment
 import java.io.FileInputStream
 
 // REMINDER: You MUST add the following dependency to your app/build.gradle file:
-// implementation 'com.github.gcacace:signature-pad:1.2.1'
+// implementation 'com.github.gcacace:signature-pad:1.3.1'
 
 class Castvote3 : AppCompatActivity() {
 
     // Views
     private lateinit var btnBack: ImageButton
-    private lateinit var signaturePad: SignaturePad
+    // FIX 1: Change type to the custom view
+    private lateinit var signaturePad: ConstrainedSignaturePad
     private lateinit var btnClearSignature: AppCompatButton
     private lateinit var btnSubmit: Button // This corresponds to btnNext in XML
+    // FIX 2: Add the error text view for constraint feedback
+    private lateinit var signaturePadReqText: TextView
 
     // State
     private var isSignatureDrawn: Boolean = false
+    // FIX 3: Add validation state, controlled by the custom view
+    private var isSignatureValid: Boolean = true
     private lateinit var reviewedPositions: List<String>
     private lateinit var reviewedCandidates: List<String>
     private var signatureBase64String: String? = null // To store the signature data
@@ -69,22 +74,25 @@ class Castvote3 : AppCompatActivity() {
 
         // 1. Initialize Views
         btnBack = findViewById(R.id.btnBack)
+        // FIX 4: Initialize as the custom view type
         signaturePad = findViewById(R.id.signaturePad)
         btnClearSignature = findViewById(R.id.btnClearSignature)
         btnSubmit = findViewById(R.id.btnSubmit) // Using the ID from XML: btnNext
+        // FIX 5: Initialize the error text view
+        signaturePadReqText = findViewById(R.id.SignaturePadReqText)
 
         // 2. Retrieve Data from Castvote2.kt
         reviewedPositions = intent.getStringArrayListExtra("positions") ?: emptyList()
         reviewedCandidates = intent.getStringArrayListExtra("candidates") ?: emptyList()
         selectionsDataBundle = intent.getBundleExtra("selectionsData")
         electionId = intent.getStringExtra("electionId")
-        
-        // Get current user ID and info
+
+        // Get current user ID and info (unchanged logic)
         val currentUser = FirebaseAuthHelper.getCurrentUser()
         currentUserId = currentUser?.uid
         currentUserEmail = currentUser?.email ?: ""
-        
-        // Get user name from Firestore
+
+        // Get user name from Firestore (unchanged logic)
         currentUserId?.let { userId: String ->
             FirebaseAuthHelper.getUserDataFromFirestore(
                 userId = userId,
@@ -100,8 +108,8 @@ class Castvote3 : AppCompatActivity() {
                 }
             )
         }
-        
-        // Get election title
+
+        // Get election title (unchanged logic)
         electionId?.let { id: String ->
             FirestoreElectionHelper.getCurrentElection(
                 onSuccess = { electionData: ElectionDetails? ->
@@ -116,6 +124,16 @@ class Castvote3 : AppCompatActivity() {
         // 3. Setup Initial State
         updateSubmitButtonState()
         btnClearSignature.isEnabled = false
+        // FIX 6: Hide constraint error text initially
+        signaturePadReqText.visibility = View.GONE
+
+        // FIX 7: Implement the listener from the custom ConstrainedSignaturePad
+        signaturePad.onBoundaryCrossedListener = { isCrossed ->
+            // Update the activity's main state based on the custom view's report
+            isSignatureValid = !isCrossed
+            signaturePadReqText.visibility = if (isCrossed) View.VISIBLE else View.GONE
+            updateSubmitButtonState()
+        }
 
         // 4. Set Listeners
         // Back Button: Goes back to Castvote2 with NO WARNING, as requested.
@@ -131,17 +149,22 @@ class Castvote3 : AppCompatActivity() {
             override fun onStartSigning() { /* Not used */ }
 
             override fun onSigned() {
-                // Signature drawn: enable clear and submit buttons
+                // Signature drawn: enable clear and set flag
                 isSignatureDrawn = true
                 btnClearSignature.isEnabled = true
+                // Validation state (isSignatureValid) is handled by the custom view's listener (FIX 7)
                 updateSubmitButtonState()
             }
 
             override fun onClear() {
                 // Signature cleared: disable clear and submit buttons, reset data
                 isSignatureDrawn = false
+                // FIX 8: Reset validation state
+                isSignatureValid = true
                 btnClearSignature.isEnabled = false
                 signatureBase64String = null
+                // FIX 9: Hide error text on clear
+                signaturePadReqText.visibility = View.GONE
                 updateSubmitButtonState()
             }
         })
@@ -153,7 +176,8 @@ class Castvote3 : AppCompatActivity() {
 
         // 7. Submit Button Logic
         btnSubmit.setOnClickListener {
-            if (isSignatureDrawn) {
+            // FIX 10: Check signature validity before proceeding
+            if (isSignatureDrawn && isSignatureValid) {
                 // 1. Capture and convert signature
                 val signatureBitmap: Bitmap = signaturePad.getSignatureBitmap()
                 val byteArrayOutputStream = ByteArrayOutputStream()
@@ -163,17 +187,20 @@ class Castvote3 : AppCompatActivity() {
 
                 // 2. Show the final confirmation dialog before submission
                 showFinalConfirmationDialog()
+            } else if (!isSignatureValid) {
+                // Show a toast and the error if validation failed
+                //Toast.makeText(this, "Please clear and re-sign inside the constraint box.", Toast.LENGTH_SHORT).show()
+                signaturePadReqText.visibility = View.VISIBLE
             }
         }
     }
 
     /**
      * Updates the enabled state of the Submit button based on required conditions.
-     * The visual appearance (color) is handled automatically by the blue_rounded_button.xml selector.
      */
     private fun updateSubmitButtonState() {
-        // Button is enabled ONLY when a signature is drawn
-        btnSubmit.isEnabled = isSignatureDrawn
+        // FIX 11: Button is enabled ONLY when a signature is drawn AND the signature is valid
+        btnSubmit.isEnabled = isSignatureDrawn && isSignatureValid
     }
 
     /**
@@ -191,9 +218,7 @@ class Castvote3 : AppCompatActivity() {
         return dialog
     }
 
-    // ----------------------------------------------------------------------
-    // --- CONFIRMATION AND SUBMISSION DIALOGS (Moved from Castvote2.kt) ---
-    // ----------------------------------------------------------------------
+    // --- REST OF THE METHODS ARE UNCHANGED (showFinalConfirmationDialog, submitVote, etc.) ---
 
     /**
      * Displays the FINAL CONFIRMATION dialog before submitting the vote.
@@ -228,7 +253,7 @@ class Castvote3 : AppCompatActivity() {
     private fun submitVote() {
         val userId = currentUserId
         val electionIdValue = electionId
-        
+
         if (userId == null || electionIdValue == null) {
             Toast.makeText(this, "Error: User or election not found", Toast.LENGTH_SHORT).show()
             return
@@ -482,7 +507,7 @@ class Castvote3 : AppCompatActivity() {
      */
     private fun showSuccessToastAndNavigate() {
         showSuccessToast("Sent Successfully", "Check your email.")
-        
+
         // Navigate after showing toast
         Handler(Looper.getMainLooper()).postDelayed({
             navigateTo(Homepage::class.java, isFinalExit = true)
@@ -531,7 +556,7 @@ class Castvote3 : AppCompatActivity() {
             }
 
             val fileName = "vote_receipt_${voteReceiptData?.voteId ?: System.currentTimeMillis()}.pdf"
-            
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Use MediaStore API for Android 10+ (API 29+)
                 savePdfToDownloadsMediaStore(file, fileName)
@@ -567,13 +592,13 @@ class Castvote3 : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                
+
                 // Clean up temporary file
                 ReceiptPdfHelper.deletePdfFile(sourceFile.absolutePath)
-                
+
                 // Show success toast
                 showSuccessToast("PDF Downloaded Successfully", "Your vote receipt has been saved to Downloads folder")
-                
+
                 // Navigate after a short delay
                 Handler(Looper.getMainLooper()).postDelayed({
                     navigateTo(Homepage::class.java, isFinalExit = true)
@@ -613,14 +638,14 @@ class Castvote3 : AppCompatActivity() {
             }
 
             val downloadId = downloadManager.enqueue(request)
-            
+
             // Clean up temporary file after a delay (DownloadManager copies it)
             Handler(Looper.getMainLooper()).postDelayed({
                 ReceiptPdfHelper.deletePdfFile(sourceFile.absolutePath)
-                
+
                 // Show success toast
                 showSuccessToast("PDF Downloaded Successfully", "Your vote receipt has been saved to Downloads folder")
-                
+
                 // Navigate after showing toast
                 Handler(Looper.getMainLooper()).postDelayed({
                     navigateTo(Homepage::class.java, isFinalExit = true)
@@ -662,7 +687,7 @@ class Castvote3 : AppCompatActivity() {
             onSuccess = { filePath ->
                 // Read PDF as byte array
                 val pdfBytes = ReceiptPdfHelper.getPdfAsByteArray(filePath)
-                
+
                 if (pdfBytes == null) {
                     Toast.makeText(this, "Error: Failed to read PDF file", Toast.LENGTH_SHORT).show()
                     ReceiptPdfHelper.deletePdfFile(filePath)
@@ -672,7 +697,7 @@ class Castvote3 : AppCompatActivity() {
 
                 // Convert PDF to base64 for email
                 val pdfBase64 = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
-                
+
                 // Prepare vote details for email
                 // Note: Selections are NOT included to protect voter privacy
                 val voteDetails = mutableMapOf<String, Any>(

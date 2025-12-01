@@ -104,7 +104,9 @@ class RegisterActivity : AppCompatActivity() {
         dialogView.findViewById<TextView>(R.id.toast_value).text = "Email address already in use or registration failed."
 
         // Trigger Red border on the Email field
-        //layoutEmail.error = null
+        layoutEmail.error = " "
+        //layoutEmail.isErrorEnabled = true
+        //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
         //layoutPassword.error = null
         //layoutConfirmPassword.error = null
 
@@ -329,9 +331,12 @@ class RegisterActivity : AppCompatActivity() {
 
             if (hasFocus) {
                 EmailRequirements.visibility = View.VISIBLE
+                layoutEmail.boxStrokeColor = COLOR_PRIMARY_BLUE
                 reqEmail.setTextColor(COLOR_HINT_GRAY)
                 reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
                 clearValidationState(layoutEmail)
+                layoutEmail.isActivated = false
+                layoutEmail.error = null
             } else {
                 when {
                     email.isEmpty() -> {
@@ -339,7 +344,7 @@ class RegisterActivity : AppCompatActivity() {
                         reqEmail.setTextColor(COLOR_ERROR_RED)
                         reqEmail.text = "• Field is required"
                         //layoutEmail.error = " "
-                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                         layoutEmail.isActivated = false
                     }
                     isValid -> {
@@ -352,7 +357,7 @@ class RegisterActivity : AppCompatActivity() {
                         reqEmail.setTextColor(COLOR_ERROR_RED)
                         reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
                         //layoutEmail.error = " "
-                        layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                         layoutEmail.isActivated = false
                     }
                 }
@@ -374,14 +379,14 @@ class RegisterActivity : AppCompatActivity() {
                 } else if (isValid) {
                     reqEmail.setTextColor(COLOR_SUCCESS_GREEN)
                     reqEmail.text = "✓ Please use your UMak email (@umak.edu.ph)"
-                    if (inputEmail.isFocused) { layoutEmail.isActivated = true }
-                    layoutEmail.isActivated = true
-                    layoutEmail.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    //if (inputEmail.isFocused) { layoutEmail.isActivated = true }
+                    //layoutEmail.isActivated = true
+                    //layoutEmail.boxStrokeColor = COLOR_SUCCESS_GREEN
                 } else {
                     reqEmail.setTextColor(COLOR_ERROR_RED)
                     reqEmail.text = "• Please use your UMak email (@umak.edu.ph)"
                     //layoutEmail.error = " "
-                    layoutEmail.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutEmail.boxStrokeColor = COLOR_ERROR_RED
                 }
 
                 updateNextButtonState()
@@ -407,10 +412,11 @@ class RegisterActivity : AppCompatActivity() {
 
                 if (password.isEmpty()) {
                     // State 1a: Empty field, focus gained: Show BOTH containers (Hint state)
-                    fieldRequirements.visibility = View.VISIBLE
+                    //fieldRequirements.visibility = View.VISIBLE
+                    fieldRequirements.visibility = View.GONE
                     passwordRequirements.visibility = View.VISIBLE
-                    reqField.setTextColor(COLOR_HINT_GRAY)
-                    reqField.text = "• Field is required"
+                    //reqField.setTextColor(COLOR_HINT_GRAY)
+                    //reqField.text = "• Field is required"
                 } else {
                     // State 2a: Filled field, focus gained: Show ONLY detailed requirements
                     fieldRequirements.visibility = View.GONE
@@ -427,7 +433,7 @@ class RegisterActivity : AppCompatActivity() {
                     reqField.setTextColor(COLOR_ERROR_RED)
                     reqField.text = "• Field is required"
                     //layoutPassword.error = " " // Show Red border
-                    layoutPassword.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutPassword.isActivated = false
                 } else {
                     // State 2b: Filled field, focus lost: Show final validation status
@@ -440,7 +446,7 @@ class RegisterActivity : AppCompatActivity() {
                     } else {
                         passwordRequirements.visibility = View.VISIBLE // Keep showing errors
                         //layoutPassword.error = " "
-                        layoutPassword.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutPassword.boxStrokeColor = COLOR_ERROR_RED
                         layoutPassword.isActivated = false
                     }
                 }
@@ -461,21 +467,21 @@ class RegisterActivity : AppCompatActivity() {
 
                 // Detailed validation logic
                 var isLengthValid = password.length >= 8
-                reqLength.setTextColor(if (isLengthValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+                reqLength.setTextColor(if (isLengthValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
                 reqLength.text = if (isLengthValid) "✓ Must be at least 8 characters" else "• Must be at least 8 characters"
 
                 val hasUpper = password.any { it.isUpperCase() }
                 val hasLower = password.any { it.isLowerCase() }
                 var isMixedcaseValid = hasUpper && hasLower
-                reqMixedcase.setTextColor(if (isMixedcaseValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+                reqMixedcase.setTextColor(if (isMixedcaseValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
                 reqMixedcase.text = if (isMixedcaseValid) "✓ Mixed case" else "• Mixed case"
 
                 var isSpecialValid = password.any { it in specialChars }
-                reqSpecial.setTextColor(if (isSpecialValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+                reqSpecial.setTextColor(if (isSpecialValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
                 reqSpecial.text = if (isSpecialValid) "✓ Must contain a special character" else "• Must contain a special character"
 
                 var isNumberValid = password.any { it.isDigit() }
-                reqNumber.setTextColor(if (isNumberValid) COLOR_SUCCESS_GREEN else COLOR_ERROR_RED)
+                reqNumber.setTextColor(if (isNumberValid) COLOR_SUCCESS_GREEN else COLOR_HINT_GRAY)
                 reqNumber.text = if (isNumberValid) "✓ Must contain a number" else "• Must contain a number"
 
                 allValidationsPassed = isLengthValid && isMixedcaseValid && isSpecialValid && isNumberValid
@@ -485,12 +491,12 @@ class RegisterActivity : AppCompatActivity() {
                 // Apply green/red border state while focused
                 if (inputPassword.isFocused) {
                     if (allValidationsPassed) {
-                        layoutPassword.isActivated = true
-                        layoutPassword.boxStrokeColor = COLOR_SUCCESS_GREEN
+                        //layoutPassword.isActivated = true
+                        //layoutPassword.boxStrokeColor = COLOR_SUCCESS_GREEN
                     }
                     else {
                         //layoutPassword.error = " "
-                        layoutPassword.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutPassword.boxStrokeColor = COLOR_ERROR_RED
                     }
                 }
 
@@ -528,20 +534,20 @@ class RegisterActivity : AppCompatActivity() {
                         reqMatch.setTextColor(COLOR_ERROR_RED)
                         reqMatch.text = "• Field is required"
                         //layoutConfirmPassword.error = " "
-                        layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                         layoutConfirmPassword.isActivated = false
                     }
                     isMatch -> {
                         ConfirmpasswordRequirements.visibility = View.GONE
                         layoutConfirmPassword.error = null
-                        layoutConfirmPassword.isActivated = true
+                        //layoutConfirmPassword.isActivated = true
                     }
                     else -> {
-                        ConfirmpasswordRequirements.visibility = View.VISIBLE
+                        ConfirmpasswordRequirements.visibility = View.GONE
                         reqMatch.setTextColor(COLOR_ERROR_RED)
                         reqMatch.text = "• Passwords must match"
                         //layoutConfirmPassword.error = " "
-                        layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
+                        //layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                         layoutConfirmPassword.isActivated = false
                     }
                 }
@@ -558,20 +564,20 @@ class RegisterActivity : AppCompatActivity() {
                 clearValidationState(layoutConfirmPassword)
 
                 if (confirmPassword.isEmpty()) {
-                    reqMatch.visibility = View.GONE
+                    reqMatch.visibility = View.VISIBLE
                     layoutConfirmPassword.isActivated = false
                 } else if (isMatch) {
                     reqMatch.visibility = View.VISIBLE
                     reqMatch.setTextColor(COLOR_SUCCESS_GREEN)
-                    reqMatch.text = "✓ Passwords match"
-                    layoutConfirmPassword.isActivated = true
-                    layoutConfirmPassword.boxStrokeColor = COLOR_SUCCESS_GREEN
+                    reqMatch.text = "✓ Passwords must match"
+                    //layoutConfirmPassword.isActivated = true
+                    //layoutConfirmPassword.boxStrokeColor = COLOR_SUCCESS_GREEN
                 } else {
                     reqMatch.visibility = View.VISIBLE
                     reqMatch.setTextColor(COLOR_ERROR_RED)
                     reqMatch.text = "• Passwords must match"
                     //layoutConfirmPassword.error = " "
-                    layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
+                    //layoutConfirmPassword.boxStrokeColor = COLOR_ERROR_RED
                     layoutConfirmPassword.isActivated = false
                 }
 

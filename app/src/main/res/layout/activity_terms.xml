@@ -68,7 +68,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:backgroundTint="#FAFCFE">
 
         <LinearLayout
             android:id="@+id/registerContainer"
@@ -88,45 +89,104 @@
                     android:id="@+id/tvTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="UMelec Terms and Conditions"
+                    android:text="UMelec Legal Agreement: Terms of Service "
                     android:textSize="20sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/montserrat_semi_bold"
                     android:layout_marginBottom="20dp"/>
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Effective Date: November 25, 2025"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_bold"
+                    android:layout_marginTop="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/legal_agreement_p1"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/legal_agreement_p2"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/legal_agreement_p3"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="10dp"/>
+
+
                 <!-- 1. Acceptance -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="1. Acceptance of Terms and System Purpose"
+                    android:text="1. Definitions and Scope"
                     android:textSize="16sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="By checking the acceptance box during registration, accessing, or using the UMelec System, You acknowledge that You have read, understood, and agree to be bound by these Terms and Conditions and our accompanying Privacy Policy. The purpose of UMelec is to provide a centralized, secure, and transparent e-governance platform for conducting UMak student elections. If You do not agree with all of these terms, You are expressly prohibited from using the System and must discontinue use immediately."
+                    android:text="@string/definition_service"
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/definition_applicable_laws"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/definition_electronic_signatures"
+                    android:textSize="12sp"
+                    android:textColor="#313131"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginStart="10dp"/>
 
                 <!-- 2. User Accounts -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="2. User Accounts, Eligibility, and Authentication"
+                    android:text="2. Access and Eligibility"
                     android:textSize="16sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Account Creation and Access: Student Voters register using their official UMak Gmail account and Student ID. Leaders and Advisers access the System using their designated organizational credentials. You agree to provide and maintain accurate, current, and complete registration information. Authentication and Security: You are responsible for safeguarding your password, which is managed securely using Firebase Authentication. You agree to notify Us immediately upon becoming aware of any unauthorized use or security breach. Eligibility: Use of the System is strictly limited to currently enrolled UMak students, verified COSEL-approved organization leaders, and designated Advisers."
+                    android:text="2.1. Eligibility and Access: The Service is intended solely for official students, verified leaders, and authorized advisers of the University of Makati.
+                        \n\n2.2. Account Creation: Use requires verification via UMak Gmail and Student ID.
+                        \n\n2.3. Client Responsibility: You are solely responsible for maintaining the confidentiality of your credentials and Digital Signature. You bear the risk of losses resulting from wrongful use of your Electronic Signatures, provided there is no fault or gross negligence on the part of the Company."
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
@@ -136,16 +196,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="3. Voting and Ballot Integrity"
+                    android:text="3. Intellectual Property (IP) and User Content"
                     android:textSize="16sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="One-Time Voting: The System enforces a strict one-time voting restriction. Once a ballot is submitted, You will receive a 'You have already voted' notification if a subsequent attempt is made. Digital Signature and Validation (DSA): Each submitted ballot is securely hashed and digitally signed using DSA. The System generates and provides You with a secure reference code and an encrypted on-screen Vote Receipt for verification, which excludes personal voter details to maintain anonymity. Fixed Duration: Voting is only permitted during the fixed duration set by the Election Setup process, and the System automatically closes submissions afterward."
+                    android:text="3.1. Company Ownership: The Company (Project Team) and the University of Makati own all content and materials within the Service, including the code, graphics, and trademarks, governed by the Intellectual Property Code of the Philippines (RA 8293).
+\n\n3.2. User License: You are granted a limited, non-exclusive, non-transferable license to use the Service solely for participating in or managing COSEL elections.
+\n\n3.3. User Content: By submitting content (e.g., candidate platforms, announcements), you grant the Company/COSEL a license to use that content for operating and documenting the elections. Prohibited content includes anything illegal, defamatory, or abusive."
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
@@ -155,16 +217,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="4. Acceptable Use and Prohibited Activities"
+                    android:text="4. Electronic Signatures and Validity"
                     android:textSize="16sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="You agree not to use the System to: Violate any UMak academic or organizational policy, or any local, state, or national law. Attempt to interfere with the integrity, operation, or security of the System, including unauthorized access to voter data, audit trails, or election management features. Transmit viruses, corrupted data, or any other destructive programs. Engage in any activity that could be construed as voter fraud, illegal election manipulation, or disruption of the transparent voting process. Any breach of this clause will result in immediate termination of access and may be reported to UMak COSEL."
+                    android:text="4.1. Binding Effect: The Client irrevocably accepts to be bound by the act of voting and ballot validation upon submission of the required Digital Signature and confirmation.
+\n\n4.2. Legal Recognition: You agree to use the Electronic Signatures as your valid and binding electronic signature under the E-Commerce Act of 2000 (RA 8792). The system records validating a correct Electronic Signature are conclusive evidence of the transaction.
+\n\n4.3. Prohibition to Contest: You shall not contest the validity or enforceability of any transactions (including the casting of a vote) on the ground that they were electronically signed."
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
@@ -174,16 +238,19 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="5. Intellectual Property and Content"
+                    android:text="5. Disclaimers, Liability, and Indemnification"
                     android:textSize="16sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="System Ownership: The UMelec App, including its source code (Kotlin, Jetpack Compose, Flutter, PHP), design (Figma, Canva), and underlying logic, is the property of the Project Team. Candidate Platforms: The content and media provided by candidates for their profiles are the responsibility of the respective candidate. UMelec is not responsible for the accuracy or legality of candidate platforms."
+                    android:text="5.1. No Warranty: The Service is provided “as is”. The Company makes no warranties regarding its quality or reliability.
+\n\n5.2. Limitation of Liability: The Company restricts the types and amounts of damages that a user can claim. This restriction is subject to the Philippine Law Exception that a waiver or limitation of liability for fraud and gross negligence is void.
+\n\n5.3. Indemnification: You agree to hold the Company and the University of Makati harmless against any claims, damages, or losses that arise from your actions or violation of these T&amp;Cs.
+electronically signed."
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
@@ -193,86 +260,23 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="6. Termination"
+                    android:text="6. Dispute Resolution and Governing Law"
                     android:textSize="16sp"
                     android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
+                    android:fontFamily="@font/poppins_bold"
                     android:layout_marginTop="10dp"/>
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="UMelec reserves the right to terminate or suspend your account access immediately, without prior notice, if You violate these Terms, particularly those relating to system integrity and security."
+                    android:text="6.1. Governing Law: These T&amp;Cs are governed by the laws of the Republic of the Philippines.
+\n\n6.2. Exclusive Venue (Litigation): Any dispute shall be brought exclusively in the courts of the Philippines which have jurisdiction over the University of Makati's principal place of business."
                     android:textSize="12sp"
                     android:textColor="#313131"
                     android:fontFamily="@font/poppins_regular"
                     android:layout_marginTop="4dp"/>
-
-                <!-- 7. Limitation -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="7. Limitation of Liability and Project Status"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="This System is a school project and is provided 'as is' and 'as available.' The Project Team and the University of Makati are not liable for any indirect, incidental, or punitive damages resulting from your use or inability to use the App, including data loss or system downtime."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 8. Governing Law -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="8. Governing Law"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="These Terms shall be governed and construed in accordance with the policies and rules of the University of Makati and the laws of the Philippines."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"/>
-
-                <!-- 9. Contact -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="9. Contact Information"
-                    android:textSize="16sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="10dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="For any questions about these Terms, please contact the UMelec Project Team at: jalbaladejo.a12345573@umak.edu.ph."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="20dp"/>
 
             </LinearLayout>
-
-
-
         </LinearLayout>
-
-
     </androidx.core.widget.NestedScrollView>
-
 </androidx.constraintlayout.widget.ConstraintLayout>
