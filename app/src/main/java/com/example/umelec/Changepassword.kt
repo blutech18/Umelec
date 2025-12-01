@@ -35,12 +35,6 @@ class Changepassword : AppCompatActivity() {
     private val COLOR_SUCCESS_GREEN = Color.parseColor("#27A688")
     private val COLOR_HINT_GRAY = Color.parseColor("#5C5C77")
 
-    // --- TEMPORARY TEST DATA ---
-    // The test password is still defined here for the simulated check in btnConfirm
-    // REMEMBER TO REMOVE THIS ENTIRE CONSTANT BEFORE FINAL DEPLOYMENT!
-    private val FAKE_CURRENT_PASSWORD_FOR_TEST = "Test1234!"
-    // ---------------------------
-
     val specialChars = "!@#$%^&*-+=()_`~[]{}|\\:;\"'<,>.?/"
 
     private lateinit var btnConfirm: Button
@@ -119,7 +113,7 @@ class Changepassword : AppCompatActivity() {
     /**
      * Custom alert dialog for password change error (e.g., old password mismatch).
      */
-    private fun showChangeErrorDialog() {
+    private fun showChangeErrorDialog(errorMessage: String = "Old password incorrect. Please try again.") {
         val layoutInflater = LayoutInflater.from(this)
         val dialogView = layoutInflater.inflate(R.layout.custom_toast_error, null)
 
@@ -131,9 +125,9 @@ class Changepassword : AppCompatActivity() {
         dialog.window?.setGravity(Gravity.CENTER)
         dialog.setCanceledOnTouchOutside(false)
 
-        // Set custom error text
-        dialogView.findViewById<TextView>(R.id.toast_title).text = "Old password incorrect."
-        dialogView.findViewById<TextView>(R.id.toast_value).text = "Please try again."
+        // Set custom error text with the actual error message
+        dialogView.findViewById<TextView>(R.id.toast_title).text = "Password Change Failed"
+        dialogView.findViewById<TextView>(R.id.toast_value).text = errorMessage
 
         // Close button listener
         dialogView.findViewById<ImageButton>(R.id.btn_close).setOnClickListener {
@@ -219,17 +213,43 @@ class Changepassword : AppCompatActivity() {
         btnConfirm.setOnClickListener {
             hideKeyboardAndClearFocus()
 
-            // 1. Get the current password input
-            val currentPasswordInput = inputCurrentPassword.text.toString()
+            // 1. Get input values
+            val currentPassword = inputCurrentPassword.text.toString()
+            val newPassword = inputNewPassword.text.toString()
+            val confirmPassword = inputConfirmPassword.text.toString()
 
-            // 2. SIMULATED BACKEND CHECK: Check if the current password is correct
-            // REMEMBER TO REPLACE THIS WITH A REAL API CALL LATER.
-            if (currentPasswordInput != FAKE_CURRENT_PASSWORD_FOR_TEST) {
-                showChangeErrorDialog() // Show error dialog
-            } else {
-                // 3. SUCCESS PATH
-                showChangeSuccessDialog()
+            // 2. Validate that new password matches confirm password
+            if (newPassword != confirmPassword) {
+                showChangeErrorDialog("New passwords do not match. Please try again.")
+                return@setOnClickListener
             }
+
+            // 3. Check if user is logged in
+            val currentUser = FirebaseAuthHelper.getCurrentUser()
+            if (currentUser == null) {
+                showChangeErrorDialog("You are not logged in. Please log in and try again.")
+                return@setOnClickListener
+            }
+
+            // 4. Disable button during password change
+            btnConfirm.isEnabled = false
+
+            // 5. Change password using Firebase Auth
+            FirebaseAuthHelper.changePassword(
+                currentPassword = currentPassword,
+                newPassword = newPassword,
+                onSuccess = {
+                    // Password changed successfully
+                    showChangeSuccessDialog()
+                },
+                onFailure = { errorMessage ->
+                    // Re-enable button
+                    btnConfirm.isEnabled = true
+                    
+                    // Show error dialog with the actual error message
+                    showChangeErrorDialog(errorMessage)
+                }
+            )
         }
         // ------------------------------------
 

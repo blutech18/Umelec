@@ -55,6 +55,26 @@ class Profile : AppCompatActivity() {
         populateProfileData()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh election status when returning to profile (e.g., after voting)
+        val currentUser = FirebaseAuthHelper.getCurrentUser()
+        if (currentUser != null) {
+            FirebaseAuthHelper.getUserDataFromFirestore(
+                userId = currentUser.uid,
+                onSuccess = { userData ->
+                    if (userData != null) {
+                        // Only refresh the status, not all profile data
+                        determineElectionStatus(currentUser.uid, userData)
+                    }
+                },
+                onFailure = { error ->
+                    android.util.Log.e("Profile", "Error refreshing status: $error")
+                }
+            )
+        }
+    }
+
     private fun initializeViews() {
         // Find the TextViews for profile data
         nameTitle = findViewById(R.id.nameTitle)
@@ -245,7 +265,9 @@ class Profile : AppCompatActivity() {
                     studentIdValue.text = userData["studentId"] as? String ?: ""
                     yearValue.text = userData["year"] as? String ?: ""
                     collegeValue.text = userData["college"] as? String ?: ""
-                    statusValue.text = userData["status"] as? String ?: "Eligible"
+                    
+                    // ⭐️ NEW: Dynamically determine election status ⭐️
+                    determineElectionStatus(currentUser.uid, userData)
                     
                     // ⭐️ NEW: Set the text for the new TextViews ⭐️
                     val initials = when {
@@ -264,7 +286,7 @@ class Profile : AppCompatActivity() {
                     studentIdValue.text = ""
                     yearValue.text = ""
                     collegeValue.text = ""
-                    statusValue.text = "Eligible"
+                    statusValue.text = "Ineligible" // No profile data = ineligible
                     profileAcronym.text = currentUser.email?.substring(0, 2)?.uppercase() ?: "UN"
                     moduleValue.text = "Voter"
                     genderValue.text = ""
@@ -276,10 +298,74 @@ class Profile : AppCompatActivity() {
                 studentIdValue.text = ""
                 yearValue.text = ""
                 collegeValue.text = ""
-                statusValue.text = "Eligible"
+                statusValue.text = "Ineligible" // Error loading = ineligible
                 profileAcronym.text = currentUser.email?.substring(0, 2)?.uppercase() ?: "UN"
                 moduleValue.text = "Voter"
                 genderValue.text = ""
+            }
+        )
+    }
+
+    /**
+     * Determines the election status based on:
+     * - Whether user has voted in the current election
+     * - Whether election is ongoing
+     * - Whether user meets eligibility requirements
+     */
+    private fun determineElectionStatus(userId: String, userData: Map<String, Any>) {
+        // Check if user meets basic eligibility requirements
+        val studentId = userData["studentId"] as? String ?: ""
+        val college = userData["college"] as? String ?: ""
+        val role = userData["role"] as? String ?: ""
+        
+        // If user doesn't have required profile data, they're ineligible
+        if (studentId.isEmpty() || college.isEmpty() || role != "VOTER") {
+            statusValue.text = "Ineligible"
+            return
+        }
+
+        // Get current election ID and state
+        FirestoreElectionHelper.getCurrentElectionId(
+            onSuccess = { electionId ->
+                if (electionId == null) {
+                    // No active election
+                    statusValue.text = "Ineligible"
+                } else {
+                    // Check election state
+                    FirestoreElectionHelper.determineElectionState(
+                        onSuccess = { electionState ->
+                            // Check if user has voted
+                            FirestoreElectionHelper.hasUserVoted(
+                                userId = userId,
+                                electionId = electionId,
+                                onSuccess = { hasVoted ->
+                                    // Determine status based on vote status and election state
+                                    val status = when {
+                                        hasVoted -> "Already Voted"
+                                        electionState == ElectionState.ONGOING -> "Eligible"
+                                        else -> "Ineligible" // Election is UPCOMING, ENDED, or NO_ELECTION
+                                    }
+                                    statusValue.text = status
+                                },
+                                onFailure = { error ->
+                                    android.util.Log.e("Profile", "Error checking vote status: $error")
+                                    // On error, default to Ineligible for safety
+                                    statusValue.text = "Ineligible"
+                                }
+                            )
+                        },
+                        onFailure = { error ->
+                            android.util.Log.e("Profile", "Error determining election state: $error")
+                            // On error, default to Ineligible
+                            statusValue.text = "Ineligible"
+                        }
+                    )
+                }
+            },
+            onFailure = { error ->
+                android.util.Log.e("Profile", "Error getting election ID: $error")
+                // No election or error = Ineligible
+                statusValue.text = "Ineligible"
             }
         )
     }

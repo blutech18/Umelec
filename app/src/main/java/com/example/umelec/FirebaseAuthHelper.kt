@@ -269,6 +269,64 @@ object FirebaseAuthHelper {
     }
 
     /**
+     * Change password for the current user
+     * Requires re-authentication with the current password before updating
+     */
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val user = auth.currentUser
+        if (user == null) {
+            onFailure("No user is currently signed in")
+            return
+        }
+
+        val email = user.email
+        if (email == null) {
+            onFailure("User email not found")
+            return
+        }
+
+        // Step 1: Re-authenticate with current password
+        val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, currentPassword)
+        user.reauthenticate(credential)
+            .addOnCompleteListener { reauthTask ->
+                if (reauthTask.isSuccessful) {
+                    // Step 2: Update password after successful re-authentication
+                    user.updatePassword(newPassword)
+                        .addOnCompleteListener { updateTask ->
+                            if (updateTask.isSuccessful) {
+                                android.util.Log.d("FirebaseAuthHelper", "Password updated successfully")
+                                onSuccess()
+                            } else {
+                                val errorMessage = updateTask.exception?.message ?: "Failed to update password"
+                                android.util.Log.e("FirebaseAuthHelper", "Error updating password: $errorMessage")
+                                onFailure(errorMessage)
+                            }
+                        }
+                } else {
+                    val errorMessage = reauthTask.exception?.message ?: "Failed to verify current password"
+                    android.util.Log.e("FirebaseAuthHelper", "Error re-authenticating: $errorMessage")
+                    
+                    // Provide user-friendly error messages
+                    val friendlyMessage = when {
+                        errorMessage.contains("wrong-password", ignoreCase = true) ||
+                        errorMessage.contains("invalid-credential", ignoreCase = true) ||
+                        errorMessage.contains("invalid password", ignoreCase = true) ->
+                            "Current password is incorrect"
+                        errorMessage.contains("network", ignoreCase = true) ->
+                            "Network error. Please check your internet connection and try again."
+                        else -> "Failed to verify current password: $errorMessage"
+                    }
+                    onFailure(friendlyMessage)
+                }
+            }
+    }
+
+    /**
      * Delete the current user's Firebase Auth account
      * This is used to clean up incomplete registrations
      */
