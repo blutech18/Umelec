@@ -52,8 +52,39 @@ class Leader_manage_candidates : AppCompatActivity() {
         setupUIListeners()
         setupFooterNavigation()
 
-        // 6. Load candidates from Firestore
+        // 6. Show loading state initially
+        showLoadingState()
+
+        // 7. Load candidates from Firestore
         loadCandidates()
+    }
+
+    /**
+     * Show loading state and hide content
+     */
+    private fun showLoadingState() {
+        if (isFinishing) return
+        try {
+            val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+            candidateLoadingGroup.visibility = View.VISIBLE
+            contentContainer.visibility = View.GONE
+        } catch (e: Exception) {
+            android.util.Log.e("Leader_manage_candidates", "Error showing loading state: ${e.message}")
+        }
+    }
+
+    /**
+     * Hide loading state and show content
+     */
+    private fun hideLoadingState() {
+        if (isFinishing) return
+        try {
+            val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+            candidateLoadingGroup.visibility = View.GONE
+            contentContainer.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            android.util.Log.e("Leader_manage_candidates", "Error hiding loading state: ${e.message}")
+        }
     }
 
     // --- VIEW INITIALIZATION ---
@@ -94,15 +125,16 @@ class Leader_manage_candidates : AppCompatActivity() {
     // ----------------------------------------------------------------------
 
     private fun inflatePositionsAndCandidates(positions: List<ManagePosition>) {
-        val inflater = LayoutInflater.from(this)
-        val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
+        if (isFinishing) return
         
-        // Hide loading, show content
-        candidateLoadingGroup.visibility = View.GONE
-        contentContainer.visibility = View.VISIBLE
+        try {
+            val inflater = LayoutInflater.from(this)
+            
+            // Hide loading, show content
+            hideLoadingState()
 
-        // Clear content container before inflating
-        contentContainer.removeAllViews()
+            // Clear content container before inflating
+            contentContainer.removeAllViews()
 
         positions.forEach { position ->
             // 1. INFLATE POSITION CARD (item_position_card.xml)
@@ -168,6 +200,17 @@ class Leader_manage_candidates : AppCompatActivity() {
 
             // 4. Add the fully populated Position Card to the main Content Container
             contentContainer.addView(positionCardView)
+        }
+        } catch (e: Exception) {
+            android.util.Log.e("Leader_manage_candidates", "Error inflating positions: ${e.message}", e)
+            if (!isFinishing) {
+                hideLoadingState()
+                contentContainer.removeAllViews()
+                val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading candidates"
+                errorView.findViewById<TextView>(R.id.AnswerTextGeneral).text = "Please try again"
+                contentContainer.addView(errorView)
+            }
         }
     }
 
@@ -237,11 +280,11 @@ class Leader_manage_candidates : AppCompatActivity() {
                     .whereEqualTo("college", userCollege)
                     .get()
                     .addOnSuccessListener { documents ->
+                        if (isFinishing) return@addOnSuccessListener
+                        
                         if (documents.isEmpty) {
                             // No election found
-                            val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
-                            candidateLoadingGroup.visibility = View.GONE
-                            contentContainer.visibility = View.VISIBLE
+                            hideLoadingState()
                             contentContainer.removeAllViews()
                             val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                             noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No election found"
@@ -261,9 +304,7 @@ class Leader_manage_candidates : AppCompatActivity() {
                             android.util.Log.d("Leader_manage_candidates", "Found election: ${mostRecentDoc.id}")
                             loadCandidatesForElection(mostRecentDoc.id)
                         } else {
-                            val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
-                            candidateLoadingGroup.visibility = View.GONE
-                            contentContainer.visibility = View.VISIBLE
+                            hideLoadingState()
                             contentContainer.removeAllViews()
                             val noElectionView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                             noElectionView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No election found"
@@ -273,14 +314,24 @@ class Leader_manage_candidates : AppCompatActivity() {
                     }
                     .addOnFailureListener { exception ->
                         android.util.Log.e("Leader_manage_candidates", "Error getting election: ${exception.message}")
-                        val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
-                        candidateLoadingGroup.visibility = View.GONE
-                        contentContainer.visibility = View.VISIBLE
+                        if (isFinishing) return@addOnFailureListener
+                        hideLoadingState()
                         contentContainer.removeAllViews()
+                        val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                        errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading election"
+                        errorView.findViewById<TextView>(R.id.AnswerTextGeneral).text = exception.message ?: "Please try again"
+                        contentContainer.addView(errorView)
                     }
             }
             .addOnFailureListener { exception ->
                 android.util.Log.e("Leader_manage_candidates", "Error getting user profile: ${exception.message}")
+                if (isFinishing) return@addOnFailureListener
+                hideLoadingState()
+                contentContainer.removeAllViews()
+                val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading profile"
+                errorView.findViewById<TextView>(R.id.AnswerTextGeneral).text = exception.message ?: "Please try again"
+                contentContainer.addView(errorView)
             }
     }
 
@@ -295,12 +346,12 @@ class Leader_manage_candidates : AppCompatActivity() {
         FirestoreCandidateHelper.getPositionsForElection(
             electionId = electionId,
             onSuccess = { positions ->
+                if (isFinishing) return@getPositionsForElection
+                
                 android.util.Log.d("Leader_manage_candidates", "Loaded ${positions.size} positions with candidates")
                 if (positions.isEmpty()) {
                     // No candidates found
-                    val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
-                    candidateLoadingGroup.visibility = View.GONE
-                    contentContainer.visibility = View.VISIBLE
+                    hideLoadingState()
                     contentContainer.removeAllViews()
                     val noCandidatesView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
                     noCandidatesView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "No candidates found"
@@ -326,14 +377,14 @@ class Leader_manage_candidates : AppCompatActivity() {
             },
             onFailure = { error ->
                 android.util.Log.e("Leader_manage_candidates", "Error loading candidates: $error")
-                val candidateLoadingGroup: LinearLayout = findViewById(R.id.candidateLoadingGroup)
-                candidateLoadingGroup.visibility = View.GONE
-                contentContainer.visibility = View.VISIBLE
-                contentContainer.removeAllViews()
-                val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
-                errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading candidates"
-                errorView.findViewById<TextView>(R.id.AnswerTextGeneral).text = error
-                contentContainer.addView(errorView)
+                if (!isFinishing) {
+                    hideLoadingState()
+                    contentContainer.removeAllViews()
+                    val errorView = LayoutInflater.from(this).inflate(R.layout.faq_item, contentContainer, false)
+                    errorView.findViewById<TextView>(R.id.QuestionTextGeneral).text = "Error loading candidates"
+                    errorView.findViewById<TextView>(R.id.AnswerTextGeneral).text = error
+                    contentContainer.addView(errorView)
+                }
             }
         )
     }
@@ -342,15 +393,24 @@ class Leader_manage_candidates : AppCompatActivity() {
      * Check which candidates have profile data
      */
     private fun checkCandidateProfiles(positions: List<ManagePosition>) {
+        if (isFinishing) return
+        
         val updatedPositions = positions.toMutableList()
         var completedChecks = 0
         val totalCandidates = positions.sumOf { it.candidates.size }
+        
+        // If no candidates, nothing to check
+        if (totalCandidates == 0) {
+            return
+        }
         
         positions.forEach { position ->
             position.candidates.forEach { candidate ->
                 FirestoreCandidateHelper.getCandidatePlatformDetails(
                     candidateId = candidate.candidateId,
                     onSuccess = { details ->
+                        if (isFinishing) return@getCandidatePlatformDetails
+                        
                         completedChecks++
                         
                         // Check if candidate has profile data
@@ -371,16 +431,18 @@ class Leader_manage_candidates : AppCompatActivity() {
                         }
                         
                         // Only refresh UI after all checks are complete
-                        if (completedChecks == totalCandidates) {
+                        if (completedChecks == totalCandidates && !isFinishing) {
                             inflatePositionsAndCandidates(updatedPositions)
                         }
                     },
                     onFailure = { error ->
+                        if (isFinishing) return@getCandidatePlatformDetails
+                        
                         completedChecks++
                         android.util.Log.e("Leader_manage_candidates", "Error checking candidate profile: $error")
                         
                         // Still refresh UI if all checks are complete (even with some failures)
-                        if (completedChecks == totalCandidates) {
+                        if (completedChecks == totalCandidates && !isFinishing) {
                             inflatePositionsAndCandidates(updatedPositions)
                         }
                     }
