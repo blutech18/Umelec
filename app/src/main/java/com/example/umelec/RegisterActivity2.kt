@@ -204,9 +204,9 @@ class RegisterActivity2 : AppCompatActivity() {
                                     android.util.Log.e("RegisterActivity2", "Failed to clean up incomplete registration: $error")
                                     // Still finish even if cleanup fails
                                     FirebaseAuthHelper.clearTemporaryCredentials(this)
-                                    finish()
-                                    @Suppress("DEPRECATION")
-                                    overridePendingTransition(0, 0)
+            finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
                                 }
                             )
                         } else {

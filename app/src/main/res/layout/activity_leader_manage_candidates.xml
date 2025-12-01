@@ -76,184 +76,190 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- CONTENT CONTAINER: ADD ALL YOUR SCROLLABLE CONTENT HERE -->
-        
-        <!-- Loading State Group -->
+        <!-- NestedScrollView MUST have exactly one direct child. -->
         <LinearLayout
-            android:id="@+id/candidateLoadingGroup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="40dp"
-            android:visibility="visible">
-            
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminateTint="#00537A"/>
-            
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Loading..."
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:fontFamily="@font/poppins_regular"
-                android:layout_marginTop="16dp"/>
-        </LinearLayout>
-        
-        <LinearLayout
-            android:id="@+id/ContentContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:orientation="vertical">
 
+            <!-- Loading State Group -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_white_outlined_bg"
-                android:layout_marginTop="20dp"
-                android:layout_marginHorizontal="40dp"
-                android:padding="5dp"
-                android:layout_gravity="center"
-                >
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnVoters"
-                    android:layout_width="wrap_content"
-                    android:layout_height="25dp"
-                    android:text="Voters"
-                    android:textColor="#313131"
-                    android:textSize="16sp"
-                    android:layout_weight="1"
-                    android:background="@drawable/rounded_white_bg"
-                    android:textAllCaps="false"
-                    android:fontFamily="@font/poppins_regular"
-                    android:stateListAnimator="@animator/button_press_animator" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnCandidates"
-                    android:layout_width="wrap_content"
-                    android:layout_height="30dp"
-                    android:text="Candidates"
-                    android:textColor="@android:color/white"
-                    android:textSize="16sp"
-                    android:layout_weight="1"
-                    android:background="@drawable/blue_rounded_button"
-                    android:textAllCaps="false"
-                    android:fontFamily="@font/poppins_regular"
-                    android:stateListAnimator="@animator/button_press_animator" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:layout_margin="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Assign and manage candidates for each available position in the upcoming election."
-                    android:textSize="12sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/poppins_regular"/>
-            </LinearLayout>
-
-            <!-- <LinearLayout
-                android:id="@+id/PositionandCandidateCard"
+                android:id="@+id/candidateLoadingGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/rounded_gray_bg"
-                android:padding="16dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
-                android:layout_marginHorizontal="20dp"
-                android:clipToPadding="false"
-                android:outlineProvider="background"
-                android:elevation="10dp"
-                android:translationZ="2dp"
-                android:gravity="center_vertical"
-                app:layout_constraintTop_toBottomOf="@+id/FloatingCardContainer"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                android:gravity="center"
+                android:padding="40dp"
+                android:visibility="visible">
 
-                <TextView
-                    android:id="@+id/tvPosition"
+                <ProgressBar
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Position"
-                    android:textSize="20sp"
-                    android:textColor="#313131"
-                    android:fontFamily="@font/montserrat_semi_bold" />
+                    android:indeterminateTint="#00537A" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Loading..."
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:fontFamily="@font/poppins_regular"
+                    android:layout_marginTop="16dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ContentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <LinearLayout
-                    android:id="@+id/layoutCandidates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_white_outlined_bg"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginHorizontal="40dp"
+                    android:padding="5dp"
+                    android:layout_gravity="center">
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnVoters"
+                        android:layout_width="wrap_content"
+                        android:layout_height="25dp"
+                        android:text="Voters"
+                        android:textColor="#313131"
+                        android:textSize="16sp"
+                        android:layout_weight="1"
+                        android:background="@drawable/rounded_white_bg"
+                        android:textAllCaps="false"
+                        android:fontFamily="@font/poppins_regular"
+                        android:stateListAnimator="@animator/button_press_animator" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnCandidates"
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:text="Candidates"
+                        android:textColor="@android:color/white"
+                        android:textSize="16sp"
+                        android:layout_weight="1"
+                        android:background="@drawable/blue_rounded_button"
+                        android:textAllCaps="false"
+                        android:fontFamily="@font/poppins_regular"
+                        android:stateListAnimator="@animator/button_press_animator" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:paddingStart="20dp"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="10dp">
+                    android:layout_marginBottom="8dp"
+                    android:layout_margin="20dp">
 
                     <TextView
-                        android:id="@+id/tvCandidates"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="• Candidate Name"
-                        android:textSize="16sp"
+                        android:text="Assign and manage candidates for each available position in the upcoming election."
+                        android:textSize="12sp"
                         android:textColor="#313131"
-                        android:fontFamily="@font/poppins_regular"
-                        android:gravity="center_vertical" />
+                        android:fontFamily="@font/poppins_regular" />
+                </LinearLayout>
 
-                    <ImageView
-                        android:id="@+id/btnFaqEdit"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:src="@drawable/ic_edit"
-                        android:contentDescription="Edit FAQ"/>
+                <!-- Old static candidate card commented out for reference -->
+                <!--
+                <LinearLayout
+                    android:id="@+id/PositionandCandidateCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/rounded_gray_bg"
+                    android:padding="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="20dp"
+                    android:layout_marginHorizontal="20dp"
+                    android:clipToPadding="false"
+                    android:outlineProvider="background"
+                    android:elevation="10dp"
+                    android:translationZ="2dp"
+                    android:gravity="center_vertical"
+                    app:layout_constraintTop_toBottomOf="@+id/FloatingCardContainer"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <TextView
+                        android:id="@+id/tvPosition"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Position"
+                        android:textSize="20sp"
+                        android:textColor="#313131"
+                        android:fontFamily="@font/montserrat_semi_bold" />
 
                     <LinearLayout
-                        android:id="@+id/btnAddNewFaq"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:background="@drawable/blue_rounded_button"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
+                        android:id="@+id/layoutCandidates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_add"
-                            android:contentDescription="Add New FAQ"
-                            app:tint="@android:color/white" />
+                        android:paddingStart="20dp"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="10dp">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvCandidates"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/poppins_bold"
-                            android:text="Profile"
-                            android:textColor="@android:color/white"
-                            android:textSize="14sp" />
+                            android:layout_weight="1"
+                            android:text="• Candidate Name"
+                            android:textSize="16sp"
+                            android:textColor="#313131"
+                            android:fontFamily="@font/poppins_regular"
+                            android:gravity="center_vertical" />
+
+                        <ImageView
+                            android:id="@+id/btnFaqEdit"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:src="@drawable/ic_edit"
+                            android:contentDescription="Edit FAQ" />
+
+                        <LinearLayout
+                            android:id="@+id/btnAddNewFaq"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:background="@drawable/blue_rounded_button"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_add"
+                                android:contentDescription="Add New FAQ"
+                                app:tint="@android:color/white" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:text="Profile"
+                                android:textColor="@android:color/white"
+                                android:textSize="14sp" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
                 </LinearLayout>
+                -->
 
-            </LinearLayout>-->
-
-
+            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
