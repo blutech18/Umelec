@@ -164,6 +164,8 @@ class OfficialResults : AppCompatActivity() {
 
         winnerData.forEach { winner ->
             val candidateCardView = createCandidateCardView(winner)
+            val horizontalMarginPx = 20.toPx()
+            val bottomMarginPx = 20.toPx()
 
             // 1. Create LayoutParams for the card
             val params = LinearLayout.LayoutParams(
@@ -171,7 +173,10 @@ class OfficialResults : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 // 2. Apply the bottom margin
-                bottomMargin = cardMarginBottomPx
+                //bottomMargin = cardMarginBottomPx
+                leftMargin = horizontalMarginPx
+                rightMargin = horizontalMarginPx
+                bottomMargin = bottomMarginPx
             }
 
             // 3. Apply the parameters to the view
@@ -248,7 +253,7 @@ class OfficialResults : AppCompatActivity() {
         navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
         navVote?.setOnClickListener { navigateTo(Vote::class.java) }
         navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
-        navResults?.setOnClickListener { navigateTo(Tallies::class.java) } // Assuming Results leads to Tallies/OfficialResults
+        navResults?.setOnClickListener { navigateTo(Tallies::class.java) }
         navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
     }
 }

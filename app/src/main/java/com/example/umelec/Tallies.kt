@@ -1,4 +1,4 @@
-package com.example.umelec
+    package com.example.umelec
 
 import android.content.Context
 import android.content.Intent
@@ -474,12 +474,17 @@ class Tallies : AppCompatActivity() {
             // Assuming R.layout.tallies_card_template is the XML layout for one position card
             val positionCardView = createPositionCardView(position, sortedCandidates)
 
-            // Apply margin at the bottom of each dynamically created card
+
+            val horizontalMarginPx = 20.toPx()
+            val bottomMarginPx = 20.toPx()
+
             positionCardView.layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                bottomMargin = 20.toPx()
+                leftMargin = horizontalMarginPx
+                rightMargin = horizontalMarginPx
+                bottomMargin = bottomMarginPx
             }
 
             outerContainer?.addView(positionCardView)
