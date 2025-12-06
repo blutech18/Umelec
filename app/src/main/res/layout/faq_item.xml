@@ -5,25 +5,30 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@drawable/faq_bg"
-    android:layout_marginBottom="20dp"
-    android:clipToPadding="false">
+    android:layout_marginBottom="12dp"
+    android:layout_marginStart="0dp"
+    android:layout_marginEnd="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/QuestionHeaderLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical">
+        android:background="@drawable/rounded_gray_bg"
+        android:padding="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="8dp">
 
         <TextView
             android:id="@+id/QuestionTextGeneral"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="12dp"
             android:fontFamily="@font/poppins_regular"
             android:maxLines="10"
-            android:text="Questionaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            android:text="Question"
             android:textColor="#313131"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -73,14 +78,16 @@
 
     <TextView
         android:id="@+id/AnswerTextGeneral"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:fontFamily="@font/poppins_regular"
         android:text="Answer content goes here."
         android:textColor="#313131"
-        android:textSize="12sp"
-        android:layout_marginLeft="20dp"
+        android:textSize="14sp"
+        android:layout_marginStart="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="12dp"
         android:visibility="gone" />
 
 </LinearLayout>

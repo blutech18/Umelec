@@ -127,7 +127,7 @@ class Faq : AppCompatActivity() {
     private fun populateFaqs(faqList: List<FaqItem>) {
         val contentContainer: LinearLayout = findViewById(R.id.ContentContainer)
 
-        // Clear existing views (keep the first child if it's a header)
+        // Clear existing views
         if (contentContainer.childCount > 0) {
             contentContainer.removeAllViews()
         }
@@ -135,26 +135,63 @@ class Faq : AppCompatActivity() {
         // Group FAQs by category
         val groupedFaqs = faqList.groupBy { it.category }
 
-        // Add General FAQs first
-        groupedFaqs[CATEGORY_GENERAL]?.forEach { faq ->
-            val faqView = createFaqItemView(this, faq.question, faq.answer)
-            contentContainer.addView(faqView)
+        // Add General / System category
+        groupedFaqs[CATEGORY_GENERAL]?.let { generalFaqs ->
+            if (generalFaqs.isNotEmpty()) {
+                val categoryHeader = createCategoryHeader("General / System")
+                contentContainer.addView(categoryHeader)
+                
+                generalFaqs.forEach { faq ->
+                    val faqView = createFaqItemView(this, faq.question, faq.answer)
+                    contentContainer.addView(faqView)
+                }
+            }
         }
 
-        // Add Voting FAQs
-        groupedFaqs[CATEGORY_VOTING]?.forEach { faq ->
-            val faqView = createFaqItemView(this, faq.question, faq.answer)
-            contentContainer.addView(faqView)
+        // Add Voting Process category
+        groupedFaqs[CATEGORY_VOTING]?.let { votingFaqs ->
+            if (votingFaqs.isNotEmpty()) {
+                val categoryHeader = createCategoryHeader("Voting Process")
+                contentContainer.addView(categoryHeader)
+                
+                votingFaqs.forEach { faq ->
+                    val faqView = createFaqItemView(this, faq.question, faq.answer)
+                    contentContainer.addView(faqView)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Creates a category header TextView
+     */
+    private fun createCategoryHeader(categoryName: String): TextView {
+        val font = ResourcesCompat.getFont(this, R.font.montserrat_semi_bold)
+        return TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 24.toPx()
+                bottomMargin = 12.toPx()
+                marginStart = 20.toPx()
+                marginEnd = 20.toPx()
+            }
+            text = categoryName
+            textSize = 18f
+            setTextColor(Color.parseColor("#0E0E2C"))
+            setTypeface(font, Typeface.BOLD)
         }
     }
 
     /**
      * Dynamically creates the interactive FAQ item view.
      * Implements the expand/collapse logic using the arrowToggle.
+     * Styled as a grey rounded button matching the design image.
      */
     private fun createFaqItemView(context: Context, question: String, answer: String): View {
 
-        // Fetch custom font once (assuming R.font.montserrat_semi_bold exists)
+        // Fetch custom font
         val font = ResourcesCompat.getFont(context, R.font.poppins_regular)
 
         // --- 1. Arrow Toggle (ImageView) ---
@@ -174,22 +211,30 @@ class Faq : AppCompatActivity() {
                 0, // MATCH_CONSTRAINT
                 ConstraintLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                marginEnd = 8.toPx()
+                marginEnd = 12.toPx()
             }
             text = question
-            textSize = 16f // 18sp size from XML
+            textSize = 16f
             setTextColor(Color.parseColor("#313131"))
-            setTypeface(font) // Set custom font and bold style
+            setTypeface(font)
         }
 
-        // --- 3. Question Header Layout (ConstraintLayout) ---
-        // This container holds the Question and Arrow
-        val questionHeaderLayout = ConstraintLayout(context).apply {
+        // --- 3. Question Button Layout (ConstraintLayout) ---
+        // This container holds the Question and Arrow, styled as a grey rounded button
+        val questionButtonLayout = ConstraintLayout(context).apply {
             id = View.generateViewId()
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                marginStart = 20.toPx()
+                marginEnd = 20.toPx()
+                bottomMargin = 8.toPx()
+            }
+            background = ContextCompat.getDrawable(context, R.drawable.rounded_gray_bg)
+            setPadding(16.toPx(), 16.toPx(), 16.toPx(), 16.toPx())
+            isClickable = true
+            isFocusable = true
 
             // Set up constraints for questionText
             addView(questionText)
@@ -216,17 +261,19 @@ class Faq : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                topMargin = 10.toPx()
+                topMargin = 8.toPx()
+                marginStart = 20.toPx()
+                marginEnd = 20.toPx()
+                bottomMargin = 12.toPx()
             }
             text = answer
-            textSize = 12f // Slightly smaller 16sp size for body text
+            textSize = 14f
             setTextColor(Color.parseColor("#313131"))
-            setTypeface(font) // Set custom font and normal style
+            setTypeface(font)
 
             // KEY: Answer is hidden by default
             visibility = View.GONE
         }
-
 
         // --- 5. Faq Layout (Outer Container) ---
         val faqLayout = LinearLayout(context).apply {
@@ -234,32 +281,30 @@ class Faq : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = 20.toPx()
-            }
+            )
             orientation = LinearLayout.VERTICAL
-            background = ContextCompat.getDrawable(context, R.drawable.faq_bg)
-            setPadding(16.toPx(), 16.toPx(), 16.toPx(), 16.toPx())
 
-            // Add the Question Header and the Answer
-            addView(questionHeaderLayout)
+            // Add the Question Button and the Answer
+            addView(questionButtonLayout)
             addView(answerText)
         }
 
         // --- 6. TOGGLE LOGIC (Interactivity) ---
-        // FIX: Attach listener only to the arrowToggle, not the whole header layout.
-        arrowToggle.setOnClickListener {
-            // Check current visibility state of the answer
+        // Make both the button and arrow clickable
+        val toggleAction = {
             if (answerText.visibility == View.VISIBLE) {
                 // Collapse: Hide answer, point arrow down
                 answerText.visibility = View.GONE
-                arrowToggle.isSelected = false // Switches to down arrow
+                arrowToggle.isSelected = false
             } else {
                 // Expand: Show answer, point arrow up
                 answerText.visibility = View.VISIBLE
-                arrowToggle.isSelected = true // Switches to up arrow
+                arrowToggle.isSelected = true
             }
         }
+        
+        questionButtonLayout.setOnClickListener { toggleAction() }
+        arrowToggle.setOnClickListener { toggleAction() }
 
         return faqLayout
     }

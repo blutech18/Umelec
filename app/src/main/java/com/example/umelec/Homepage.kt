@@ -29,7 +29,8 @@ data class Candidate(
 data class WinningCandidate(
     val name: String,
     val position: String,
-    val photoResource: Int // Resource ID for the drawable/image
+    val photoResource: Int = R.drawable.ic_profile, // Resource ID for the drawable/image (fallback)
+    val photoUrl: String? = null // URL for candidate photo (optional)
 )
 
 
