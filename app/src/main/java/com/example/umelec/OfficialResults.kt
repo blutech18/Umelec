@@ -19,7 +19,8 @@ data class OfficialResultCandidate(
     val name: String,
     val position: String,
     val votes: Int,
-    val photoResId: Int // Resource ID for the drawable/image (e.g., R.drawable.profile_placeholder)
+    val photoResId: Int = R.drawable.ic_profile, // Resource ID for the drawable/image (fallback)
+    val photoUrl: String? = null // URL for candidate photo (optional)
 )
 
 class OfficialResults : AppCompatActivity() {
@@ -75,7 +76,8 @@ class OfficialResults : AppCompatActivity() {
                                             name = winner.name,
                                             position = winner.position,
                                             votes = votes,
-                                            photoResId = winner.photoResource
+                                            photoResId = winner.photoResource,
+                                            photoUrl = winner.photoUrl
                                         )
                                     }.sortedByDescending { it.votes }
 
@@ -94,7 +96,8 @@ class OfficialResults : AppCompatActivity() {
                                             name = it.name,
                                             position = it.position,
                                             votes = 0,
-                                            photoResId = it.photoResource
+                                            photoResId = it.photoResource,
+                                            photoUrl = it.photoUrl
                                         )
                                     }
                                     officialUpdateTimeMillis = System.currentTimeMillis()
@@ -164,8 +167,6 @@ class OfficialResults : AppCompatActivity() {
 
         winnerData.forEach { winner ->
             val candidateCardView = createCandidateCardView(winner)
-            val horizontalMarginPx = 20.toPx()
-            val bottomMarginPx = 20.toPx()
 
             // 1. Create LayoutParams for the card
             val params = LinearLayout.LayoutParams(
@@ -173,10 +174,7 @@ class OfficialResults : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 // 2. Apply the bottom margin
-                //bottomMargin = cardMarginBottomPx
-                leftMargin = horizontalMarginPx
-                rightMargin = horizontalMarginPx
-                bottomMargin = bottomMarginPx
+                bottomMargin = cardMarginBottomPx
             }
 
             // 3. Apply the parameters to the view
@@ -197,7 +195,14 @@ class OfficialResults : AppCompatActivity() {
         val cardView = inflater.inflate(R.layout.list_item_winner_card, null, false) as LinearLayout
 
         // Populate data into the card views
-        cardView.findViewById<CircleImageView>(R.id.candidate_profile_photo).setImageResource(winner.photoResId)
+        val photoView = cardView.findViewById<CircleImageView>(R.id.candidate_profile_photo)
+        // Use ImageLoaderHelper to load image from URL with default fallback
+        ImageLoaderHelper.loadCandidateImage(
+            imageView = photoView,
+            photoUrl = winner.photoUrl,
+            defaultResource = winner.photoResId
+        )
+        
         cardView.findViewById<TextView>(R.id.candidate_name).text = winner.name
         cardView.findViewById<TextView>(R.id.candidate_position).text = winner.position
 
@@ -253,7 +258,7 @@ class OfficialResults : AppCompatActivity() {
         navHome?.setOnClickListener { navigateTo(Homepage::class.java) }
         navVote?.setOnClickListener { navigateTo(Vote::class.java) }
         navCandidates?.setOnClickListener { navigateTo(Candidates::class.java) }
-        navResults?.setOnClickListener { navigateTo(Tallies::class.java) }
+        navResults?.setOnClickListener { navigateTo(Tallies::class.java) } // Assuming Results leads to Tallies/OfficialResults
         navFaq?.setOnClickListener { navigateTo(Faq::class.java) }
     }
 }

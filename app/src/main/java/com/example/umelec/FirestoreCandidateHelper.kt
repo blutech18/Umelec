@@ -239,17 +239,79 @@ object FirestoreCandidateHelper {
                     return@addOnSuccessListener
                 }
 
-                val winners = documents.documents.mapNotNull { doc ->
-                    val data = doc.data ?: return@mapNotNull null
-                    val name = data["candidateName"] as? String ?: return@mapNotNull null
-                    val position = data["positionName"] as? String ?: "Unknown"
-                    WinningCandidate(
-                        name = name,
-                        position = position,
-                        photoResource = R.drawable.ic_profile
-                    )
+                // Fetch photoUrl for each winner from candidates collection
+                val winnersList = mutableListOf<WinningCandidate>()
+                var completedCount = 0
+                val totalWinners = documents.size()
+
+                if (totalWinners == 0) {
+                    onSuccess(emptyList())
+                    return@addOnSuccessListener
                 }
-                onSuccess(winners)
+
+                documents.documents.forEach { doc ->
+                    val data = doc.data ?: run {
+                        completedCount++
+                        if (completedCount == totalWinners) {
+                            onSuccess(winnersList)
+                        }
+                        return@forEach
+                    }
+                    val name = data["candidateName"] as? String ?: run {
+                        completedCount++
+                        if (completedCount == totalWinners) {
+                            onSuccess(winnersList)
+                        }
+                        return@forEach
+                    }
+                    val position = data["positionName"] as? String ?: "Unknown"
+                    
+                    // Fetch candidate photoUrl from candidates collection
+                    firestore.collection(CANDIDATES_COLLECTION)
+                        .whereEqualTo("electionId", electionId)
+                        .whereEqualTo("name", name)
+                        .whereEqualTo("positionName", position)
+                        .limit(1)
+                        .get()
+                        .addOnSuccessListener { candidateDocs ->
+                            val photoUrl = if (candidateDocs.isEmpty) {
+                                null
+                            } else {
+                                candidateDocs.documents.firstOrNull()?.getString("photoUrl")
+                            }
+                            
+                            winnersList.add(
+                                WinningCandidate(
+                                    name = name,
+                                    position = position,
+                                    photoResource = R.drawable.ic_profile,
+                                    photoUrl = photoUrl
+                                )
+                            )
+                            
+                            completedCount++
+                            if (completedCount == totalWinners) {
+                                onSuccess(winnersList.sortedBy { it.position })
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e(TAG, "Error fetching candidate photoUrl for $name: ${exception.message}")
+                            // Use default if fetch fails
+                            winnersList.add(
+                                WinningCandidate(
+                                    name = name,
+                                    position = position,
+                                    photoResource = R.drawable.ic_profile,
+                                    photoUrl = null
+                                )
+                            )
+                            
+                            completedCount++
+                            if (completedCount == totalWinners) {
+                                onSuccess(winnersList.sortedBy { it.position })
+                            }
+                        }
+                }
             }
             .addOnFailureListener { exception ->
                 Log.e(TAG, "Error getting winning candidates: ${exception.message}", exception)
@@ -269,21 +331,69 @@ object FirestoreCandidateHelper {
         FirestoreVoteHelper.getVoteTallies(
             electionId = electionId,
             onSuccess = { tallies ->
-                val winners = tallies
+                val topCandidates = tallies
                     .groupBy { it.positionId }
                     .mapNotNull { (positionId, candidateTallies) ->
-                        val topCandidate = candidateTallies.maxByOrNull { it.voteCount }
-                        topCandidate?.let {
-                            WinningCandidate(
-                                name = it.candidateName,
-                                position = it.positionName,
-                                photoResource = R.drawable.ic_profile
-                            )
-                        }
+                        candidateTallies.maxByOrNull { it.voteCount }
                     }
-                    .sortedBy { it.position }
 
-                onSuccess(winners)
+                if (topCandidates.isEmpty()) {
+                    onSuccess(emptyList())
+                    return@getVoteTallies
+                }
+
+                // Fetch photoUrl for each winner from candidates collection
+                val winnersList = mutableListOf<WinningCandidate>()
+                var completedCount = 0
+                val totalWinners = topCandidates.size
+
+                topCandidates.forEach { topCandidate ->
+                    // Fetch candidate photoUrl from candidates collection
+                    firestore.collection(CANDIDATES_COLLECTION)
+                        .whereEqualTo("electionId", electionId)
+                        .whereEqualTo("name", topCandidate.candidateName)
+                        .whereEqualTo("positionName", topCandidate.positionName)
+                        .limit(1)
+                        .get()
+                        .addOnSuccessListener { candidateDocs ->
+                            val photoUrl = if (candidateDocs.isEmpty) {
+                                null
+                            } else {
+                                candidateDocs.documents.firstOrNull()?.getString("photoUrl")
+                            }
+                            
+                            winnersList.add(
+                                WinningCandidate(
+                                    name = topCandidate.candidateName,
+                                    position = topCandidate.positionName,
+                                    photoResource = R.drawable.ic_profile,
+                                    photoUrl = photoUrl
+                                )
+                            )
+                            
+                            completedCount++
+                            if (completedCount == totalWinners) {
+                                onSuccess(winnersList.sortedBy { it.position })
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Log.e(TAG, "Error fetching candidate photoUrl for ${topCandidate.candidateName}: ${exception.message}")
+                            // Use default if fetch fails
+                            winnersList.add(
+                                WinningCandidate(
+                                    name = topCandidate.candidateName,
+                                    position = topCandidate.positionName,
+                                    photoResource = R.drawable.ic_profile,
+                                    photoUrl = null
+                                )
+                            )
+                            
+                            completedCount++
+                            if (completedCount == totalWinners) {
+                                onSuccess(winnersList.sortedBy { it.position })
+                            }
+                        }
+                }
             },
             onFailure = { error ->
                 Log.e(TAG, "Error calculating winners from tallies: $error")

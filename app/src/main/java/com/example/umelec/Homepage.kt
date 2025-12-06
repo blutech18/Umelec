@@ -23,13 +23,14 @@ data class Candidate(
     val name: String,
     val position: String,
     val photoResource: Int = R.drawable.ic_profile, // Resource ID for the drawable/image (fallback)
-    val photoUrl: String? = null // URL for candidate photo (optional)
+    val photoUrl: String? = null // URL for candidate photo
 )
 
 data class WinningCandidate(
     val name: String,
     val position: String,
-    val photoResource: Int // Resource ID for the drawable/image
+    val photoResource: Int = R.drawable.ic_profile, // Resource ID for the drawable/image (fallback)
+    val photoUrl: String? = null // URL for candidate photo (optional)
 )
 
 
@@ -50,7 +51,7 @@ class Homepage : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        
+
         // Check if user is logged in
         if (!FirebaseAuthHelper.isUserLoggedIn()) {
             // User not logged in, redirect to login
@@ -60,38 +61,46 @@ class Homepage : AppCompatActivity() {
             finish()
             return
         }
-        
+
         // Check user role and redirect leaders to their homepage
         val currentUser = FirebaseAuthHelper.getCurrentUser()
         currentUser?.let { user ->
+
             FirebaseAuthHelper.getUserDataFromFirestore(
                 userId = user.uid,
                 onSuccess = { userData ->
                     val role = userData?.get("role") as? String ?: "VOTER"
                     val isVerified = userData?.get("isVerified") as? Boolean ?: false
-                    
+
+
                     // If user is a leader, redirect to leader homepage
                     if (role == "LEADER") {
                         if (isVerified) {
+
                             val intent = Intent(this, Leader_homepage::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             startActivity(intent)
+
                             finish()
                         } else {
                             val intent = Intent(this, Leader_Verification::class.java)
+
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             startActivity(intent)
                             finish()
                         }
+
                     } else {
                         // Continue with voter homepage setup
                         initializeHomepage()
                     }
                 },
+
                 onFailure = { error ->
                     // If we can't get user data, continue with voter homepage (default)
                     android.util.Log.e("Homepage", "Error getting user data: $error")
                     initializeHomepage()
+
                 }
             )
         } ?: run {
@@ -99,10 +108,11 @@ class Homepage : AppCompatActivity() {
             val intent = Intent(this, Login::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
+
             finish()
         }
     }
-    
+
     private fun initializeHomepage() {
         // Set the content view
         setContentView(R.layout.activity_homepage)
@@ -112,6 +122,7 @@ class Homepage : AppCompatActivity() {
 
         // Initialize UI components and set up listeners
         setupUI()
+
 
 
         // --- NEW ELECTION INITIALIZATION ---
@@ -128,6 +139,7 @@ class Homepage : AppCompatActivity() {
     private fun setupUI() {
         // Find the views defined in your XML layout
         val nameTextView: TextView = findViewById(R.id.NameTitle)
+
         val profileIcon: ImageView = findViewById(R.id.profileIcon)
         val notificationIcon: ImageView = findViewById(R.id.notificationIcon)
 
@@ -137,63 +149,78 @@ class Homepage : AppCompatActivity() {
         val currentUser = FirebaseAuthHelper.getCurrentUser()
         if (currentUser != null) {
             // Fetch user data from Firestore to get firstname only
+
             FirebaseAuthHelper.getUserDataFromFirestore(
                 userId = currentUser.uid,
                 onSuccess = { userData ->
                     if (userData != null) {
-                        // Try to get firstname - check both lowercase and camelCase
-                        val firstname = (userData["firstname"] as? String)?.trim() 
+                        // Try to get firstname - check both lowercase
+                        val firstname = (userData["firstname"] as? String)?.trim()
                             ?: (userData["firstName"] as? String)?.trim()
                             ?: ""
-                        
+
+
                         // Display only firstname if available
                         nameTextView.text = if (firstname.isNotEmpty() && firstname.lowercase() != "email") {
                             firstname
-                        } else {
+                        } else
+                        {
                             // Fallback: extract username from email (part before @)
                             val email = currentUser.email ?: ""
-                            val emailUsername = if (email.contains("@")) {
-                                email.substringBefore("@").trim()
-                            } else {
-                                email.trim()
-                            }
-                            
+                            val emailUsername =
+                                if (email.contains("@")) {
+                                    email.substringBefore("@").trim()
+                                } else {
+                                    email.trim()
+
+                                }
+
                             // Only use email username if it's not empty and not "email"
+
                             if (emailUsername.isNotEmpty() && emailUsername.lowercase() != "email") {
                                 emailUsername
                             } else {
+
                                 "User"
                             }
                         }
                     } else {
+
                         // No user data in Firestore, use email username as fallback
                         val email = currentUser.email ?: ""
                         val emailUsername = if (email.contains("@")) {
+
                             email.substringBefore("@").trim()
                         } else {
                             email.trim()
                         }
+
                         nameTextView.text = if (emailUsername.isNotEmpty() && emailUsername.lowercase() != "email") {
                             emailUsername
                         } else {
+
                             "User"
                         }
                     }
                 },
                 onFailure = { errorMessage ->
+
                     // If Firestore fetch fails, use email username as fallback
                     Log.e("Homepage", "Failed to fetch user data: $errorMessage")
                     val email = currentUser.email ?: ""
                     val emailUsername = if (email.contains("@")) {
+
                         email.substringBefore("@").trim()
                     } else {
                         email.trim()
                     }
+
                     nameTextView.text = if (emailUsername.isNotEmpty() && emailUsername.lowercase() != "email") {
                         emailUsername
                     } else {
                         "User"
                     }
+
                 }
             )
         } else {
@@ -211,6 +238,7 @@ class Homepage : AppCompatActivity() {
 
         // 3. 庁 NEW: Notification Icon Click Listener (Integrate NotificationManager)
         notificationIcon.setOnClickListener {
+            //
             // Call the reusable manager to handle the dropdown logic
             notificationManager.toggleNotificationDropdown(it as ImageView)
         }
@@ -222,11 +250,13 @@ class Homepage : AppCompatActivity() {
         FirestoreElectionHelper.getCurrentElectionId(
             onSuccess = { electionId ->
                 currentElectionId = electionId
+
                 if (electionId == null) {
                     hasVotedInCurrentElection = false
                 } else {
                     refreshUserVoteStatus()
                 }
+
                 determineElectionState()
             },
             onFailure = { error ->
@@ -236,7 +266,8 @@ class Homepage : AppCompatActivity() {
         )
     }
 
-    private fun refreshUserVoteStatus() {
+    private fun refreshUserVoteStatus()
+    {
         val electionId = currentElectionId ?: return
         val userId = FirebaseAuthHelper.getCurrentUser()?.uid ?: return
 
@@ -245,6 +276,7 @@ class Homepage : AppCompatActivity() {
             electionId = electionId,
             onSuccess = { hasVoted ->
                 hasVotedInCurrentElection = hasVoted
+
                 lastKnownElectionState?.let { updateElectionUI(it) }
             },
             onFailure = { error ->
@@ -254,6 +286,7 @@ class Homepage : AppCompatActivity() {
     }
 
     // Determine election state from Firestore
+
     private fun determineElectionState() {
         FirestoreElectionHelper.determineElectionState(
             onSuccess = { state ->
@@ -261,6 +294,7 @@ class Homepage : AppCompatActivity() {
                 updateElectionUI(state)
             },
             onFailure = { error ->
+
                 android.util.Log.e("Homepage", "Error determining election state: $error")
                 lastKnownElectionState = ElectionState.NO_ELECTION
                 updateElectionUI(ElectionState.NO_ELECTION)
@@ -295,6 +329,7 @@ class Homepage : AppCompatActivity() {
         electionEndedText.visibility = View.GONE
 
 
+
         // Disable Vote Now button by default
         voteNowButton.isEnabled = false // Disable by default
         voteNowButton.alpha = 0.5f // Optional: Dim the button when disabled
@@ -303,6 +338,7 @@ class Homepage : AppCompatActivity() {
         // Clear election info placeholders to avoid flashing stale data
         electionTitleValue.text = ""
         votingPeriodValue.text = ""
+
         statusValue.text = ""
         voteNowButton.text = "Vote now"
         voteNowButton.setOnClickListener(null)
@@ -313,7 +349,8 @@ class Homepage : AppCompatActivity() {
         textNoCandidates.visibility = View.GONE
         textCandidatesEnded.visibility = View.GONE
         btnViewAll.isClickable = false
-        btnViewAll.setTextColor(Color.parseColor("#AAAAAA"))
+        btnViewAll.setTextColor(Color.parseColor("#0098E0"))
+
         btnViewAll.setOnClickListener(null)
         candidateListContainer.removeAllViews()
 
@@ -335,6 +372,7 @@ class Homepage : AppCompatActivity() {
         val btnVoteNow: AppCompatButton = findViewById(R.id.btnVoteNow)
 
         val electionTitleValue: TextView = findViewById(R.id.electionTitleValue)
+
         val votingPeriodValue: TextView = findViewById(R.id.votingPeriodValue)
         val statusValue: TextView = findViewById(R.id.statusValue)
         val electionLoadingGroup: LinearLayout = findViewById(R.id.electionLoadingGroup)
@@ -353,6 +391,7 @@ class Homepage : AppCompatActivity() {
             ongoingLayout = ongoingLayout,
             noElectionText = textNoElection,
             upcomingLayout = upcomingLayout,
+
             electionEndedText = textElectionEnded,
             voteNowButton = btnVoteNow,
             electionTitleValue = electionTitleValue,
@@ -360,6 +399,7 @@ class Homepage : AppCompatActivity() {
             statusValue = statusValue,
             candidatesContainer = candidatesContainer,
             candidatesCardTitle = candidatesCardTitle,
+
             textNoCandidates = textNoCandidates,
             textCandidatesEnded = textCandidatesEnded,
             btnViewAll = btnViewAll,
@@ -369,6 +409,7 @@ class Homepage : AppCompatActivity() {
         )
 
         when (state) {
+
 
             ElectionState.ONGOING -> {
                 // PHASE 1: ONGOING (Election Info Card)
@@ -380,42 +421,51 @@ class Homepage : AppCompatActivity() {
                 btnVoteNow.alpha = 1.0f // Restore full opacity
 
 
+
                 // **Backend Integration Point (ONGOING)**
                 fetchElectionData { electionData ->
                     electionLoadingGroup.visibility = View.GONE
                     electionTitleValue.text = electionData.title
                     votingPeriodValue.text = electionData.period
 
+
                     if (hasVotedInCurrentElection) {
                         statusValue.text = "Already voted"
                         statusValue.setTextColor(Color.parseColor("#C62828"))
                         btnVoteNow.text = "Already voted"
+
                         btnVoteNow.isEnabled = false
                         btnVoteNow.alpha = 0.5f
                         btnVoteNow.setOnClickListener(null)
                     } else {
+
                         // 🚀 UPDATED LOGIC (From Vote.kt): Status text and button text
                         statusValue.text = "Eligible"
                         statusValue.setTextColor(Color.parseColor("#333333"))
                         btnVoteNow.text = "Vote now"
+
                         btnVoteNow.isEnabled = true
                         btnVoteNow.alpha = 1.0f
 
                         // Set click listener for Vote Now button
+
                         btnVoteNow.setOnClickListener {
                             val intent = Intent(this, Vote::class.java)
                             startActivity(intent)
                         }
+
                     }
 
                     // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
                     candidatesContainer.visibility = View.VISIBLE
                     btnViewAll.isClickable = true
-                    btnViewAll.setTextColor(Color.parseColor("#0039A6"))
+
+                    btnViewAll.setTextColor(Color.parseColor("#0098E0"))
 
                     // Fetch and populate candidates
                     currentElectionId?.let { electionId ->
                         FirestoreCandidateHelper.getCandidatesForPreview(
+
                             electionId = electionId,
                             limit = 5,
                             onSuccess = { candidates ->
@@ -423,22 +473,27 @@ class Homepage : AppCompatActivity() {
                                 populateCandidateList(candidateListContainer, candidates)
                                 setupCandidateScrollControls()
                             },
+
                             onFailure = { error ->
                                 android.util.Log.e("Homepage", "Error fetching candidates: $error")
                                 candidateLoadingGroup.visibility = View.GONE
+
                                 textNoCandidates.visibility = View.VISIBLE
                             }
                         )
+
                     } ?: run {
                         candidateLoadingGroup.visibility = View.GONE
                         textNoCandidates.visibility = View.VISIBLE
                     }
 
-                    // Set View All button click listener
+                    // Set View
+                    // All button click listener
                     btnViewAll.setOnClickListener {
                         val intent = Intent(this, Candidates::class.java)
                         startActivity(intent)
                     }
+
                 }
 
 
@@ -448,6 +503,7 @@ class Homepage : AppCompatActivity() {
                 // PHASE 2: NO ELECTION (Election Info Card)
                 textNoElection.visibility = View.VISIBLE
                 electionLoadingGroup.visibility = View.GONE
+
                 candidateLoadingGroup.visibility = View.GONE
 
                 // btnVoteNow remains disabled
@@ -456,6 +512,7 @@ class Homepage : AppCompatActivity() {
 
                 textNoCandidates.visibility = View.VISIBLE
                 // btnViewAll remains disabled/non-clickable
+
 
             }
 
@@ -470,44 +527,54 @@ class Homepage : AppCompatActivity() {
                 fetchElectionData { electionData ->
                     electionLoadingGroup.visibility = View.GONE
                     electionTitleValue.text = electionData.title
+
                     votingPeriodValue.text = electionData.period
 
                     // 🚀 UPDATED LOGIC (From Vote.kt): Status text and Button state
                     statusValue.text = "Upcoming"
                     statusValue.setTextColor(Color.parseColor("#333333"))
+
                     btnVoteNow.text = "Vote Now"
                     btnVoteNow.isEnabled = false
                     btnVoteNow.alpha = 0.5f
                     btnVoteNow.setOnClickListener(null)
 
-                    // PHASE 1 & 3: ONGOING and UPCOMING (Candidate Preview Card)
+                    // PHASE 1 & 3: ONGOING and UPCOMING
+                    // (Candidate Preview Card)
                     candidatesContainer.visibility = View.VISIBLE
                     btnViewAll.isClickable = true
-                    btnViewAll.setTextColor(Color.parseColor("#0039A6"))
+                    btnViewAll.setTextColor(Color.parseColor("#0098E0"))
 
                     // Fetch and populate candidates
+
                     currentElectionId?.let { electionId ->
                         FirestoreCandidateHelper.getCandidatesForPreview(
                             electionId = electionId,
                             limit = 5,
+
                             onSuccess = { candidates ->
                                 candidateLoadingGroup.visibility = View.GONE
                                 populateCandidateList(candidateListContainer, candidates)
+
                                 setupCandidateScrollControls()
                             },
                             onFailure = { error ->
+
                                 android.util.Log.e("Homepage", "Error fetching candidates: $error")
                                 candidateLoadingGroup.visibility = View.GONE
                                 textNoCandidates.visibility = View.VISIBLE
+
                             }
                         )
                     } ?: run {
                         candidateLoadingGroup.visibility = View.GONE
+
                         textNoCandidates.visibility = View.VISIBLE
                     }
 
                     // Set View All button click listener
                     btnViewAll.setOnClickListener {
+
                         val intent = Intent(this, Candidates::class.java)
                         startActivity(intent)
                     }
@@ -515,7 +582,8 @@ class Homepage : AppCompatActivity() {
 
             }
 
-            ElectionState.ENDED -> {
+            ElectionState.ENDED ->
+            {
 
 
                 // PHASE 4: ENDED (Election Info Card)
@@ -523,12 +591,14 @@ class Homepage : AppCompatActivity() {
                 //upcomingLayout.visibility = View.VISIBLE
                 textElectionEnded.visibility = View.VISIBLE
 
+
                 // 🚀 UPDATED LOGIC (From Vote.kt): Hide the Vote button
                 btnVoteNow.visibility = View.GONE
 
                 fetchElectionData { electionData ->
                     electionLoadingGroup.visibility = View.GONE
                     electionTitleValue.text = electionData.title
+
                     votingPeriodValue.text = electionData.period
                     statusValue.text = "Ended"
                     statusValue.setTextColor(Color.parseColor("#333333"))
@@ -536,6 +606,7 @@ class Homepage : AppCompatActivity() {
 
 
                 // PHASE 4: ENDED (Candidate Preview Card)
+
 
                 //textCandidatesEnded.visibility = View.VISIBLE
                 // btnViewAll remains disabled/non-clickable
@@ -546,39 +617,47 @@ class Homepage : AppCompatActivity() {
                 candidatesCardTitle.text = "Results Preview"
 
 
+
                 // 2. Display the candidates/winners list
                 candidatesContainer.visibility = View.VISIBLE
 
                 // textCandidatesEnded is hidden, as we are showing the list
 
                 // 3. Make the "View All" button clickable
+
                 btnViewAll.isClickable = true
 
-                btnViewAll.setTextColor(Color.parseColor("#0039A6")) // Active Blue color
+                btnViewAll.setTextColor(Color.parseColor("#0098E0")) // Active Blue color
 
                 // 4. Populate with winning candidates
                 // **Backend Integration Point (ENDED):** Use the list of winning candidates
                 currentElectionId?.let { electionId ->
+
                     FirestoreCandidateHelper.getWinningCandidates(
                         electionId = electionId,
                         onSuccess = { winners ->
                             candidateLoadingGroup.visibility = View.GONE
+
                             val candidateList = winners.map {
-                                Candidate(it.name, it.position, it.photoResource)
+                                Candidate(it.name, it.position, it.photoResource, it.photoUrl)
                             }
+
                             populateCandidateList(candidateListContainer, candidateList)
                             setupCandidateScrollControls()
                         },
                         onFailure = { error ->
-                            android.util.Log.e("Homepage", "Error fetching winners: $error")
+                            // 🚀 MODIFIED: Log the error but DO NOT show textCandidatesEnded.
+                            // This allows cached data to render if available, making it resilient.
+                            android.util.Log.e("Homepage", "Error fetching winners: $error (Index issue - attempting to use cached data)")
                             candidateLoadingGroup.visibility = View.GONE
-                            textCandidatesEnded.visibility = View.VISIBLE
+                            // textCandidatesEnded.visibility = View.VISIBLE // REMOVED
                         }
                     )
                 } ?: run {
+                    // 🚀 MODIFIED: Log the error but DO NOT show textCandidatesEnded.
                     android.util.Log.e("Homepage", "No election ID available")
                     candidateLoadingGroup.visibility = View.GONE
-                    textCandidatesEnded.visibility = View.VISIBLE
+                    // textCandidatesEnded.visibility = View.VISIBLE // REMOVED
                 }
 
                 // 5. Set View All button click listener
@@ -601,22 +680,26 @@ class Homepage : AppCompatActivity() {
                     callback(electionData)
                 } else {
                     // Default fallback
+
                     callback(ElectionDetails(
                         title = "No Active Election",
                         period = "",
                         status = "None"
+
                     ))
                 }
             },
             onFailure = { error ->
                 android.util.Log.e("Homepage", "Error fetching election data: $error")
                 // Default fallback
+
                 callback(ElectionDetails(
                     title = "Error Loading Election",
                     period = "",
                     status = "Error"
                 ))
             }
+
         )
     }
 
@@ -641,6 +724,7 @@ class Homepage : AppCompatActivity() {
             val viewWidth = constraintLayout.width
 
 
+
             val arrowWidth = findViewById<ImageButton>(R.id.btnPrevCandidate).width +
                     findViewById<ImageButton>(R.id.btnNextCandidate).width +
                     (resources.getDimensionPixelSize(R.dimen.candidate_padding) * 2) // Add padding for safety
@@ -654,6 +738,7 @@ class Homepage : AppCompatActivity() {
             // 3. Dynamically create and add a view for each candidate
             candidates.forEach { candidate ->
                 val candidateItemView = createCandidateItemView(candidate)
+
 
 
                 container.addView(candidateItemView)
@@ -677,6 +762,7 @@ class Homepage : AppCompatActivity() {
             )
 
 
+
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER_HORIZONTAL
             setPadding(8.toPx(), 8.toPx(), 8.toPx(), 8.toPx()) // Convert DP to pixels
@@ -685,14 +771,16 @@ class Homepage : AppCompatActivity() {
         // CircleImageView for the photo (circular profile picture)
         val photoView = de.hdodenhof.circleimageview.CircleImageView(context).apply {
             layoutParams = LinearLayout.LayoutParams(80.toPx(), 80.toPx())
+
             contentDescription = "Candidate Photo"
             scaleType = ImageView.ScaleType.CENTER_CROP
         }
-        
+
         // Load image from URL if available, otherwise use default drawable
         if (!candidate.photoUrl.isNullOrEmpty()) {
             Glide.with(context)
                 .load(candidate.photoUrl)
+
                 .placeholder(candidate.photoResource)
                 .error(candidate.photoResource)
                 .centerCrop()
@@ -700,7 +788,8 @@ class Homepage : AppCompatActivity() {
         } else {
             photoView.setImageResource(candidate.photoResource)
         }
-        
+
+
         itemLayout.addView(photoView)
 
         // TextView for the Name
@@ -709,6 +798,7 @@ class Homepage : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
+
                 topMargin = 4.toPx()
             }
             text = candidate.name
@@ -717,6 +807,7 @@ class Homepage : AppCompatActivity() {
             setTextColor(Color.parseColor("#333333"))
             gravity = android.view.Gravity.CENTER
             textAlignment = View.TEXT_ALIGNMENT_CENTER
+
             setLineSpacing(0f, 1.1f)
             // Note: setting custom font programmatically is complex;
             // relies on XML definition
@@ -728,6 +819,7 @@ class Homepage : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
+
 
 
             )
@@ -758,6 +850,7 @@ class Homepage : AppCompatActivity() {
         }
 
 
+
         // Next button logic: scroll right by the width of one candidate item
         btnNext.setOnClickListener {
             scrollView.smoothScrollBy(candidateItemWidth, 0)
@@ -766,8 +859,6 @@ class Homepage : AppCompatActivity() {
         // Initial check (hiding one button if list is short or at the start/end)
         scrollView.post {
             // You would typically monitor scroll position to hide/show buttons,
-
-
             // but for a fixed step scroll, enabling both is often simpler for a preview.
             // For now, we'll keep both visible unless the candidate list is very short.
         }
@@ -795,11 +886,13 @@ class Homepage : AppCompatActivity() {
         // Helper function to navigate to a new Activity
 
 
+
         val navigateTo = { activityClass: Class<*> ->
             // Only start the activity if it's not the current one (to prevent unnecessary restarts)
             if (activityClass != this::class.java) {
                 val intent = Intent(this, activityClass)
                 startActivity(intent)
+
 
 
                 // Optional: Add finish() if you don't want the user to return here via back button
@@ -811,6 +904,7 @@ class Homepage : AppCompatActivity() {
 
         // Home (Current Activity - No action needed unless reloading is desired)
         // We can keep this listener
+
         // empty or make it re-initialize the current activity.
         navHome.setOnClickListener {
             // Since we are already on Homepage.kt, we typically do nothing or smooth scroll to top.
