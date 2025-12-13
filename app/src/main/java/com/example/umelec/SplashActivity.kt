@@ -14,11 +14,12 @@ class SplashActivity : AppCompatActivity() {
 
         // Delay for a few seconds then check authentication state
         android.os.Handler(Looper.getMainLooper()).postDelayed({
-            // Check if user is logged in
+            // Always sign out user on app start to disable auto-login
+            // This ensures users must log in again every time they open the app
             if (FirebaseAuthHelper.isUserLoggedIn()) {
                 val currentUser = FirebaseAuthHelper.getCurrentUser()
                 currentUser?.let { user ->
-                    // 1) Ensure multi-step registration is fully completed
+                    // Check if registration is incomplete before signing out
                     FirebaseAuthHelper.isRegistrationComplete(
                         userId = user.uid,
                         onComplete = { isComplete ->
@@ -33,52 +34,36 @@ class SplashActivity : AppCompatActivity() {
                                         FirebaseAuthHelper.deleteCurrentUser(
                                             onSuccess = {
                                                 android.util.Log.d("SplashActivity", "Incomplete registration cleaned on app start.")
+                                                // Sign out and go to login
+                                                FirebaseAuthHelper.signOut()
+                                                FirebaseAuthHelper.clearTemporaryCredentials(this)
                                                 startActivity(Intent(this, MainActivity::class.java))
                                                 finish()
                                             },
                                             onFailure = { error ->
                                                 android.util.Log.e("SplashActivity", "Failed to delete incomplete user: $error")
+                                                // Sign out and go to login
                                                 FirebaseAuthHelper.signOut()
+                                                FirebaseAuthHelper.clearTemporaryCredentials(this)
                                                 startActivity(Intent(this, MainActivity::class.java))
                                                 finish()
                                             }
                                         )
                                     }
                             } else {
-                                // 2) Registration is complete – proceed with existing role-based routing
-                                FirebaseAuthHelper.getUserDataFromFirestore(
-                                    userId = user.uid,
-                                    onSuccess = { userData ->
-                                        val role = userData?.get("role") as? String ?: "VOTER"
-                                        val isVerified = userData?.get("isVerified") as? Boolean ?: false
-
-                                        when (role) {
-                                            "LEADER" -> {
-                                                // Leaders: always require fresh verification on app restart
-                                                android.util.Log.d("SplashActivity", "Leader detected, signing out for fresh verification")
-                                                FirebaseAuthHelper.signOut()
-                                                startActivity(Intent(this, MainActivity::class.java))
-                                            }
-                                            else -> {
-                                                // Voter, go directly to Homepage
-                                                startActivity(Intent(this, Homepage::class.java))
-                                            }
-                                        }
-                                        finish()
-                                    },
-                                    onFailure = { error ->
-                                        // If we can't get user data, default to voter homepage
-                                        android.util.Log.e("SplashActivity", "Error getting user data: $error")
-                                        startActivity(Intent(this, Homepage::class.java))
-                                        finish()
-                                    }
-                                )
+                                // Registration is complete - sign out user to disable auto-login
+                                android.util.Log.d("SplashActivity", "User logged in, signing out to disable auto-login")
+                                FirebaseAuthHelper.signOut()
+                                FirebaseAuthHelper.clearTemporaryCredentials(this)
+                                startActivity(Intent(this, MainActivity::class.java))
+                                finish()
                             }
                         },
                         onError = { error ->
-                            // If registration status can't be checked, be safe and send user to login
+                            // If registration status can't be checked, sign out and send user to login
                             android.util.Log.e("SplashActivity", "Error checking registration status: $error")
                             FirebaseAuthHelper.signOut()
+                            FirebaseAuthHelper.clearTemporaryCredentials(this)
                             startActivity(Intent(this, MainActivity::class.java))
                             finish()
                         }
