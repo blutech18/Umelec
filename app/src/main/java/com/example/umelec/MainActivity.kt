@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
         val slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up)
         // Load the new fade-in animation for the logo
         val fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in)
-
+    
         // Find the views
         val bottomContainer = findViewById<LinearLayout>(R.id.bottomContainer)
         val logoImage = findViewById<ImageView>(R.id.logoImage) // Find the logo ImageView

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_white_outlined_bg"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/montserrat_bold"
+        android:text="Upload Certification of Registration"
+        android:textColor="#313131"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/poppins_regular"
+        android:text="Supported file: PDF file\nMaximum number of files: 1"
+        android:textColor="#8C8CA1"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"/>
+
+    <LinearLayout
+        android:id="@+id/layoutSelectedFile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#F0F4F8"
+        android:padding="12dp"
+        android:layout_marginBottom="20dp"
+        android:visibility="gone"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvFileName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/poppins_regular"
+            android:textColor="#313131"
+            android:textSize="14sp"
+            android:ellipsize="middle"
+            android:singleLine="true"/>
+
+        <ImageView
+            android:id="@+id/btnRemoveFile"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_toast_error"
+            android:clickable="true"
+            android:focusable="true"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnSelectOrSubmit"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:background="@drawable/blue_rounded_button"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+
+        <ImageView
+            android:id="@+id/iconBtn"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_add"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/tvBtnText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="@font/poppins_bold"
+            android:text="Select a file"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+</LinearLayout>

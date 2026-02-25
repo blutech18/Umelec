@@ -22,6 +22,7 @@ import android.graphics.Rect
 import android.view.Gravity
 import android.graphics.drawable.ColorDrawable
 import android.view.LayoutInflater
+import android.widget.ImageView
 
 class RegisterActivity2 : AppCompatActivity() {
 
@@ -83,6 +84,13 @@ class RegisterActivity2 : AppCompatActivity() {
     private lateinit var inputYear: AutoCompleteTextView // (REORDERED)
 
     private lateinit var layoutCollege: TextInputLayout // Redefined for visibility (REORDERED)
+    private lateinit var btnConfirm: Button
+    // 🚨 NEW COMPONENT: COR Upload views
+    private lateinit var layoutUploadCOR: View
+    private lateinit var tvUploadStatus: TextView
+    private lateinit var btnClearFile: ImageButton
+    private lateinit var iconUpload: ImageView
+    private var selectedPdfName: String? = null // Stores the name of the uploaded file
     private lateinit var inputCollege: AutoCompleteTextView // (REORDERED)
 
 
@@ -297,6 +305,12 @@ class RegisterActivity2 : AppCompatActivity() {
 
         // COLLEGE DROPDOWN (Now third dropdown)
         layoutCollege = findViewById(R.id.textInputLayoutCollege)
+
+        // 🚨 NEW COMPONENT: Initialize COR Upload views
+        layoutUploadCOR = findViewById(R.id.layoutUploadCOR)
+        tvUploadStatus = findViewById(R.id.tvUploadStatus)
+        btnClearFile = findViewById(R.id.btnClearFile)
+        iconUpload = findViewById(R.id.iconUpload)
         inputCollege = findViewById(R.id.inputCollege)
         val collegeRequirementsContainer = findViewById<View>(R.id.CollegeRequirements)
         val reqCollege = findViewById<TextView>(R.id.reqCollege)
@@ -311,8 +325,19 @@ class RegisterActivity2 : AppCompatActivity() {
         // ---------------------------------------------------------------------
         // 1.3 Button Initialization
         // ---------------------------------------------------------------------
-        val btnConfirm = findViewById<Button>(R.id.btnConfirm)
+        btnConfirm = findViewById<Button>(R.id.btnConfirm)
         btnConfirm.isEnabled = false
+
+        // 🚨 NEW COMPONENT: Listener to open the upload dialog
+        layoutUploadCOR.setOnClickListener {
+            showUploadDialog()
+        }
+
+        // 🚨 NEW COMPONENT: Listener to clear the selected file
+        btnClearFile.setOnClickListener {
+            resetUploadField()
+            updateConfirmButtonState() // Re-validate the form
+        }
 
 
         // =====================================================================
@@ -320,7 +345,7 @@ class RegisterActivity2 : AppCompatActivity() {
         // =====================================================================
 
         // Helper function to update Confirm button state
-        fun updateConfirmButtonState() {
+        /*fun updateConfirmButtonState() {
             // 1. Get current values from all fields
             val studentID = inputStudentID.text.toString().trim()
             val firstname = inputFirstname.text.toString().trim()
@@ -338,11 +363,16 @@ class RegisterActivity2 : AppCompatActivity() {
             val isCollegeValid = isCollegeValid(collegeSelection)
 
             // 3. Combine all valid checks (UPDATED)
-            val allFieldsValid = isIDValid && isFirstnameValid && isLastnameValid && isGenderValid && isYearValid && isCollegeValid
+            val allFieldsValid = VALID_ID_PATTERN.matches(inputStudentID.text.toString().trim()) &&
+                    isFirstnameValid(inputFirstname.text.toString().trim()) &&
+                    isLastnameValid(inputLastname.text.toString().trim()) &&
+                    isGenderValid(inputGender.text.toString().trim()) &&
+                    isYearValid(inputYear.text.toString().trim()) &&
+                    isCollegeValid(inputCollege.text.toString().trim()) &&
+                    selectedPdfName != null // 🚨 NEW: Next button only enables if COR is uploaded
 
-            // 4. Set the button state
             btnConfirm.isEnabled = allFieldsValid
-        }
+        }*/
 
 
         // =====================================================================
@@ -934,28 +964,115 @@ class RegisterActivity2 : AppCompatActivity() {
                 onFailure = { errorMessage ->
                     // Re-enable button
                     btnConfirm.isEnabled = true
-                    
+
                     // Log error for debugging
                     android.util.Log.e("RegisterActivity2", "Failed to save user data: $errorMessage")
-                    
+
                     // Show error dialog with actual error message
                     // Format error message for user display
                     val displayMessage = when {
-                        errorMessage.contains("PERMISSION_DENIED", ignoreCase = true) -> 
+                        errorMessage.contains("PERMISSION_DENIED", ignoreCase = true) ->
                             "Permission denied. Please check your internet connection and try again."
-                        errorMessage.contains("network", ignoreCase = true) -> 
+                        errorMessage.contains("network", ignoreCase = true) ->
                             "Network error. Please check your internet connection and try again."
-                        errorMessage.contains("already exists", ignoreCase = true) -> 
+                        errorMessage.contains("already exists", ignoreCase = true) ->
                             "User data already exists. Please continue to the next step."
-                        else -> 
+                        else ->
                             "Failed to save user data: $errorMessage"
                     }
-                    
+
                     showStudentIDErrorDialog(displayMessage)
                 }
             )
         }
     } // End of onCreate
+
+    // 🚨 BACKEND NOTE: New function to handle the custom COR Upload Dialog
+    private fun showUploadDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_upload_cor, null)
+        val builder = AlertDialog.Builder(this).setView(dialogView)
+        val dialog = builder.create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val layoutSelectedFile = dialogView.findViewById<View>(R.id.layoutSelectedFile)
+        val tvFileName = dialogView.findViewById<TextView>(R.id.tvFileName)
+        val btnRemoveFile = dialogView.findViewById<ImageView>(R.id.btnRemoveFile)
+        val btnSelectOrSubmit = dialogView.findViewById<View>(R.id.btnSelectOrSubmit)
+        val iconBtn = dialogView.findViewById<ImageView>(R.id.iconBtn)
+        val tvBtnText = dialogView.findViewById<TextView>(R.id.tvBtnText)
+
+        // Helper to toggle Dialog UI
+        fun updateDialogUI(fileName: String?) {
+            if (fileName != null) {
+                layoutSelectedFile.visibility = View.VISIBLE
+                tvFileName.text = fileName
+                iconBtn.visibility = View.GONE
+                tvBtnText.text = "Submit"
+            } else {
+                layoutSelectedFile.visibility = View.GONE
+                iconBtn.visibility = View.VISIBLE
+                tvBtnText.text = "Select a file"
+            }
+        }
+
+        btnSelectOrSubmit.setOnClickListener {
+            if (tvBtnText.text == "Submit") {
+                // Transfer "selected" file info to the main Activity UI
+                selectedPdfName = tvFileName.text.toString()
+                tvUploadStatus.text = selectedPdfName
+                tvUploadStatus.setTextColor(Color.BLACK)
+                iconUpload.visibility = View.GONE
+                btnClearFile.visibility = View.VISIBLE
+
+                // Hide the requirement text for COR in the main activity
+                findViewById<View>(R.id.reqCOR).visibility = View.GONE
+
+                dialog.dismiss()
+                updateConfirmButtonState() // Re-validate the form to enable "Next"
+            } else {
+                // Frontend Simulation: Pre-filling a dummy name to simulate file selection
+                updateDialogUI("COR_Sample_File.pdf")
+            }
+        }
+
+        btnRemoveFile.setOnClickListener {
+            updateDialogUI(null)
+        }
+
+        dialog.show()
+    }
+
+    // 🚨 BACKEND NOTE: New function to reset the COR field to its empty state
+    private fun resetUploadField() {
+        selectedPdfName = null
+        tvUploadStatus.text = "Upload Certification of Registration"
+        tvUploadStatus.setTextColor(COLOR_HINT_GRAY)
+        iconUpload.visibility = View.VISIBLE
+        btnClearFile.visibility = View.GONE
+        findViewById<View>(R.id.reqCOR).visibility = View.VISIBLE
+    }
+
+    // Helper function to update Confirm button state
+    private fun updateConfirmButtonState() {
+        val studentID = inputStudentID.text.toString().trim()
+        val firstname = inputFirstname.text.toString().trim()
+        val lastname = inputLastname.text.toString().trim()
+        val genderSelection = inputGender.text.toString().trim()
+        val yearSelection = inputYear.text.toString().trim()
+        val collegeSelection = inputCollege.text.toString().trim()
+
+        val allFieldsValid = VALID_ID_PATTERN.matches(studentID) &&
+                isFirstnameValid(firstname) &&
+                isLastnameValid(lastname) &&
+                isGenderValid(genderSelection) &&
+                isYearValid(yearSelection) &&
+                isCollegeValid(collegeSelection) &&
+                selectedPdfName != null // COR requirement check
+
+        btnConfirm.isEnabled = allFieldsValid
+    }
+
 
     // =========================================================================
     // 8. DISPATCH TOUCH EVENT (CLICK OUTSIDE TO UNFOCUS/HIDE KEYBOARD)
